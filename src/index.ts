@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import type { TSESLint } from "@typescript-eslint/utils";
 import asyncKeyword from "./rules/async-keyword.js";
 import bareCatch from "./rules/bare-catch.js";
@@ -21,9 +22,12 @@ const rules = {
   "no-hardcoded-secrets": noHardcodedSecrets,
 } as const;
 
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json") as { name: string; version: string };
+
 const meta = {
-  name: "eslint-plugin-agent-code-guard",
-  version: "0.1.0",
+  name: pkg.name,
+  version: pkg.version,
 };
 
 interface PluginConfig {

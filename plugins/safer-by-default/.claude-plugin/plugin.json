@@ -1,6 +1,6 @@
 {
   "name": "safer-by-default",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Raise the floor of AI-written TypeScript. Two skills: setup (one-time bootstrap) and typescript (in-band principles applied whenever the agent writes or reviews TS code).",
   "author": {
     "name": "Tapan Chugh"
