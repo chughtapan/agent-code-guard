@@ -1,151 +1,8 @@
 ---
-name: safer-by-default
-version: 0.1.0
-description: |
-  Agent-facing coding discipline. Default to the high-safety idioms that
-  humans skip because of friction. Strong types, schemas at boundaries,
-  typed errors, exhaustive handlers, Effect. Agents have no friction cost
-  for ceremony, so the "not worth it for MVP" excuse is dead. Invoke when
-  starting a new repo, reviewing a plan, or before writing non-trivial code.
-  Companion to eslint-plugin-agent-code-guard.
-allowed-tools:
-  - Read
-  - Grep
-  - Glob
+description: Apply safer-by-default principles when writing or reviewing TypeScript code. Default to strong types, schemas at every boundary, typed errors, no silent catches, and Effect + Kysely patterns. Invoke before editing .ts files, when reviewing TS code changes, or when the user or agent reaches for a human-era shortcut (async/await, Promise<T> return types, throw Error, Record<string, unknown> casts, raw SQL, vi.mock in integration tests).
 ---
 
-# /safer-by-default
-
-## When this skill is invoked
-
-Your first responsibility, before anything else, is to check whether this repo is set up. Run through the [Setup checklist](#setup-checklist). If the plugin is already wired, skip to the principles and apply them to whatever the user is working on.
-
-Humans don't run setup steps by hand. You do.
-
-## Setup checklist
-
-Run this on a fresh repo, or any repo where `eslint-plugin-agent-code-guard` isn't yet installed or wired. Confirm with the user at each major step and don't guess past ambiguity.
-
-### 1. Detect the package manager
-
-Check in order: `pnpm-lock.yaml` → pnpm, `package-lock.json` → npm, `yarn.lock` → yarn. If none, ask the user which to use.
-
-### 2. Check peer deps
-
-- `eslint >= 9` (flat config). If below 9, ask the user to upgrade first — this plugin does not support legacy `.eslintrc` configs.
-- `typescript >= 5`.
-
-### 3. Install the plugin and parser
-
-```sh
-<pm> add -D eslint-plugin-agent-code-guard @typescript-eslint/parser
-```
-
-### 4. Wire `eslint.config.js`
-
-Create or update `eslint.config.js` with the two-block setup — application source under `recommended`, integration tests under `integrationTests`. Ask the user for their integration-test glob before writing the config. Do not assume `**/*.integration.test.ts`; their tests may be under `tests/integration/**` or similar.
-
-```js
-import guard from "eslint-plugin-agent-code-guard";
-import tsParser from "@typescript-eslint/parser";
-
-export default [
-  {
-    files: ["src/**/*.ts"],
-    ignores: ["**/*.test.ts", "**/*.spec.ts"],
-    languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
-    plugins: { "agent-code-guard": guard },
-    rules: guard.configs.recommended.rules,
-  },
-  {
-    files: ["<USER'S INTEGRATION-TEST GLOB>"],
-    languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
-    plugins: { "agent-code-guard": guard },
-    rules: guard.configs.integrationTests.rules,
-  },
-];
-```
-
-### 5. Adjust rules to the user's stack
-
-Ask two questions before proceeding:
-
-- **Effect?** If the user's project does not use Effect, disable `async-keyword`, `promise-type`, and `then-chain` in the application-source block. Don't suppress per-callsite — turn them off at the preset level.
-- **Kysely or Drizzle?** If the user's project has no typed query builder, disable `no-raw-sql`. Note that raw SQL without a typed builder will stay a weak spot regardless.
-
-Always keep these on: `bare-catch`, `record-cast`, `no-manual-enum-cast`, `no-hardcoded-secrets`. They are stack-independent.
-
-### 6. Install and wire `eslint-comments/require-description`
-
-Every rule suppression must carry a written reason. Install and wire it:
-
-```sh
-<pm> add -D @eslint-community/eslint-plugin-eslint-comments
-```
-
-```js
-import comments from "@eslint-community/eslint-plugin-eslint-comments";
-
-// Add as a new config block in eslint.config.js:
-{
-  files: ["**/*.ts"],
-  plugins: { "eslint-comments": comments },
-  rules: { "eslint-comments/require-description": ["error", { ignore: [] }] },
-}
-```
-
-### 7. Install companion rules if they aren't already
-
-Skip any that are already on. Otherwise install:
-
-```sh
-<pm> add -D @typescript-eslint/eslint-plugin eslint-plugin-sonarjs
-```
-
-Enable these rules on the application-source block:
-
-- `@typescript-eslint/no-magic-numbers`
-- `@typescript-eslint/no-unused-vars`
-- `sonarjs/no-duplicate-string`
-
-### 8. Flip `tsconfig.json` strict flags
-
-In the existing `tsconfig.json`, set these under `compilerOptions`. If any are already set, leave them. If any flag change breaks the existing codebase, surface the breakage — don't silently back out.
-
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "noImplicitOverride": true,
-    "noFallthroughCasesInSwitch": true
-  }
-}
-```
-
-### 9. Run the lint and report the baseline
-
-Run `<pm> eslint .` (or whatever the user's lint script is). Report how many violations exist. Ask the user:
-
-- Fix now, rule by rule, in this session?
-- Accept the baseline and only block new violations (add an `.eslintignore`-style carve-out, or commit the baseline report so the CI check compares against it)?
-- Fix specific rules now and defer others?
-
-Do not silently fix everything without asking. Some rule fixes (e.g. rewriting `async` → `Effect.gen`) touch behavior, not just style.
-
-### 10. Activate this skill for future sessions (if not already)
-
-If `.claude/skills/safer-by-default/SKILL.md` does not exist:
-
-```sh
-mkdir -p .claude/skills/safer-by-default
-cp node_modules/eslint-plugin-agent-code-guard/SKILL.md .claude/skills/safer-by-default/SKILL.md
-```
-
-Commit `.claude/skills/safer-by-default/SKILL.md` so the skill travels with the repo.
-
----
+# /safer-by-default:typescript
 
 ## The core claim
 
@@ -155,15 +12,13 @@ We are at the same inflection for AI agents and high-level code.
 
 Strong types. Schemas at every boundary. Typed errors. Total functions. Exhaustive pattern matches. Property-based tests. These techniques eliminate entire classes of bugs before any runtime check. For humans they were "too much friction." Too much typing, too much ceremony, too much boilerplate to read. So humans bypassed linters, loosened tsconfig, cast things to unknown, threw untyped errors, and shipped.
 
-Agents feel none of that friction. An agent writes two hundred lines of Effect with tagged errors as easily as twenty lines of async/await. The gstack compression table puts boilerplate at roughly one hundred times, tests at fifty times, features at thirty times. The ten percent of completeness that humans skipped because it was "not worth it for MVP" costs seconds when an agent writes it, and prevents hours of debugging later.
+Agents feel none of that friction. An agent writes two hundred lines of Effect with tagged errors as easily as twenty lines of async/await. The ten percent of completeness that humans skipped because it was "not worth it for MVP" costs seconds when an agent writes it, and prevents hours of debugging later.
 
 This skill tells the agent: default to the high-grade idioms. The MVP excuse is dead.
 
 ## Connection to Boil the Lake
 
-Garry Tan's principle. Always do the complete thing when AI makes the marginal cost near-zero. A lake is boilable. One hundred percent test coverage for a module, full feature implementation, all edge cases, complete error paths. An ocean is not. Multi-quarter rewrites. Platform migrations. Boil lakes. Flag oceans.
-
-Canonical essay: https://garryslist.org/posts/boil-the-ocean. Full principle lives in `~/.claude/skills/gstack/ETHOS.md`.
+Always do the complete thing when AI makes the marginal cost near-zero. A lake is boilable: one hundred percent test coverage for a module, full feature implementation, all edge cases, complete error paths. An ocean is not: multi-quarter rewrites, platform migrations. Boil lakes. Flag oceans.
 
 TypeScript code safety is a lake. Every concrete technique below is reachable in fifteen to sixty agent-minutes. Boil it.
 
@@ -259,9 +114,9 @@ When the user asks for a shortcut, surface the compression cost. Something like:
 
 In every row, choose the full version. The compression math makes it roughly free, and the safety dividend compounds forever.
 
-## The lake to boil
+## The ideal repo state
 
-Every new TypeScript repo, day one.
+Every new TypeScript repo, day one. The `setup` skill automates the first four; the rest are architectural choices you make as you write code.
 
 `tsconfig.json` with `strict: true`, `noUncheckedIndexedAccess: true`, `exactOptionalPropertyTypes: true`, `noImplicitOverride: true`, `noFallthroughCasesInSwitch: true`.
 
@@ -289,11 +144,11 @@ Integration tests hit real dependencies. No `vi.mock` in `*.integration.test.ts`
 
 No secrets in source. All secrets loaded from the environment with a schema-validated shape.
 
-Default posture is all twelve, day one. Adding them later costs roughly ten times the effort, because existing code is written to slack rules.
+Default posture is all of the above, day one. Adding them later costs roughly ten times the effort, because existing code is written to slack rules.
 
 ## Connection to the lint plugin
 
-The plugin enforces the floor. If code trips any of its nine rules, it is below the floor. The agent fixes it rather than suppressing it without a written reason.
+The plugin enforces the floor. If code trips any of its rules, it is below the floor. Fix it rather than suppressing it without a written reason.
 
 This skill describes the ceiling. What the code looks like when it is actively using the agent-era techniques, not just avoiding the forbidden ones.
 
@@ -311,7 +166,7 @@ Rule to principle mapping:
 
 `no-hardcoded-secrets` follows from principle three. Env is a boundary, validate at boot.
 
-Per-rule before-and-after examples live at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`. Agents read the relevant doc before attempting a fix.
+Per-rule Before/After examples live at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`. Read the relevant doc before attempting a fix.
 
 ## User sovereignty still wins
 
@@ -322,18 +177,6 @@ Name exactly what is being skipped. "We are shipping without the env schema. `pr
 Add a TODO referencing this skill so the next agent sees the debt.
 
 Never silently skip. Every shortcut is explicit, named, and attributed.
-
-## When to invoke
-
-User runs `/safer-by-default` explicitly. First action: run the [Setup checklist](#setup-checklist) unless the repo is already wired.
-
-Starting a new TypeScript repo. Use the setup checklist, then the lake checklist.
-
-Reviewing a plan that describes code changes. Score each decision against the principles.
-
-Before writing a chunk of non-trivial code. Pick the full-version option for each decision listed.
-
-When the user or the agent says any rejected phrase. Pause. Present the compression math.
 
 ## When not to invoke
 

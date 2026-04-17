@@ -9,23 +9,19 @@ Agents don't pay the friction cost of ceremony.
 
 The floor of code quality in AI-written TypeScript can be higher than any human team could reasonably maintain. Strong types. Schemas at every boundary. Typed errors. No silent catches. Real-dependency integration tests. The ceremony humans skipped because it wasn't worth their time takes seconds for an agent to write. Those same seconds prevent hours of debugging later.
 
-This package is how you enforce it.
+This repo is how you enforce it.
 
-## Install the skill
+## Install
 
-The primary way to adopt this is the companion Claude Code skill, `/safer-by-default`. It installs the ESLint plugin, writes `eslint.config.js`, flips the `tsconfig.json` strict flags, and recommends adjacent rules worth pairing. You don't wire any of it up by hand.
-
-```sh
-pnpm add -D eslint-plugin-agent-code-guard @typescript-eslint/parser
-mkdir -p .claude/skills/safer-by-default
-cp node_modules/eslint-plugin-agent-code-guard/SKILL.md .claude/skills/safer-by-default/SKILL.md
+```
+/plugin marketplace add chughtapan/agent-code-guard
+/plugin install safer-by-default@agent-code-guard
 ```
 
-Then in any Claude Code session in that repo:
+Two slash commands inside Claude Code. No shell. Once installed, the plugin ships two skills:
 
-> /safer-by-default
-
-The skill takes over. It asks you which stack you're on, what your integration-test glob is, and what's already wired. Then it does the rest.
+- `/safer-by-default:setup` — user-invoked once per repo. Installs `eslint-plugin-agent-code-guard`, writes `eslint.config.js`, flips the `tsconfig.json` strict flags, and adds adjacent rules worth pairing. Asks you which stack you're on (Effect? Kysely?) and what your integration-test glob is.
+- `safer-by-default:typescript` — auto-invoked by Claude Code whenever the agent writes or reviews TypeScript. The in-band principles: strong types, schemas at boundaries, typed errors, no silent catches, Effect + Kysely patterns. You don't type this one.
 
 Requires `eslint >= 9`, `typescript >= 5`.
 
