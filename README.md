@@ -58,6 +58,20 @@ File-scoping is deliberately up to you. Rules stay pure pattern detectors — no
 | `recommended` | Application source | `async-keyword`, `promise-type`, `then-chain`, `bare-catch`, `record-cast`, `no-raw-sql`, `no-manual-enum-cast`, `no-hardcoded-secrets` |
 | `integrationTests` | Integration-test files (via `files:` filter) | `no-vitest-mocks` |
 
+## The companion skill: `safer-by-default`
+
+This package ships a Claude Code skill at `SKILL.md` (also reachable at `node_modules/eslint-plugin-agent-code-guard/SKILL.md` after install). The skill articulates the *why* behind the rules: agents enable a higher grade of code safety than humans could reasonably maintain, because agents don't pay the friction cost of ceremony. "Not worth it for MVP" is dead as an excuse when the marginal cost of the complete version is measured in agent-seconds.
+
+To activate it in a project:
+
+```sh
+# one-time, from your repo root
+mkdir -p .claude/skills/safer-by-default
+cp node_modules/eslint-plugin-agent-code-guard/SKILL.md .claude/skills/safer-by-default/SKILL.md
+```
+
+Any Claude Code session in that repo will then recognize `/safer-by-default` and can auto-invoke it when the user starts a new module, reviews a plan, or asks for code quality guidance. The skill pairs with the lint rules — the plugin is the floor (don't do these things), the skill is the ceiling (actively use the agent-era techniques).
+
 ## Reading rule docs (especially for agents)
 
 Each rule has a full `docs/rules/<name>.md` file with a Before (flagged) / After (preferred) code example and notes. **These ship inside the installed package**, so agents with filesystem access can read them directly:
