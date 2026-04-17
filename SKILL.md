@@ -2,10 +2,10 @@
 name: safer-by-default
 version: 0.1.0
 description: |
-  Agent-facing coding discipline. Default to the high-safety idioms — strong
-  types, schemas at boundaries, typed errors, exhaustive handlers, Effect —
-  that humans skip because of friction. Agents have no friction cost for
-  ceremony, so the "not worth it for MVP" excuse is dead. Invoke when
+  Agent-facing coding discipline. Default to the high-safety idioms that
+  humans skip because of friction. Strong types, schemas at boundaries,
+  typed errors, exhaustive handlers, Effect. Agents have no friction cost
+  for ceremony, so the "not worth it for MVP" excuse is dead. Invoke when
   starting a new repo, reviewing a plan, or before writing non-trivial code.
   Companion to eslint-plugin-agent-code-guard.
 allowed-tools:
@@ -14,139 +14,206 @@ allowed-tools:
   - Glob
 ---
 
-# /safer-by-default — Agents Enable a Higher Grade of Code Safety
+# /safer-by-default
 
 ## The core claim
 
-Compilers took assembly from "careful humans writing bit patterns" to "type-checked high-level code." Compilers were too slow, too annoying, too expensive for most assembly programmers to adopt — until tooling made them near-free. Then "not using a compiler" became unthinkable.
+Compilers took assembly from "careful humans writing bit patterns" to "type-checked high-level code." Compilers were slow, annoying, and expensive. Most assembly programmers skipped them. Then tooling made compilers near-free, and skipping them became unthinkable.
 
 We are at the same inflection for AI agents and high-level code.
 
-Strong types, exhaustive validation, typed errors, schema-first decoding, property-based tests, total functions — the techniques that eliminate entire classes of bugs without writing runtime checks — were "too much friction" for humans. Too much typing, too much ceremony, too much boilerplate to read. Humans bypass linters, loosen tsconfig, cast to `unknown`, `throw new Error("bad")`, and ship.
+Strong types. Schemas at every boundary. Typed errors. Total functions. Exhaustive pattern matches. Property-based tests. These techniques eliminate entire classes of bugs before any runtime check. For humans they were "too much friction." Too much typing, too much ceremony, too much boilerplate to read. So humans bypassed linters, loosened tsconfig, cast things to unknown, threw untyped errors, and shipped.
 
-Agents don't feel friction. An agent writes 200 lines of Effect with tagged errors as easily as 20 lines of `async`/`await`. The [gstack compression table](~/.claude/skills/gstack/ETHOS.md) puts boilerplate at ~100x, tests at ~50x, features at ~30x. The 10% of completeness that humans skip because it's "not worth it for MVP" costs seconds when an agent writes it, and prevents hours of debugging later.
+Agents feel none of that friction. An agent writes two hundred lines of Effect with tagged errors as easily as twenty lines of async/await. The gstack compression table puts boilerplate at roughly one hundred times, tests at fifty times, features at thirty times. The ten percent of completeness that humans skipped because it was "not worth it for MVP" costs seconds when an agent writes it, and prevents hours of debugging later.
 
-**This skill tells the agent: default to the high-grade idioms. The MVP excuse is dead.**
+This skill tells the agent: default to the high-grade idioms. The MVP excuse is dead.
 
-## How this relates to Boil the Lake
+## Connection to Boil the Lake
 
-Garry Tan's principle: *always do the complete thing when AI makes the marginal cost near-zero.* A lake is boilable (100% test coverage, all edge cases, full feature). An ocean is not (multi-quarter rewrite). Boil lakes, flag oceans. Canonical: <https://garryslist.org/posts/boil-the-ocean>, loaded in full in `~/.claude/skills/gstack/ETHOS.md`.
+Garry Tan's principle. Always do the complete thing when AI makes the marginal cost near-zero. A lake is boilable. One hundred percent test coverage for a module, full feature implementation, all edge cases, complete error paths. An ocean is not. Multi-quarter rewrites. Platform migrations. Boil lakes. Flag oceans.
 
-TypeScript code safety is a lake. Every concrete technique below is reachable in 15–60 agent-minutes. Boil it.
+Canonical essay: https://garryslist.org/posts/boil-the-ocean. Full principle lives in `~/.claude/skills/gstack/ETHOS.md`.
+
+TypeScript code safety is a lake. Every concrete technique below is reachable in fifteen to sixty agent-minutes. Boil it.
 
 ## The principles
 
-### 1. Completeness is cheap; incomplete is expensive.
-The full version — all edge cases, types that make bad states unrepresentable, schemas at every boundary, errors typed — costs minutes more than the shortcut when an agent writes it. Choose it every time. "Ship the 90%" was the right call when human-engineering-hours were the bottleneck. They aren't anymore.
+### 1. Completeness is cheap. Incomplete is expensive.
+
+The full version of a feature costs minutes more than the shortcut when an agent writes it. All edge cases handled. Types that make bad states unrepresentable. Schemas at every boundary. Errors typed. Choose the full version every time.
+
+"Ship the ninety percent" was the right call when human engineering hours were the bottleneck. They are not the bottleneck anymore.
 
 ### 2. Types beat tests.
-A test catches a bug that already exists. A type makes the bug impossible to write. Before adding a test, ask: can I encode this in the type system? Branded string types, discriminated unions, exhaustive `switch` with `never`, `NonEmptyArray`, `Positive<number>`, literal unions — every constraint you can push into the types is a test you don't have to write and a mistake the compiler catches.
+
+A test catches a bug that already exists. A type makes the bug impossible to write.
+
+Before adding a test, ask whether the constraint can live in the type system. Branded string types. Discriminated unions. Exhaustive switch with never. NonEmptyArray. Positive numbers. Literal unions.
+
+Every constraint you push into the types is a test you do not have to write and a mistake the compiler catches before it ships.
 
 ### 3. Validate at every boundary.
-Data from disk, network, env vars, user input, dynamic imports, other packages — never trust static types at a boundary. Decode with a schema (Effect `Schema`, Zod, Valibot) and fail loudly when the shape is wrong. Inside the boundary, your types are truths. Outside, they're wishes.
+
+Data from disk, network, environment variables, user input, dynamic imports, other packages. Never trust static types at a boundary. Decode with a schema and fail loudly when the shape is wrong.
+
+Inside the boundary, your types are truths. Outside, they are wishes. Pick a schema library (Effect Schema, Zod, Valibot) and use it consistently at every edge.
 
 ### 4. Typed errors are not optional.
-`throw new Error("something went wrong")` hides a fact that will cost hours later: which call sites can this happen at, which callers know how to handle it, what does the user actually see. Tagged error classes (Effect `Data.TaggedError`) or discriminated-union results make the error set part of the type. Untyped `throw` is the assembly-language way.
+
+`throw new Error("something went wrong")` hides a fact that will cost hours later. Which call sites can this happen at. Which callers know how to handle it. What does the user see.
+
+Tagged error classes or discriminated-union results make the error set part of the type. Untyped throw is the assembly-language way of doing error handling.
 
 ### 5. Refactor aggressively.
-Agents refactor at ~30x–100x human speed. Awkward name? Rename. Wrong module boundary? Split. Two almost-identical functions? Merge. The cost of the right refactor is minutes; the cost of living with the wrong structure is every future session multiplied by every future developer.
+
+Agents refactor at thirty to one hundred times human speed. Awkward name? Rename. Wrong module boundary? Split. Two almost-identical functions? Merge.
+
+The cost of the right refactor is minutes. The cost of living with the wrong structure compounds every future session, multiplied by every future developer.
 
 ### 6. Exhaustiveness over optionality.
-Every `switch` over a union gets a `default` that assigns to `never`. Every `if/else if` chain gets a final `else` that either handles or rejects. Every `Option.match` / `Either.match` handles both branches. Never leave a branch as "probably not reached" — "probably not reached" becomes "definitely not handled."
+
+Every switch over a union gets a default that assigns to never. Every if/else chain gets a final else that either handles or rejects. Every Option.match and Either.match handles both branches.
+
+Never leave a branch as "probably not reached." Probably not reached becomes definitely not handled, and then definitely breaks at two in the morning.
 
 ### 7. Strict tsconfig is the floor.
-All strict flags on, day one. `strict: true`, `noUncheckedIndexedAccess: true`, `exactOptionalPropertyTypes: true`, `noImplicitOverride: true`, `noFallthroughCasesInSwitch: true`. Flipping these later means rewriting code that was written to slack rules. Flipping them first means the code was written correctly from the start.
 
-### 8. The agent is the last mile. Make the code easy for the next agent.
-You will not be the last agent to touch this code. Every type annotation you add, every schema you write, every tagged error you introduce is load-bearing context for the next session. Dense, untyped, implicit code is illegible to agents the same way obfuscated code is illegible to humans. Self-documenting types are the agent-readable equivalent of good naming.
+All strict flags on, day one. `strict: true`. `noUncheckedIndexedAccess: true`. `exactOptionalPropertyTypes: true`. `noImplicitOverride: true`. `noFallthroughCasesInSwitch: true`.
 
-## Phrases the agent must reject
+Flipping these later means rewriting code that was written to slack rules. Flipping them first means the code was written correctly from the start. This is cheaper.
 
-These signal "a human shortcut is about to happen." Catch them in your own output or the user's request, pause, and rewrite.
+### 8. The next agent thanks you.
 
-- "This is just a prototype"
-- "Not worth it for MVP"
-- "We'll add types / tests / validation later"
-- "Good enough for now"
-- "I'll just cast it to `any` / `unknown` / `Record<string, unknown>`"
-- "Let me just silence the linter for this one"
-- "The happy path is the important part"
-- "Users will pass the right shape, don't worry about malformed input"
-- "Don't over-engineer it"
+You are not the last agent to touch this code. Every type annotation, every schema, every tagged error you add is load-bearing context for the next session.
 
-If the user asks for a shortcut, surface the compression cost: *"That's a 2-week-human / 30-minute-agent task. The shortcut saves you ~25 minutes of agent time and costs you hours of debugging later. Want the full version?"* Then defer to user sovereignty if they still say skip.
+Dense untyped implicit code is illegible to agents the same way obfuscated code is illegible to humans. Self-documenting types are the agent-readable equivalent of good naming.
+
+## Phrases to reject
+
+These signal that a human shortcut is about to happen. Catch them in your own output or the user's request. Pause and rewrite.
+
+"This is just a prototype."
+
+"Not worth it for MVP."
+
+"We'll add types / tests / validation later."
+
+"Good enough for now."
+
+"I'll just cast it to any / unknown / Record<string, unknown>."
+
+"Let me just silence the linter for this one."
+
+"The happy path is the important part."
+
+"Users will pass the right shape, don't worry about malformed input."
+
+"Don't over-engineer it."
+
+When the user asks for a shortcut, surface the compression cost. Something like: *"That's a two-week-human / thirty-minute-agent task. The shortcut saves you about twenty-five minutes of agent time and costs you hours of debugging later. Want the full version?"* Then defer to user sovereignty if they still say skip.
 
 ## Decision rules for when to invest
 
-| Scenario | Shortcut (human-era) | Full version (agent-era) | Call |
-|---|---|---|---|
-| Parsing an API response | `(await r.json()) as Record<string, unknown>` | `Schema.decodeUnknown(Body)(await r.json())` | **Full.** ~10 extra lines. |
-| Function that can fail | `throw new Error("bad")` | `return yield* Effect.fail(new BadError({ cause }))` | **Full.** Typed errors. |
-| String union | `status as "a" \| "b" \| "c"` | Import the generated `Status` union | **Full.** No re-cast. |
-| Error in `try`/`catch` | `try { op() } catch {}` | `Effect.try({ try: op, catch: e => new OpError({ cause: e }) })` | **Full.** Typed failure. |
-| Env var access | `process.env.FOO!` | Env schema parsed once at boot | **Full.** Fail at boot, not line 4000. |
-| Async return | `async f(): Promise<T>` | `const f = (): Effect.Effect<T, E, R> => Effect.gen(...)` | **Full.** Composable, typed errors. |
-| ID / email / URL | `string` | `UserId = string & { __brand: "UserId" }` | **Full.** Can't pass wrong ID anywhere. |
-| `switch` over union | `case "a": ... case "b": ...` | `...default: return absurd(x)` with `const absurd = (x: never): never => {...}` | **Full.** Compile error on new variant. |
-| Test coverage | "Happy path test" | "Happy path + all error paths + property test" | **Full.** Tests are 50x compressed. |
+| Scenario | Human-era shortcut | Agent-era full version |
+|---|---|---|
+| Parsing an API response | `(await r.json()) as Record<string, unknown>` | `Schema.decodeUnknown(Body)(await r.json())` |
+| Function that can fail | `throw new Error("bad")` | `return yield* Effect.fail(new BadError({ cause }))` |
+| String union type | `row.status as "a" \| "b" \| "c"` | Import generated Status union |
+| Error in try/catch | `try { op() } catch {}` | `Effect.try({ try: op, catch: e => new OpError({ cause: e }) })` |
+| Env var access | `process.env.FOO!` | Env schema parsed once at boot |
+| Async return type | `async f(): Promise<T>` | `(): Effect.Effect<T, E, R> => Effect.gen(...)` |
+| Identifier type | `string` | `UserId = string & { __brand: "UserId" }` |
+| Switch over union | `case "a": ... case "b": ...` | Final case returns `absurd(x)` where `absurd(x: never): never` |
+| Test coverage | Happy path only | Happy path, error paths, property test |
 
-## The lake to boil (TypeScript starter checklist)
+In every row, choose the full version. The compression math makes it roughly free, and the safety dividend compounds forever.
 
-Every new TypeScript repo, day one:
+## The lake to boil
 
-- [ ] `tsconfig.json` with `strict: true`, `noUncheckedIndexedAccess: true`, `exactOptionalPropertyTypes: true`, `noImplicitOverride: true`, `noFallthroughCasesInSwitch: true`
-- [ ] `eslint-plugin-agent-code-guard` installed with `recommended` + `integrationTests` presets
-- [ ] `@typescript-eslint/no-magic-numbers` + `sonarjs/no-duplicate-string` enabled
-- [ ] `@eslint-community/eslint-plugin-eslint-comments` with `require-description: ["error"]` (every rule suppression must carry a reason)
-- [ ] Schema library wired in at every I/O boundary (Effect `Schema` or Zod — pick one and use it everywhere)
-- [ ] Effect-style error channel for every fallible operation (`Data.TaggedError` subclasses, never raw `throw`)
-- [ ] Env vars validated with a schema at boot; code never reads `process.env` directly after that
-- [ ] Branded types for every ID-like string (`UserId`, `OrgId`, `Email`, `Url`)
-- [ ] Discriminated unions for every state machine; `absurd(x: never)` helper imported
-- [ ] Property-based tests (`fast-check`) for pure logic
-- [ ] Kysely (or Drizzle) for DB access; zero raw SQL
-- [ ] Integration tests hit real dependencies (no `vi.mock` in `*.integration.test.ts`)
-- [ ] No secrets in source — all loaded from env with schema-validated shape
+Every new TypeScript repo, day one.
 
-Default posture: all twelve, day one. Adding them later costs 10x the effort because existing code is written to slack rules.
+`tsconfig.json` with `strict: true`, `noUncheckedIndexedAccess: true`, `exactOptionalPropertyTypes: true`, `noImplicitOverride: true`, `noFallthroughCasesInSwitch: true`.
 
-## Connection to `eslint-plugin-agent-code-guard`
+`eslint-plugin-agent-code-guard` installed with the `recommended` and `integrationTests` presets wired up.
 
-The plugin enforces the **floor**. If code trips any of the 9 rules, it's below the floor and the agent must fix it (not suppress it without a written reason). This skill describes the **ceiling**: what the code looks like when it's actively using the agent-era techniques, not just avoiding the forbidden ones.
+`@typescript-eslint/no-magic-numbers` and `sonarjs/no-duplicate-string` enabled.
 
-Rule → principle mapping:
-- `async-keyword`, `promise-type`, `then-chain` — principle 4 (typed errors)
-- `bare-catch` — principles 4 + 6 (typed errors, exhaustiveness)
-- `record-cast`, `no-manual-enum-cast` — principle 3 (validate at boundaries) and 2 (types beat tests)
-- `no-raw-sql` — principles 2 + 3 (types over runtime checks, validated boundaries)
-- `no-vitest-mocks` — integration-test integrity (real boundaries, not fictional ones)
-- `no-hardcoded-secrets` — principle 3 (env is a boundary, validate at boot)
+`@eslint-community/eslint-plugin-eslint-comments` with `require-description` set to `"error"` so every rule suppression carries a reason.
 
-Per-rule Before / After examples live at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`. Agents should read the relevant doc before attempting a fix.
+Schema library wired in at every input and output boundary. Effect Schema or Zod. Pick one and use it everywhere.
+
+Effect-style error channel for every fallible operation. Tagged error classes instead of raw throws.
+
+Env vars validated with a schema at boot. After that, code never reads `process.env` directly.
+
+Branded types for every identifier-like string. `UserId`, `OrgId`, `Email`, `Url`.
+
+Discriminated unions for every state machine. An `absurd(x: never)` helper imported and used in exhaustive switches.
+
+Property-based tests (e.g. `fast-check`) for any pure logic that takes a value and returns another.
+
+Kysely or Drizzle for database access. Zero raw SQL.
+
+Integration tests hit real dependencies. No `vi.mock` in `*.integration.test.ts`.
+
+No secrets in source. All secrets loaded from the environment with a schema-validated shape.
+
+Default posture is all twelve, day one. Adding them later costs roughly ten times the effort, because existing code is written to slack rules.
+
+## Connection to the lint plugin
+
+The plugin enforces the floor. If code trips any of its nine rules, it is below the floor. The agent fixes it rather than suppressing it without a written reason.
+
+This skill describes the ceiling. What the code looks like when it is actively using the agent-era techniques, not just avoiding the forbidden ones.
+
+Rule to principle mapping:
+
+`async-keyword`, `promise-type`, `then-chain` follow from principle four (typed errors).
+
+`bare-catch` follows from principles four and six (typed errors, exhaustiveness).
+
+`record-cast` and `no-manual-enum-cast` follow from principles three and two (validate at boundaries, types beat tests).
+
+`no-raw-sql` follows from principles two and three (types over runtime checks, validated boundaries).
+
+`no-vitest-mocks` follows from integration-test integrity. Real boundaries, not fictional ones.
+
+`no-hardcoded-secrets` follows from principle three. Env is a boundary, validate at boot.
+
+Per-rule before-and-after examples live at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`. Agents read the relevant doc before attempting a fix.
 
 ## User sovereignty still wins
 
-The user can always say "skip it, we ship tomorrow." Comply — but:
+The user can always say "skip it, we ship tomorrow." Comply. But.
 
-1. Name exactly what's being skipped ("We're shipping without the env schema; `process.env.STRIPE_KEY!` will 500 at runtime if missing").
-2. Add a TODO referencing this skill so the next agent sees the debt.
-3. Never silently skip. Every shortcut is explicit, named, and attributed.
+Name exactly what is being skipped. "We are shipping without the env schema. `process.env.STRIPE_KEY!` will 500 at runtime if missing."
+
+Add a TODO referencing this skill so the next agent sees the debt.
+
+Never silently skip. Every shortcut is explicit, named, and attributed.
 
 ## When to invoke
 
-- Starting a new TypeScript repo — use the lake checklist.
-- Reviewing a plan that describes code changes — score each decision against the principles.
-- Before writing a chunk of non-trivial code — pick the full-version option for each decision listed above.
-- When the user says any rejected phrase — pause and present the compression math.
+Starting a new TypeScript repo. Use the lake checklist.
 
-## When NOT to invoke
+Reviewing a plan that describes code changes. Score each decision against the principles.
 
-- Pure refactors that preserve behavior (the existing code's discipline is out of scope).
-- Scripts with a single-use lifetime (one-shot data migrations, CI glue) where the compression math flips — no future agent will read this code.
-- Debugging sessions where the goal is to find a bug, not to ship new code. Apply after the bug is understood.
+Before writing a chunk of non-trivial code. Pick the full-version option for each decision listed.
 
----
+When the user or the agent says any rejected phrase. Pause. Present the compression math.
 
-The human era said: *be pragmatic, ship it, iterate.* That was correct when engineering time was the bottleneck.
+## When not to invoke
 
-The agent era says: *be complete, ship it, and the next agent thanks you.* The bottleneck moved. Write code that reflects where it is now.
+Pure refactors that preserve behavior. The existing code's discipline is out of scope.
+
+Scripts with a single-use lifetime. One-shot data migrations, CI glue. The compression math flips here. No future agent will read this code.
+
+Debugging sessions where the goal is to find a bug, not ship new code. Apply the principles after the bug is understood.
+
+## Closing
+
+The human era said: be pragmatic, ship it, iterate. That was correct when engineering time was the bottleneck.
+
+The agent era says: be complete, ship it, and the next agent thanks you. The bottleneck moved.
+
+Write code that reflects where the bottleneck is now.
