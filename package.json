@@ -19,7 +19,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
+    "clean": "rm -rf dist",
+    "build": "pnpm clean && tsc",
     "test": "vitest run",
     "prepublishOnly": "pnpm build && pnpm test"
   },
