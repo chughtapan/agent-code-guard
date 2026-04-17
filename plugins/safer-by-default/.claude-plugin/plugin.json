@@ -5,8 +5,8 @@
   "author": {
     "name": "Tapan Chugh"
   },
-  "homepage": "https://github.com/chughtapan/agent-code-guard",
-  "repository": "https://github.com/chughtapan/agent-code-guard",
+  "homepage": "https://github.com/chughtapan/safer-by-default",
+  "repository": "https://github.com/chughtapan/safer-by-default",
   "license": "MIT",
   "keywords": ["typescript", "eslint", "effect", "kysely", "ai-agent", "code-quality"]
 }

@@ -1,4 +1,4 @@
-# `agent-code-guard/then-chain`
+# `safer-by-default/then-chain`
 
 **What it flags:** Any `.then(...)` method call.
 
@@ -41,7 +41,7 @@ Notes for agents:
 Consuming a raw `PromiseLike` from an external library at the edge of your code:
 
 ```ts
-// eslint-disable-next-line agent-code-guard/then-chain -- SDK returns PromiseLike at this boundary; wrap at callsite
+// eslint-disable-next-line safer-by-default/then-chain -- SDK returns PromiseLike at this boundary; wrap at callsite
 externalSdk.doThing().then(processResult);
 ```
 

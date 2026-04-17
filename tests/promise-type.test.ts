@@ -23,7 +23,7 @@ ruleTester.run("promise-type", rule, {
     { code: "const m: Map<string, Promise<number>> = new Map();" },
     { code: "type X = Promise<number>;" },
     {
-      code: "// eslint-disable-next-line @rule-tester/promise-type -- suppression test (real prefix in production is `agent-code-guard/promise-type`)\nfunction suppressed(): Promise<number> { return Promise.resolve(1); }",
+      code: "// eslint-disable-next-line @rule-tester/promise-type -- suppression test (real prefix in production is `safer-by-default/promise-type`)\nfunction suppressed(): Promise<number> { return Promise.resolve(1); }",
     },
   ],
   invalid: [

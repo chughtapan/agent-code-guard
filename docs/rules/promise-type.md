@@ -1,4 +1,4 @@
-# `agent-code-guard/promise-type`
+# `safer-by-default/promise-type`
 
 **What it flags:** `Promise<...>` used as a function **return type annotation**. Nested uses (e.g. `Map<string, Promise<X>>`) are allowed — you still consume third-party promise-returning APIs.
 
@@ -33,7 +33,7 @@ Notes for agents:
 Exporting a library surface that must match a promise-based contract (e.g. a public SDK method consumed by non-Effect users):
 
 ```ts
-// eslint-disable-next-line agent-code-guard/promise-type -- public SDK surface, callers are not on Effect
+// eslint-disable-next-line safer-by-default/promise-type -- public SDK surface, callers are not on Effect
 export function fetchUserAsPromise(id: string): Promise<User> {
   return Effect.runPromise(fetchUser(id));
 }

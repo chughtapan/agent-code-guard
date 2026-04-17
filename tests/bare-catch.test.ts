@@ -23,7 +23,7 @@ ruleTester.run("bare-catch", rule, {
     { code: "try { doThing(); } catch (error) { log(error); }" },
     { code: "try { doThing(); } catch (e) { throw e; }" },
     {
-      code: "// eslint-disable-next-line @rule-tester/bare-catch -- suppression test (real prefix in production is `agent-code-guard/bare-catch`)\ntry { doThing(); } catch {}",
+      code: "// eslint-disable-next-line @rule-tester/bare-catch -- suppression test (real prefix in production is `safer-by-default/bare-catch`)\ntry { doThing(); } catch {}",
     },
   ],
   invalid: [

@@ -1,4 +1,4 @@
-# `agent-code-guard/no-manual-enum-cast`
+# `safer-by-default/no-manual-enum-cast`
 
 **What it flags:** `as "a" | "b" | "c"` string-union casts (two or more string-literal types).
 
@@ -41,6 +41,6 @@ Notes for agents:
 Narrowing an externally-typed value whose real runtime type you know at this specific callsite (e.g. parsing a query-string value that your router validated earlier):
 
 ```ts
-// eslint-disable-next-line agent-code-guard/no-manual-enum-cast -- router guard upstream guarantees these three values
+// eslint-disable-next-line safer-by-default/no-manual-enum-cast -- router guard upstream guarantees these three values
 const kind = params.kind as "quick" | "full" | "custom";
 ```

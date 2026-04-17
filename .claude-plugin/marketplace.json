@@ -1,5 +1,5 @@
 {
-  "name": "agent-code-guard",
+  "name": "safer-by-default",
   "owner": {
     "name": "Tapan Chugh"
   },
@@ -10,13 +10,13 @@
     {
       "name": "safer-by-default",
       "source": "./plugins/safer-by-default",
-      "description": "Installs eslint-plugin-agent-code-guard, wires eslint.config.js and tsconfig strict flags, and applies safer-by-default principles to ongoing TypeScript work.",
+      "description": "Installs eslint-plugin-safer-by-default, wires eslint.config.js and tsconfig strict flags, and applies safer-by-default principles to ongoing TypeScript work.",
       "version": "0.0.2",
       "author": {
         "name": "Tapan Chugh"
       },
-      "homepage": "https://github.com/chughtapan/agent-code-guard",
-      "repository": "https://github.com/chughtapan/agent-code-guard",
+      "homepage": "https://github.com/chughtapan/safer-by-default",
+      "repository": "https://github.com/chughtapan/safer-by-default",
       "license": "MIT",
       "keywords": ["typescript", "eslint", "effect", "kysely", "ai-agent", "code-quality"]
     }

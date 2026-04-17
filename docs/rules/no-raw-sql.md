@@ -1,4 +1,4 @@
-# `agent-code-guard/no-raw-sql`
+# `safer-by-default/no-raw-sql`
 
 **What it flags:** `.query(...)` calls where the first argument looks like SQL (starts with `SELECT`/`INSERT`/`UPDATE`/`DELETE`/`CREATE`/`ALTER`/`DROP`/`WITH`, in a string literal or template literal) or uses a `` sql`...` `` tagged template.
 
@@ -46,6 +46,6 @@ Notes for agents:
 Migration scripts, ad-hoc admin tools, or raw-SQL benchmarks where the typed builder isn't appropriate:
 
 ```ts
-// eslint-disable-next-line agent-code-guard/no-raw-sql -- migration: one-off DDL, runs once
+// eslint-disable-next-line safer-by-default/no-raw-sql -- migration: one-off DDL, runs once
 await db.query("CREATE INDEX CONCURRENTLY idx_users_email ON users(email)");
 ```

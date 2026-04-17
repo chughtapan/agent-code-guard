@@ -1,4 +1,4 @@
-# `agent-code-guard/no-vitest-mocks`
+# `safer-by-default/no-vitest-mocks`
 
 **What it flags:** `vi.mock(...)`, `vi.hoisted(...)`, and `vi.spyOn(...)` calls.
 
@@ -49,6 +49,6 @@ Notes for agents:
 A specific dependency is genuinely out-of-scope for integration testing (e.g. a paid third-party API with no sandbox), and you need to stub only that one:
 
 ```ts
-// eslint-disable-next-line agent-code-guard/no-vitest-mocks -- third-party billing API has no sandbox
+// eslint-disable-next-line safer-by-default/no-vitest-mocks -- third-party billing API has no sandbox
 vi.mock("./stripe-client", () => ({ charge: vi.fn().mockResolvedValue({ id: "ch_test" }) }));
 ```

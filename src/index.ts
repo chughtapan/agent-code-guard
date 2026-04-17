@@ -31,7 +31,7 @@ const meta = {
 };
 
 interface PluginConfig {
-  plugins: { "agent-code-guard": Plugin };
+  plugins: { "safer-by-default": Plugin };
   rules: Record<string, TSESLint.Linter.RuleLevel>;
 }
 
@@ -49,28 +49,28 @@ const plugin: Plugin = {
   rules,
   configs: {
     recommended: {
-      plugins: { "agent-code-guard": undefined as unknown as Plugin },
+      plugins: { "safer-by-default": undefined as unknown as Plugin },
       rules: {
-        "agent-code-guard/async-keyword": "error",
-        "agent-code-guard/promise-type": "error",
-        "agent-code-guard/then-chain": "error",
-        "agent-code-guard/bare-catch": "error",
-        "agent-code-guard/record-cast": "error",
-        "agent-code-guard/no-raw-sql": "error",
-        "agent-code-guard/no-manual-enum-cast": "error",
-        "agent-code-guard/no-hardcoded-secrets": "error",
+        "safer-by-default/async-keyword": "error",
+        "safer-by-default/promise-type": "error",
+        "safer-by-default/then-chain": "error",
+        "safer-by-default/bare-catch": "error",
+        "safer-by-default/record-cast": "error",
+        "safer-by-default/no-raw-sql": "error",
+        "safer-by-default/no-manual-enum-cast": "error",
+        "safer-by-default/no-hardcoded-secrets": "error",
       },
     },
     integrationTests: {
-      plugins: { "agent-code-guard": undefined as unknown as Plugin },
+      plugins: { "safer-by-default": undefined as unknown as Plugin },
       rules: {
-        "agent-code-guard/no-vitest-mocks": "error",
+        "safer-by-default/no-vitest-mocks": "error",
       },
     },
   },
 };
 
-plugin.configs.recommended.plugins["agent-code-guard"] = plugin;
-plugin.configs.integrationTests.plugins["agent-code-guard"] = plugin;
+plugin.configs.recommended.plugins["safer-by-default"] = plugin;
+plugin.configs.integrationTests.plugins["safer-by-default"] = plugin;
 
 export default plugin;

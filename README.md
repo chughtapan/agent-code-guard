@@ -1,29 +1,42 @@
 # Safer by default
 
-[![npm](https://img.shields.io/npm/v/eslint-plugin-agent-code-guard.svg)](https://www.npmjs.com/package/eslint-plugin-agent-code-guard)
-[![license](https://img.shields.io/npm/l/eslint-plugin-agent-code-guard.svg)](./LICENSE)
+[![npm](https://img.shields.io/npm/v/eslint-plugin-safer-by-default.svg)](https://www.npmjs.com/package/eslint-plugin-safer-by-default)
+[![license](https://img.shields.io/npm/l/eslint-plugin-safer-by-default.svg)](./LICENSE)
 
-Agents don't pay the friction cost of ceremony.
+Your coding agent is miscalibrated.
 
-"We'll add types later." "We'll add tests later." "We'll add validation later." These were real tradeoffs when engineering time was scarce. Engineering time isn't scarce anymore.
+It was trained on human TypeScript: decades of a language written under one constraint that no longer applies to it, which is that ceremony was expensive for humans. That is why the training corpus is saturated with `async`/`await` and `Promise<T>` return types. That is why it reaches for `throw new Error("bad")` and `as Record<string, unknown>` and `try { ... } catch {}` and `vi.mock(...)`. Those were the right calls when engineering time was scarce. Engineering time is not scarce for an agent. An agent can write two hundred lines of Effect with tagged errors as easily as twenty lines of `async`/`await`.
 
-The floor of code quality in AI-written TypeScript can be higher than any human team could reasonably maintain. Strong types. Schemas at every boundary. Typed errors. No silent catches. Real-dependency integration tests. The ceremony humans skipped because it wasn't worth their time takes seconds for an agent to write. Those same seconds prevent hours of debugging later.
+The agent is calibrated to a workload that does not exist for it. The shortcuts it learned to call "good code" were cost-optimizations for human attention, not quality choices. It defaults to them anyway, because that is what the training data looked like.
 
-This repo is how you enforce it.
+This repo is how you recalibrate the agent, on your codebase, automatically.
+
+## How it works
+
+`safer-by-default` is a Claude Code plugin. It ships two skills and an ESLint plugin underneath them.
+
+The first skill, `/safer-by-default:setup`, is invoked once per repo. It detects your existing state, installs `eslint-plugin-safer-by-default` and the rules that pair well with it, writes an `eslint.config.js` you can actually read, flips the TypeScript strict flags, and verifies that the whole thing fires before it calls itself done. If the repo is already wired up, it notices and asks whether you want to verify, reconfigure, update, or walk away.
+
+The second skill, `safer-by-default:typescript`, is invoked automatically whenever the agent writes or reviews TypeScript code in your repo. It carries the full recalibration: the principles, the decision table, the phrases to reject, the mapping from each rule back to the reasoning behind it. The agent reads it before it starts writing, so that when it faces a fork like "do I write an Effect with a tagged error or just `throw new Error`," it picks the one this repo was set up to enforce.
+
+The ESLint plugin is the floor. The skill is the ceiling. The plugin catches the patterns an agent must not ship. The skill describes the patterns it should actively reach for.
 
 ## Install
 
 ```
-/plugin marketplace add chughtapan/agent-code-guard
-/plugin install safer-by-default@agent-code-guard
+/plugin marketplace add chughtapan/safer-by-default
+/plugin install safer-by-default@safer-by-default
 ```
 
-Two slash commands inside Claude Code. No shell. Once installed, the plugin ships two skills:
+Two slash commands inside Claude Code. No shell, no `mkdir`, no `cp`. Once the plugin is installed, run the setup skill once:
 
-- `/safer-by-default:setup` — user-invoked once per repo. Installs `eslint-plugin-agent-code-guard`, writes `eslint.config.js`, flips the `tsconfig.json` strict flags, and adds adjacent rules worth pairing. Asks you which stack you're on (Effect? Kysely?) and what your integration-test glob is.
-- `safer-by-default:typescript` — auto-invoked by Claude Code whenever the agent writes or reviews TypeScript. The in-band principles: strong types, schemas at boundaries, typed errors, no silent catches, Effect + Kysely patterns. You don't type this one.
+```
+/safer-by-default:setup
+```
 
-Requires `eslint >= 9`, `typescript >= 5`.
+After that, the typescript skill applies itself whenever the agent touches a `.ts` file. You do not invoke it; you do not need to think about it. The floor is enforced every time the lint runs, and the ceiling is pulled into context every time the agent writes TS.
+
+Requires `eslint >= 9` and `typescript >= 5`.
 
 ## License
 

@@ -1,4 +1,4 @@
-# `agent-code-guard/no-hardcoded-secrets`
+# `safer-by-default/no-hardcoded-secrets`
 
 **What it flags:** String literals of 20+ characters assigned to names matching `apiKey` / `api_key` / `secret` / `token` / `password` / `authToken` (case-insensitive). Known placeholder values (`test`, `dummy`, `placeholder`, `your-key-here`, `example`, `sample`, `mock`) are allowed.
 
@@ -50,7 +50,7 @@ Notes for agents:
 A public identifier that isn't actually a secret but happens to look like one (e.g. a published API's public key, a well-known test token):
 
 ```ts
-// eslint-disable-next-line agent-code-guard/no-hardcoded-secrets -- Stripe test mode publishable key, safe to commit
+// eslint-disable-next-line safer-by-default/no-hardcoded-secrets -- Stripe test mode publishable key, safe to commit
 const stripePublishableKey = "pk_test_TYooMQauvdEDq54NiTphI7jx";
 ```
 
