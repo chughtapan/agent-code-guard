@@ -29,24 +29,72 @@ ruleTester.run("bare-catch", rule, {
   invalid: [
     {
       code: "try { doThing(); } catch {}",
-      errors: [{ messageId: "bareCatch" }],
+      errors: [
+        {
+          messageId: "bareCatch",
+          suggestions: [
+            {
+              messageId: "bindError",
+              output: "try { doThing(); } catch (err) {}",
+            },
+          ],
+        },
+      ],
     },
     {
       code: "try { doThing(); } catch (_) {}",
-      errors: [{ messageId: "bareCatch" }],
+      errors: [
+        {
+          messageId: "bareCatch",
+          suggestions: [
+            {
+              messageId: "bindError",
+              output: "try { doThing(); } catch (err) {}",
+            },
+          ],
+        },
+      ],
     },
     {
       code: "try { doThing(); } catch (_err) { /* ignore */ }",
-      errors: [{ messageId: "bareCatch" }],
+      errors: [
+        {
+          messageId: "bareCatch",
+          suggestions: [
+            {
+              messageId: "bindError",
+              output: "try { doThing(); } catch (err) { /* ignore */ }",
+            },
+          ],
+        },
+      ],
     },
     {
       code: "try { doThing(); } catch (_unused) { return; }",
-      errors: [{ messageId: "bareCatch" }],
+      errors: [
+        {
+          messageId: "bareCatch",
+          suggestions: [
+            {
+              messageId: "bindError",
+              output: "try { doThing(); } catch (err) { return; }",
+            },
+          ],
+        },
+      ],
     },
     {
-      code: "async function run() { try { await x(); } catch {} }",
+      code: "function run() { try { x(); } catch {} }",
       errors: [
-        { messageId: "bareCatch" },
+        {
+          messageId: "bareCatch",
+          suggestions: [
+            {
+              messageId: "bindError",
+              output: "function run() { try { x(); } catch (err) {} }",
+            },
+          ],
+        },
       ],
     },
   ],

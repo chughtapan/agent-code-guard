@@ -58,6 +58,16 @@ File-scoping is deliberately up to you. Rules stay pure pattern detectors — no
 | `recommended` | Application source | `async-keyword`, `promise-type`, `then-chain`, `bare-catch`, `record-cast`, `no-raw-sql`, `no-manual-enum-cast`, `no-hardcoded-secrets` |
 | `integrationTests` | Integration-test files (via `files:` filter) | `no-vitest-mocks` |
 
+## Reading rule docs (especially for agents)
+
+Each rule has a full `docs/rules/<name>.md` file with a Before (flagged) / After (preferred) code example and notes. **These ship inside the installed package**, so agents with filesystem access can read them directly:
+
+```
+node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md
+```
+
+For example, an agent hitting `agent-code-guard/async-keyword` can read `node_modules/eslint-plugin-agent-code-guard/docs/rules/async-keyword.md` to see the canonical Effect.gen rewrite before attempting a fix. The same files back the `docs.url` in ESLint rule metadata, so IDEs and `eslint --rule-docs` also land on the right page once the GitHub repo URL in `src/utils/create-rule.ts` is set.
+
 ## Rules
 
 ### Effect-discipline rules

@@ -11,10 +11,11 @@ export default createRule({
     },
     messages: {
       bareCatch: "Silently swallowed error — always bind and log it",
+      bindError: "Bind the caught error to `err` (remove the underscore / add the param)",
     },
     schema: [],
     fixable: undefined,
-    hasSuggestions: false,
+    hasSuggestions: true,
   },
   defaultOptions: [],
   create(context) {
@@ -22,14 +23,37 @@ export default createRule({
       CatchClause(node) {
         const param = node.param;
         if (param === null || param === undefined) {
-          context.report({ node, messageId: "bareCatch" });
+          const catchKeywordEnd = node.range[0] + "catch".length;
+          context.report({
+            node,
+            messageId: "bareCatch",
+            suggest: [
+              {
+                messageId: "bindError",
+                fix: (fixer) =>
+                  fixer.insertTextAfterRange(
+                    [node.range[0], catchKeywordEnd],
+                    " (err)",
+                  ),
+              },
+            ],
+          });
           return;
         }
         if (
           param.type === AST_NODE_TYPES.Identifier &&
           param.name.startsWith("_")
         ) {
-          context.report({ node, messageId: "bareCatch" });
+          context.report({
+            node,
+            messageId: "bareCatch",
+            suggest: [
+              {
+                messageId: "bindError",
+                fix: (fixer) => fixer.replaceText(param, "err"),
+              },
+            ],
+          });
         }
       },
     };
