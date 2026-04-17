@@ -1,9 +1,7 @@
-# eslint-plugin-agent-code-guard
+# Safer by default
 
 [![npm](https://img.shields.io/npm/v/eslint-plugin-agent-code-guard.svg)](https://www.npmjs.com/package/eslint-plugin-agent-code-guard)
 [![license](https://img.shields.io/npm/l/eslint-plugin-agent-code-guard.svg)](./LICENSE)
-
-## Safer by default
 
 Agents don't pay the friction cost of ceremony.
 
