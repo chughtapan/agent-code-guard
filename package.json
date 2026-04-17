@@ -1,7 +1,7 @@
 {
-  "name": "eslint-plugin-sloppy-code-guard",
+  "name": "eslint-plugin-agent-code-guard",
   "version": "0.1.0",
-  "description": "ESLint plugin that flags common sloppy TypeScript patterns (async/Promise/.then/bare catch/Record casts) to nudge codebases toward Effect-idiomatic style.",
+  "description": "ESLint plugin that guards AI-agent-written TypeScript against common sloppy patterns: async/Promise/.then chains, bare catches, unsafe casts, raw SQL, manual enum casts, mocks in integration tests, and hardcoded secrets.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -27,7 +27,8 @@
     "eslint-plugin",
     "typescript",
     "effect",
-    "sloppy-code-guard"
+    "kysely",
+    "agent-code-guard"
   ],
   "license": "MIT",
   "dependencies": {

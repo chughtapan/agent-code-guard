@@ -23,7 +23,7 @@ ruleTester.run("then-chain", rule, {
     { code: "const x = obj.map(f);" },
     { code: "const then = 1; const x = then;" },
     {
-      code: "// eslint-disable-next-line @rule-tester/then-chain -- suppression test (real prefix in production is `sloppy-code-guard/then-chain`)\nPromise.resolve(1).then((v) => v);",
+      code: "// eslint-disable-next-line @rule-tester/then-chain -- suppression test (real prefix in production is `agent-code-guard/then-chain`)\nPromise.resolve(1).then((v) => v);",
     },
   ],
   invalid: [
