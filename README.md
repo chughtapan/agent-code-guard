@@ -1,16 +1,43 @@
 # eslint-plugin-agent-code-guard
 
+[![npm](https://img.shields.io/npm/v/eslint-plugin-agent-code-guard.svg)](https://www.npmjs.com/package/eslint-plugin-agent-code-guard)
+[![license](https://img.shields.io/npm/l/eslint-plugin-agent-code-guard.svg)](./LICENSE)
+
 An opinionated ESLint plugin for repos where AI coding agents write most of the TypeScript. It guards against the patterns agents fall into by default — `async`/`await` sprawl, `Promise<>` return types, `.then()` chains, silently-swallowed `catch` blocks, unsafe casts, raw SQL in app code, manual enum casts, mocks in integration tests, and hardcoded secrets — and nudges code toward Effect + Kysely + real-dependency integration testing. Rules are AST-accurate (no regex guessing) and ship as a flat-config-ready plugin with two presets.
 
-## Install
+## How to adopt it (the real way)
+
+**Don't wire this up by hand. Tell your coding agent to.**
+
+This package ships a Claude Code skill at `SKILL.md`. The skill knows how to install the plugin, add it to `eslint.config.js`, adjust rules to your stack, enable adjacent rules that pair well (`eslint-comments/require-description`, `@typescript-eslint/no-magic-numbers`, etc.), and flip the relevant `tsconfig.json` strict flags. In one session your repo goes from "nothing" to "the floor and the ceiling are both wired up."
+
+Activate the skill once per repo:
 
 ```sh
-pnpm add -D eslint-plugin-agent-code-guard
+pnpm add -D eslint-plugin-agent-code-guard @typescript-eslint/parser
+mkdir -p .claude/skills/safer-by-default
+cp node_modules/eslint-plugin-agent-code-guard/SKILL.md .claude/skills/safer-by-default/SKILL.md
 ```
 
-Peer deps: `eslint >= 9`, `typescript >= 5`.
+Then in any Claude Code session in that repo:
 
-## Flat-config usage
+> /safer-by-default
+
+The skill takes over from there — installs what's missing, writes the config, walks the tradeoffs with you, and leaves the repo set up.
+
+The rest of this README is reference material for when you (or the agent) want to know what a specific rule catches, what's in each preset, or how to turn a rule off globally.
+
+---
+
+## Requirements
+
+- `eslint >= 9` (flat config)
+- `typescript >= 5`
+- A TypeScript parser (`@typescript-eslint/parser`)
+
+## Manual configure
+
+If you don't want to use the skill, add to `eslint.config.js`:
 
 ```js
 // eslint.config.js
@@ -18,15 +45,10 @@ import guard from "eslint-plugin-agent-code-guard";
 import tsParser from "@typescript-eslint/parser";
 
 export default [
-  // Apply the default preset to application source.
+  // Application source.
   {
     files: ["src/**/*.ts", "packages/*/src/**/*.ts"],
-    ignores: [
-      "**/*.test.ts",
-      "**/*.spec.ts",
-      "**/__tests__/**",
-      "**/test-utils/**",
-    ],
+    ignores: ["**/*.test.ts", "**/*.spec.ts", "**/__tests__/**", "**/test-utils/**"],
     languageOptions: {
       parser: tsParser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
@@ -35,8 +57,7 @@ export default [
     rules: guard.configs.recommended.rules,
   },
 
-  // Scope the integration-test preset to YOUR integration-test glob.
-  // Change the pattern here to match whatever your vitest/jest config uses.
+  // Integration tests. Change `files:` to match your integration-test glob.
   {
     files: ["**/*.integration.test.ts"],
     languageOptions: {
@@ -49,7 +70,7 @@ export default [
 ];
 ```
 
-File-scoping is deliberately up to you. Rules stay pure pattern detectors — no runtime filesystem reads, no guessing. If your integration tests live under `tests/integration/**`, change the `files:` line. Same for production source.
+File-scoping is deliberately up to you. Rules are pure pattern detectors — no runtime filesystem reads, no guessing. If your integration tests live under `tests/integration/**`, change the `files:` line. Same for production source.
 
 ## Presets
 
@@ -58,29 +79,29 @@ File-scoping is deliberately up to you. Rules stay pure pattern detectors — no
 | `recommended` | Application source | `async-keyword`, `promise-type`, `then-chain`, `bare-catch`, `record-cast`, `no-raw-sql`, `no-manual-enum-cast`, `no-hardcoded-secrets` |
 | `integrationTests` | Integration-test files (via `files:` filter) | `no-vitest-mocks` |
 
-## The companion skill: `safer-by-default`
+## Adjusting rules to your stack
 
-This package ships a Claude Code skill at `SKILL.md` (also reachable at `node_modules/eslint-plugin-agent-code-guard/SKILL.md` after install). The skill articulates the *why* behind the rules: agents enable a higher grade of code safety than humans could reasonably maintain, because agents don't pay the friction cost of ceremony. "Not worth it for MVP" is dead as an excuse when the marginal cost of the complete version is measured in agent-seconds.
+The `recommended` preset assumes you're moving toward Effect + Kysely. If you're not, turn off the rules that don't fit **in `eslint.config.js`** — not with per-call `eslint-disable` comments.
 
-To activate it in a project:
+```js
+{
+  files: ["src/**/*.ts"],
+  plugins: { "agent-code-guard": guard },
+  rules: {
+    ...guard.configs.recommended.rules,
 
-```sh
-# one-time, from your repo root
-mkdir -p .claude/skills/safer-by-default
-cp node_modules/eslint-plugin-agent-code-guard/SKILL.md .claude/skills/safer-by-default/SKILL.md
+    // Not using Effect:
+    "agent-code-guard/async-keyword": "off",
+    "agent-code-guard/promise-type":  "off",
+    "agent-code-guard/then-chain":    "off",
+
+    // Not using a typed query builder (Kysely, Drizzle):
+    "agent-code-guard/no-raw-sql":    "off",
+  },
+}
 ```
 
-Any Claude Code session in that repo will then recognize `/safer-by-default` and can auto-invoke it when the user starts a new module, reviews a plan, or asks for code quality guidance. The skill pairs with the lint rules — the plugin is the floor (don't do these things), the skill is the ceiling (actively use the agent-era techniques).
-
-## Reading rule docs (especially for agents)
-
-Each rule has a full `docs/rules/<name>.md` file with a Before (flagged) / After (preferred) code example and notes. **These ship inside the installed package**, so agents with filesystem access can read them directly:
-
-```
-node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md
-```
-
-For example, an agent hitting `agent-code-guard/async-keyword` can read `node_modules/eslint-plugin-agent-code-guard/docs/rules/async-keyword.md` to see the canonical Effect.gen rewrite before attempting a fix. The same files back the `docs.url` in ESLint rule metadata, so IDEs and `eslint --rule-docs` also land on the right page once the GitHub repo URL in `src/utils/create-rule.ts` is set.
+Rules always worth keeping regardless of stack: `bare-catch`, `record-cast`, `no-manual-enum-cast`, `no-hardcoded-secrets`. `no-vitest-mocks` only applies via the `integrationTests` preset, so it's a no-op on projects without integration tests.
 
 ## Rules
 
@@ -117,28 +138,16 @@ Flags `vi.mock` / `vi.hoisted` / `vi.spyOn` calls. Scope it (via `files:`) to wh
 #### `agent-code-guard/no-hardcoded-secrets`
 Flags string literals ≥ 20 chars assigned to names matching `apiKey` / `secret` / `token` / `password` / `authToken`. Placeholder values (`test`, `dummy`, `placeholder`, `your-key-here`) are allowed. Works everywhere — hardcoded secrets shouldn't live in production source either.
 
-## Companion rules you should also enable
+## Suppressions require a reason
 
-This plugin focuses on patterns no existing rule covers well. For common adjacent concerns, enable these instead of waiting for us to duplicate them:
-
-| Concern | Rule to enable | Source |
-|---|---|---|
-| Magic numbers inline in code | `@typescript-eslint/no-magic-numbers` | `@typescript-eslint/eslint-plugin` |
-| Duplicated magic string literals | `sonarjs/no-duplicate-string` | `eslint-plugin-sonarjs` |
-| Unused variables / dead code | `@typescript-eslint/no-unused-vars` | `@typescript-eslint/eslint-plugin` |
-| High-entropy strings anywhere (broader secret scan) | `no-secrets/no-secrets` | `eslint-plugin-no-secrets` |
-| General promise hygiene (when NOT going full Effect) | `eslint-plugin-promise` — but note it promotes `async`/`await`, which conflicts with our `async-keyword`. Pick one side. | `eslint-plugin-promise` |
-
-## Disable syntax (reason required)
-
-All suppressions must carry a reason. Install [`@eslint-community/eslint-plugin-eslint-comments`](https://www.npmjs.com/package/@eslint-community/eslint-plugin-eslint-comments) and enable `eslint-comments/require-description` so ESLint rejects disables without `-- <reason>`:
+When you need to suppress a rule at a specific callsite (not disable it globally), give a reason. Install [`@eslint-community/eslint-plugin-eslint-comments`](https://www.npmjs.com/package/@eslint-community/eslint-plugin-eslint-comments) and turn on `eslint-comments/require-description`:
 
 ```ts
 // eslint-disable-next-line agent-code-guard/async-keyword -- interop with legacy API, migration tracked in #123
 async function legacyHandler() { /* ... */ }
 ```
 
-Copy-paste recipe:
+Recipe:
 
 ```js
 import comments from "@eslint-community/eslint-plugin-eslint-comments";
@@ -155,15 +164,27 @@ export default [
 ];
 ```
 
-## Contributing
+## Companion ESLint rules worth enabling
 
-To add a rule:
+This plugin focuses on patterns no existing rule covers well. For common adjacent concerns, enable these:
 
-1. Create `src/rules/<rule-name>.ts` exporting a `TSESLint.RuleModule` via `createRule`.
-2. Register it in `src/index.ts` (rules map + the relevant preset).
-3. Add `tests/<rule-name>.test.ts` with ≥3 valid and ≥5 invalid cases, plus a suppression case.
-4. Document the rule in this README under the right section.
-5. `pnpm build && pnpm test` must pass.
+| Concern | Rule to enable | Source |
+|---|---|---|
+| Magic numbers inline in code | `@typescript-eslint/no-magic-numbers` | `@typescript-eslint/eslint-plugin` |
+| Duplicated magic string literals | `sonarjs/no-duplicate-string` | `eslint-plugin-sonarjs` |
+| Unused variables / dead code | `@typescript-eslint/no-unused-vars` | `@typescript-eslint/eslint-plugin` |
+| High-entropy strings anywhere (broader secret scan) | `no-secrets/no-secrets` | `eslint-plugin-no-secrets` |
+| General promise hygiene (when NOT going full Effect) | `eslint-plugin-promise` — note: it promotes `async`/`await`, which conflicts with our `async-keyword`. Pick one side. | `eslint-plugin-promise` |
+
+## For agents: where rule docs ship
+
+Each rule has a `docs/rules/<name>.md` file with a Before (flagged) / After (preferred) code example. These ship inside the installed package, so agents with filesystem access can read them directly:
+
+```
+node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md
+```
+
+The same files back `meta.docs.url` on each rule, so IDEs and `eslint --rule-docs` resolve to the corresponding file on GitHub.
 
 ## License
 

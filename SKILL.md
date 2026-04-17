@@ -16,6 +16,137 @@ allowed-tools:
 
 # /safer-by-default
 
+## When this skill is invoked
+
+Your first responsibility, before anything else, is to check whether this repo is set up. Run through the [Setup checklist](#setup-checklist). If the plugin is already wired, skip to the principles and apply them to whatever the user is working on.
+
+Humans don't run setup steps by hand. You do.
+
+## Setup checklist
+
+Run this on a fresh repo, or any repo where `eslint-plugin-agent-code-guard` isn't yet installed or wired. Confirm with the user at each major step and don't guess past ambiguity.
+
+### 1. Detect the package manager
+
+Check in order: `pnpm-lock.yaml` → pnpm, `package-lock.json` → npm, `yarn.lock` → yarn. If none, ask the user which to use.
+
+### 2. Check peer deps
+
+- `eslint >= 9` (flat config). If below 9, ask the user to upgrade first — this plugin does not support legacy `.eslintrc` configs.
+- `typescript >= 5`.
+
+### 3. Install the plugin and parser
+
+```sh
+<pm> add -D eslint-plugin-agent-code-guard @typescript-eslint/parser
+```
+
+### 4. Wire `eslint.config.js`
+
+Create or update `eslint.config.js` with the two-block setup — application source under `recommended`, integration tests under `integrationTests`. Ask the user for their integration-test glob before writing the config. Do not assume `**/*.integration.test.ts`; their tests may be under `tests/integration/**` or similar.
+
+```js
+import guard from "eslint-plugin-agent-code-guard";
+import tsParser from "@typescript-eslint/parser";
+
+export default [
+  {
+    files: ["src/**/*.ts"],
+    ignores: ["**/*.test.ts", "**/*.spec.ts"],
+    languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
+    plugins: { "agent-code-guard": guard },
+    rules: guard.configs.recommended.rules,
+  },
+  {
+    files: ["<USER'S INTEGRATION-TEST GLOB>"],
+    languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
+    plugins: { "agent-code-guard": guard },
+    rules: guard.configs.integrationTests.rules,
+  },
+];
+```
+
+### 5. Adjust rules to the user's stack
+
+Ask two questions before proceeding:
+
+- **Effect?** If the user's project does not use Effect, disable `async-keyword`, `promise-type`, and `then-chain` in the application-source block. Don't suppress per-callsite — turn them off at the preset level.
+- **Kysely or Drizzle?** If the user's project has no typed query builder, disable `no-raw-sql`. Note that raw SQL without a typed builder will stay a weak spot regardless.
+
+Always keep these on: `bare-catch`, `record-cast`, `no-manual-enum-cast`, `no-hardcoded-secrets`. They are stack-independent.
+
+### 6. Install and wire `eslint-comments/require-description`
+
+Every rule suppression must carry a written reason. Install and wire it:
+
+```sh
+<pm> add -D @eslint-community/eslint-plugin-eslint-comments
+```
+
+```js
+import comments from "@eslint-community/eslint-plugin-eslint-comments";
+
+// Add as a new config block in eslint.config.js:
+{
+  files: ["**/*.ts"],
+  plugins: { "eslint-comments": comments },
+  rules: { "eslint-comments/require-description": ["error", { ignore: [] }] },
+}
+```
+
+### 7. Install companion rules if they aren't already
+
+Skip any that are already on. Otherwise install:
+
+```sh
+<pm> add -D @typescript-eslint/eslint-plugin eslint-plugin-sonarjs
+```
+
+Enable these rules on the application-source block:
+
+- `@typescript-eslint/no-magic-numbers`
+- `@typescript-eslint/no-unused-vars`
+- `sonarjs/no-duplicate-string`
+
+### 8. Flip `tsconfig.json` strict flags
+
+In the existing `tsconfig.json`, set these under `compilerOptions`. If any are already set, leave them. If any flag change breaks the existing codebase, surface the breakage — don't silently back out.
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true
+  }
+}
+```
+
+### 9. Run the lint and report the baseline
+
+Run `<pm> eslint .` (or whatever the user's lint script is). Report how many violations exist. Ask the user:
+
+- Fix now, rule by rule, in this session?
+- Accept the baseline and only block new violations (add an `.eslintignore`-style carve-out, or commit the baseline report so the CI check compares against it)?
+- Fix specific rules now and defer others?
+
+Do not silently fix everything without asking. Some rule fixes (e.g. rewriting `async` → `Effect.gen`) touch behavior, not just style.
+
+### 10. Activate this skill for future sessions (if not already)
+
+If `.claude/skills/safer-by-default/SKILL.md` does not exist:
+
+```sh
+mkdir -p .claude/skills/safer-by-default
+cp node_modules/eslint-plugin-agent-code-guard/SKILL.md .claude/skills/safer-by-default/SKILL.md
+```
+
+Commit `.claude/skills/safer-by-default/SKILL.md` so the skill travels with the repo.
+
+---
+
 ## The core claim
 
 Compilers took assembly from "careful humans writing bit patterns" to "type-checked high-level code." Compilers were slow, annoying, and expensive. Most assembly programmers skipped them. Then tooling made compilers near-free, and skipping them became unthinkable.
@@ -194,7 +325,9 @@ Never silently skip. Every shortcut is explicit, named, and attributed.
 
 ## When to invoke
 
-Starting a new TypeScript repo. Use the lake checklist.
+User runs `/safer-by-default` explicitly. First action: run the [Setup checklist](#setup-checklist) unless the repo is already wired.
+
+Starting a new TypeScript repo. Use the setup checklist, then the lake checklist.
 
 Reviewing a plan that describes code changes. Score each decision against the principles.
 

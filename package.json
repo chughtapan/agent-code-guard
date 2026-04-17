@@ -33,6 +33,15 @@
     "agent-code-guard"
   ],
   "license": "MIT",
+  "author": "Tapan Chugh",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chughtapan/agent-code-guard.git"
+  },
+  "homepage": "https://github.com/chughtapan/agent-code-guard#readme",
+  "bugs": {
+    "url": "https://github.com/chughtapan/agent-code-guard/issues"
+  },
   "dependencies": {
     "@typescript-eslint/utils": "^8.0.0"
   },
