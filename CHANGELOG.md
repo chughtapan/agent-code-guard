@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.3] - 2026-04-18
+
+### Changed
+
+- **Package renamed to `eslint-plugin-agent-code-guard`.** Previously `eslint-plugin-safer-by-default`. The rename finishes the split started in commit 789a861, which separated the lint plugin (this repo, `chughtapan/agent-code-guard`) from the `/safer` Claude Code skills (`chughtapan/safer-by-default`). The rule namespace remains `safer-by-default/<rule>` because that is the philosophy family; the npm distribution name now matches the repo. Drift fixed in `package.json`, `src/utils/create-rule.ts` (doc-path comment), and `.claude-plugin/marketplace.json` (description).
+
 ## [0.0.2] - 2026-04-17
 
 ### Fixed
