@@ -6,6 +6,8 @@ const TEST_FILE_PATTERNS = [
   /\.test\.[cm]?[jt]sx?$/,
   /\.spec\.[cm]?[jt]sx?$/,
   /[\\/]tests?[\\/]/,
+  /[\\/]__tests__[\\/]/,
+  /[\\/]e2e[\\/]/,
 ];
 
 function isTestFile(filename: string): boolean {
@@ -77,29 +79,31 @@ export default createRule<[Options], "skipOrOnly">({
   create(context, [options]) {
     if (!isTestFile(context.filename)) return {};
     const allowed = new Set<Modifier>(options.allow ?? []);
+
+    function report(node: TSESTree.Node, mod: Modifier) {
+      if (allowed.has(mod)) return;
+      context.report({ node, messageId: "skipOrOnly", data: { modifier: mod } });
+    }
+
     return {
       CallExpression(node) {
         const callee = node.callee;
         if (callee.type === AST_NODE_TYPES.Identifier) {
           const mod = ALIASES[callee.name];
-          if (!mod) return;
-          if (allowed.has(mod)) return;
-          context.report({
-            node: callee,
-            messageId: "skipOrOnly",
-            data: { modifier: mod },
-          });
+          if (mod) report(callee, mod);
           return;
         }
         if (callee.type !== AST_NODE_TYPES.MemberExpression) return;
         const mod = extractModifier(callee);
-        if (!mod) return;
-        if (allowed.has(mod)) return;
-        context.report({
-          node: callee,
-          messageId: "skipOrOnly",
-          data: { modifier: mod },
-        });
+        if (mod) report(callee, mod);
+      },
+      // `` it.skip.each`a|b\n1|2`('...', fn) `` — Vitest's tagged-template table form.
+      // The outer call's callee is a TaggedTemplateExpression; the MemberExpression
+      // visit in `CallExpression` would miss it, so hook the tagged template directly.
+      TaggedTemplateExpression(node) {
+        if (node.tag.type !== AST_NODE_TYPES.MemberExpression) return;
+        const mod = extractModifier(node.tag);
+        if (mod) report(node.tag, mod);
       },
     };
   },

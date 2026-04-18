@@ -1,6 +1,12 @@
 # `safer-by-default/no-raw-throw-new-error`
 
-**What it flags:** `throw new Error(...)`, `throw new TypeError(...)`, `throw new RangeError(...)` in non-test TypeScript/JavaScript. Test files (`**/*.test.*`, `**/*.spec.*`, `**/test/**`, `**/tests/**`) are exempt, as are functions whose name starts with `absurd` (exhaustiveness helpers).
+**What it flags:** `throw new Error(...)`, `throw new TypeError(...)`, `throw new RangeError(...)` in non-test TypeScript/JavaScript. Test files are exempt, as are functions/methods whose name starts with `absurd` (exhaustiveness helpers).
+
+Test-file patterns (any one matches):
+- `**/*.test.*`, `**/*.spec.*`
+- `**/test/**`, `**/tests/**`
+- `**/__tests__/**` (Jest default)
+- `**/e2e/**`
 
 **Why:** A raw throw hides three facts: which call sites it can happen at, which callers know how to handle it, and what the user actually sees. Those surface at runtime, usually in production, usually with bad error messages. A typed error channel (tagged `Data.TaggedError`, a discriminated-union result, or `Effect.fail`) forces the caller to discriminate; the compiler enforces exhaustiveness.
 

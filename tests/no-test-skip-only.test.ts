@@ -103,5 +103,25 @@ ruleTester.run("no-test-skip-only", rule, {
       code: "describe.only.each([[1, 2]])('focus %s', (a, b) => {});",
       errors: [{ messageId: "skipOrOnly", data: { modifier: "only" } }],
     },
+    {
+      filename: "/repo/src/auth.test.ts",
+      code: "it.skip.each`\n  a | b\n  1 | 2\n`('wip $a', ({ a, b }) => {});",
+      errors: [{ messageId: "skipOrOnly", data: { modifier: "skip" } }],
+    },
+    {
+      filename: "/repo/src/auth.test.ts",
+      code: "describe.only.each`\n  a\n  1\n`('focus $a', ({ a }) => {});",
+      errors: [{ messageId: "skipOrOnly", data: { modifier: "only" } }],
+    },
+    {
+      filename: "/repo/src/__tests__/auth.ts",
+      code: "it.skip('wip', () => {});",
+      errors: [{ messageId: "skipOrOnly", data: { modifier: "skip" } }],
+    },
+    {
+      filename: "/repo/e2e/flow.ts",
+      code: "it.only('focus', () => {});",
+      errors: [{ messageId: "skipOrOnly", data: { modifier: "only" } }],
+    },
   ],
 });

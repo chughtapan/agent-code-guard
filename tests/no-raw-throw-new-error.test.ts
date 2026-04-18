@@ -29,6 +29,18 @@ ruleTester.run("no-raw-throw-new-error", rule, {
       code: "const absurdGuard = (x: never): never => { throw new Error(String(x)); };",
     },
     {
+      filename: "/repo/src/util.ts",
+      code: "class Exhaustive { absurd(x: never): never { throw new Error(String(x)); } }",
+    },
+    {
+      filename: "/repo/src/__tests__/auth.ts",
+      code: "throw new Error('fixture setup failed');",
+    },
+    {
+      filename: "/repo/e2e/auth.ts",
+      code: "throw new Error('e2e setup failed');",
+    },
+    {
       filename: "/repo/src/auth.test.ts",
       code: "it('fails', () => { throw new Error('nope'); });",
     },

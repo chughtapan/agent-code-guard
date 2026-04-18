@@ -1,10 +1,11 @@
 # `safer-by-default/no-test-skip-only`
 
-**What it flags:** In test files (`**/*.test.*`, `**/*.spec.*`, `**/test/**`, `**/tests/**`):
+**What it flags:** In test files (`**/*.test.*`, `**/*.spec.*`, `**/test/**`, `**/tests/**`, `**/__tests__/**`, `**/e2e/**`):
 
 - `it.skip(...)`, `test.skip(...)`, `describe.skip(...)` — skipped tests.
 - `it.only(...)`, `test.only(...)`, `describe.only(...)` — focused tests that silently disable everything else.
 - `xit(...)`, `xtest(...)`, `xdescribe(...)` — Jest-style aliases for `.skip`.
+- `it.skip.each([...])(...)`, `describe.only.each\`...\`(...)` — parameterized skips/onlys in both array and tagged-template forms.
 
 **Why:** A `.skip` in a committed test file is a test that never runs in CI. A `.only` is worse — it silently disables every other test in the same file. Both pass green while coverage regresses. Commit a passing test or delete it.
 

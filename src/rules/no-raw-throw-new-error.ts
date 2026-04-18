@@ -8,6 +8,8 @@ const TEST_FILE_PATTERNS = [
   /\.test\.[cm]?[jt]sx?$/,
   /\.spec\.[cm]?[jt]sx?$/,
   /[\\/]tests?[\\/]/,
+  /[\\/]__tests__[\\/]/,
+  /[\\/]e2e[\\/]/,
 ];
 
 function isTestFile(filename: string): boolean {
@@ -31,6 +33,10 @@ function enclosingFunctionName(
         return parent.id.name;
       }
       if (parent?.type === AST_NODE_TYPES.Property && !parent.computed) {
+        if (parent.key.type === AST_NODE_TYPES.Identifier) return parent.key.name;
+        if (parent.key.type === AST_NODE_TYPES.Literal && typeof parent.key.value === "string") return parent.key.value;
+      }
+      if (parent?.type === AST_NODE_TYPES.MethodDefinition && !parent.computed) {
         if (parent.key.type === AST_NODE_TYPES.Identifier) return parent.key.name;
         if (parent.key.type === AST_NODE_TYPES.Literal && typeof parent.key.value === "string") return parent.key.value;
       }
