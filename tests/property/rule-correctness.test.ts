@@ -209,12 +209,11 @@ describe("property: rule correctness", () => {
     "safer-by-default/record-cast": "r",
     "safer-by-default/no-raw-sql": "db",
     "safer-by-default/no-manual-enum-cast": "s",
-    // Name-gated: rule keys on the LHS identifier matching SECRET_KEY_NAMES.
-    // Rename to a non-matching ident is a true negative by design — skip the
-    // rename mutation so Property 2 tests the invariant the rule actually
-    // promises. Senior follow-up (acg#10) tracks whether value-shape detection
-    // should complement name-based triggering.
-    "safer-by-default/no-hardcoded-secrets": "",
+    // Rename exercises the value-shape detector added in acg#10: the seed's
+    // LHS is `apiKey`, mutation renames it to a random non-secret-looking
+    // ident, and the rule still fires because `sk_live_...` matches the
+    // Stripe canonical shape regex.
+    "safer-by-default/no-hardcoded-secrets": "apiKey",
     "safer-by-default/no-raw-throw-new-error": "",
     "safer-by-default/no-test-skip-only": "",
     "safer-by-default/no-coverage-threshold-gate": "",
