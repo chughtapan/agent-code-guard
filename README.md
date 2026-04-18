@@ -11,7 +11,7 @@ pnpm add -D eslint-plugin-agent-code-guard
 
 Your coding agent is miscalibrated. It was trained on human-written TypeScript — decades of it — written under one constraint that does not apply to it: typing was expensive for humans. That is why its training corpus is saturated with `throw new Error("bad")`, `as Record<string, unknown>`, `try { ... } catch {}`, `Promise<T>` return types, `process.env.FOO!`, raw SQL strings, and `vi.mock` inside integration tests. Those were the compromises humans made when keyboard time was scarce. An agent does not pay the scarcity; it inherits the patterns anyway.
 
-This plugin is the floor. Nine rules, all errors by default under the `recommended` preset, plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
+This plugin is the floor. Twelve rules under the `recommended` preset (eleven errors, one warn), plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
 
 | Rule | Catches |
 |---|---|
@@ -23,6 +23,9 @@ This plugin is the floor. Nine rules, all errors by default under the `recommend
 | `safer-by-default/no-raw-sql` | Raw SQL strings that bypass the typed query builder |
 | `safer-by-default/no-manual-enum-cast` | `as "a" \| "b"` string-union casts that should be generated unions |
 | `safer-by-default/no-hardcoded-secrets` | Literal secret-shaped values in source |
+| `safer-by-default/no-raw-throw-new-error` | `throw new Error(...)` outside tests — return a tagged error instead |
+| `safer-by-default/no-test-skip-only` | `.skip` / `.only` / `xit` / `xdescribe` in committed test files |
+| `safer-by-default/no-coverage-threshold-gate` | `coverageThreshold` gates in jest/vitest/vite configs (warn) |
 | `safer-by-default/no-vitest-mocks` | `vi.mock(...)` inside files that match the integration-tests glob |
 
 Each rule ships a Before/After doc at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`.
@@ -37,7 +40,7 @@ import guard from "eslint-plugin-agent-code-guard";
 import tsParser from "@typescript-eslint/parser";
 
 export default [
-  // Application source
+  // Application source — prod rules, test files excluded
   {
     files: ["src/**/*.ts"],
     ignores: ["**/*.test.ts", "**/*.spec.ts"],
@@ -47,6 +50,32 @@ export default [
     },
     plugins: { "safer-by-default": guard },
     rules: guard.configs.recommended.rules,
+  },
+
+  // Test files — only the test-hygiene rule fires here
+  {
+    files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
+    },
+    plugins: { "safer-by-default": guard },
+    rules: {
+      "safer-by-default/no-test-skip-only": "error",
+    },
+  },
+
+  // Config files — coverage-gate lint (warn)
+  {
+    files: ["**/jest.config.*", "**/vitest.config.*", "**/vite.config.*"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
+    },
+    plugins: { "safer-by-default": guard },
+    rules: {
+      "safer-by-default/no-coverage-threshold-gate": "warn",
+    },
   },
 
   // Integration tests: no mocks allowed
