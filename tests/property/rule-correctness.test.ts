@@ -1,0 +1,256 @@
+import { Linter } from "eslint";
+import * as tsParser from "@typescript-eslint/parser";
+import * as fc from "fast-check";
+import * as ts from "typescript";
+import { describe, expect, it } from "vitest";
+import plugin from "../../src/index.js";
+
+const RECOMMENDED_RULE_IDS = Object.keys(plugin.configs.recommended.rules);
+
+function baseConfig(rules: Linter.RulesRecord): Linter.Config {
+  return {
+    files: ["**/*.ts"],
+    languageOptions: {
+      parser: tsParser as unknown as Linter.Parser,
+      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
+    },
+    plugins: { "safer-by-default": plugin as unknown as NonNullable<Linter.Config["plugins"]>[string] },
+    rules,
+  };
+}
+
+const linter = new Linter();
+
+function lintAll(code: string): Linter.LintMessage[] {
+  return linter.verify(code, baseConfig(plugin.configs.recommended.rules), {
+    filename: "test.ts",
+  });
+}
+
+function lintOne(code: string, ruleId: string): Linter.LintMessage[] {
+  return linter.verify(code, baseConfig({ [ruleId]: "error" }), {
+    filename: "test.ts",
+  });
+}
+
+function isSyntacticallyValid(code: string): boolean {
+  const sf = ts.createSourceFile(
+    "test.ts",
+    code,
+    ts.ScriptTarget.Latest,
+    false,
+    ts.ScriptKind.TS,
+  );
+  const diags = (sf as unknown as { parseDiagnostics?: readonly ts.Diagnostic[] })
+    .parseDiagnostics;
+  return !diags || diags.length === 0;
+}
+
+// Safe-grammar generator: syntactically valid TS sources that should not trip
+// any recommended rule. Narrow shapes only: literal const decls, typed decls,
+// and plain (non-async) function decls.
+const identArb = fc
+  .stringMatching(/^[a-z][a-zA-Z0-9]{0,7}$/)
+  .filter((s) => !RESERVED.has(s));
+
+const RESERVED = new Set([
+  "async", "await", "break", "case", "catch", "class", "const", "continue",
+  "debugger", "default", "delete", "do", "else", "enum", "export", "extends",
+  "false", "finally", "for", "function", "if", "import", "in", "instanceof",
+  "let", "new", "null", "of", "return", "super", "switch", "this", "throw",
+  "true", "try", "typeof", "var", "void", "while", "with", "yield", "as",
+  "then", "query", "mock", "spyOn", "hoisted",
+]);
+
+const safeStringArb = fc
+  .stringMatching(/^[a-z]{0,12}$/)
+  .map((s) => `"${s}"`);
+const safeNumberArb = fc.integer({ min: 0, max: 1000 }).map((n) => String(n));
+const safeBoolArb = fc.constantFrom("true", "false");
+
+const safeLiteralArb = fc.oneof(safeStringArb, safeNumberArb, safeBoolArb);
+
+const literalDeclArb = fc
+  .tuple(identArb, safeLiteralArb)
+  .map(([id, lit]) => `const ${id} = ${lit};`);
+
+const typedDeclArb = fc
+  .tuple(identArb, fc.constantFrom("number", "string", "boolean"))
+  .chain(([id, ty]) => {
+    const litArb =
+      ty === "number" ? safeNumberArb : ty === "string" ? safeStringArb : safeBoolArb;
+    return litArb.map((lit) => `const ${id}: ${ty} = ${lit};`);
+  });
+
+const plainFnArb = fc
+  .tuple(identArb, identArb, safeNumberArb)
+  .map(([fname, pname, n]) =>
+    `function ${fname}(${pname}: number): number { return ${pname} + ${n}; }`,
+  );
+
+const safeStmtArb = fc.oneof(literalDeclArb, typedDeclArb, plainFnArb);
+
+const safeSourceArb = fc
+  .array(safeStmtArb, { minLength: 1, maxLength: 5 })
+  .map((stmts) => stmts.join("\n"));
+
+describe("property: rule correctness", () => {
+  it("Property 1: no recommended rule fires on safe TS sources", () => {
+    fc.assert(
+      fc.property(safeSourceArb, (code) => {
+        if (!isSyntacticallyValid(code)) return; // skip, not fail
+        const messages = lintAll(code);
+        if (messages.length !== 0) {
+          throw new Error(
+            `Safe source produced ${messages.length} report(s):\n` +
+              `--- source ---\n${code}\n--- reports ---\n` +
+              messages
+                .map((m) => `  [${m.ruleId ?? "?"}] ${m.message}`)
+                .join("\n"),
+          );
+        }
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  // Seed anti-pattern per rule (lifted from the first invalid case of each
+  // rule's hand-written test). Also records ruleIds that may legitimately
+  // co-fire with the seed — empty for all current seeds, but kept as a slot
+  // so a reviewer can whitelist a future co-firing without loosening the
+  // assertion.
+  const SEEDS: ReadonlyArray<{
+    ruleId: string;
+    seed: string;
+    coFire: ReadonlyArray<string>;
+  }> = [
+    { ruleId: "safer-by-default/async-keyword", seed: "async function foo() {}", coFire: [] },
+    {
+      ruleId: "safer-by-default/promise-type",
+      seed: "function foo(): Promise<number> { return Promise.resolve(1); }",
+      coFire: [],
+    },
+    {
+      ruleId: "safer-by-default/then-chain",
+      seed: "Promise.resolve(1).then((v) => v);",
+      coFire: [],
+    },
+    {
+      ruleId: "safer-by-default/bare-catch",
+      seed: "try { doThing(); } catch {}",
+      coFire: [],
+    },
+    {
+      ruleId: "safer-by-default/record-cast",
+      seed: "const r = {} as Record<string, unknown>;",
+      coFire: [],
+    },
+    {
+      ruleId: "safer-by-default/no-raw-sql",
+      seed: "db.query('SELECT * FROM users');",
+      coFire: [],
+    },
+    {
+      ruleId: "safer-by-default/no-manual-enum-cast",
+      seed: "const s = x as 'active' | 'inactive';",
+      coFire: [],
+    },
+    {
+      ruleId: "safer-by-default/no-hardcoded-secrets",
+      seed: "const apiKey = 'sk_live_abc123xyz0987654321';",
+      coFire: [],
+    },
+  ];
+
+  const renameArb = fc
+    .stringMatching(/^[a-z][a-zA-Z0-9]{0,6}$/)
+    .filter((s) => !RESERVED.has(s));
+
+  const paddingArb = fc.constantFrom("", " ", "\n", "  ", "\n\n", "\t");
+
+  // Small, rule-preserving mutations: whitespace padding + identifier rename
+  // of a single target ident. Rename is applied as whole-word replace so
+  // substrings of keywords are untouched.
+  function mutate(seed: string, pad: string, ident: string, rename: string): string {
+    const renamed =
+      ident.length > 0
+        ? seed.replace(new RegExp(`\\b${escapeRegex(ident)}\\b`, "g"), rename)
+        : seed;
+    return `${pad}${renamed}${pad}`;
+  }
+
+  function escapeRegex(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  const IDENTS_BY_SEED: Record<string, string> = {
+    "safer-by-default/async-keyword": "foo",
+    "safer-by-default/promise-type": "foo",
+    "safer-by-default/then-chain": "", // no rename target — `.then` is the trigger
+    "safer-by-default/bare-catch": "doThing",
+    "safer-by-default/record-cast": "r",
+    "safer-by-default/no-raw-sql": "db",
+    "safer-by-default/no-manual-enum-cast": "s",
+    "safer-by-default/no-hardcoded-secrets": "apiKey",
+  };
+
+  for (const { ruleId, seed, coFire } of SEEDS) {
+    it(`Property 2: ${ruleId} fires on its anti-pattern across mutations`, () => {
+      const targetIdent = IDENTS_BY_SEED[ruleId] ?? "";
+      fc.assert(
+        fc.property(paddingArb, renameArb, (pad, rename) => {
+          const code = mutate(seed, pad, targetIdent, rename);
+          if (!isSyntacticallyValid(code)) return;
+          const allMessages = lintAll(code);
+          const firedIds = new Set(
+            allMessages
+              .map((m) => m.ruleId)
+              .filter((id): id is string => id != null),
+          );
+          const ownFired = firedIds.has(ruleId);
+          const unexpected = [...firedIds].filter(
+            (id) => id !== ruleId && !coFire.includes(id),
+          );
+          if (!ownFired || unexpected.length > 0) {
+            throw new Error(
+              `Mutation broke expectations for ${ruleId}:\n` +
+                `--- source ---\n${code}\n` +
+                `--- own fired: ${ownFired} ---\n` +
+                `--- unexpected: ${unexpected.join(", ") || "(none)"} ---\n` +
+                `--- all reports ---\n` +
+                allMessages
+                  .map((m) => `  [${m.ruleId ?? "?"}] ${m.message}`)
+                  .join("\n"),
+            );
+          }
+        }),
+        { numRuns: 20 },
+      );
+    });
+  }
+
+  // Property 3: fixer idempotence. Scoped to rules that declare `fixable`.
+  // No recommended rule currently declares one — this is a guard that will
+  // light up once a fixer lands.
+  const FIXABLE_RULE_IDS = Object.entries(plugin.rules)
+    .filter(([, r]) => r.meta.fixable)
+    .map(([name]) => `safer-by-default/${name}`);
+
+  it("Property 3: fixer idempotence (skipped if no fixable rules)", () => {
+    if (FIXABLE_RULE_IDS.length === 0) {
+      expect(FIXABLE_RULE_IDS).toHaveLength(0);
+      return;
+    }
+    for (const ruleId of FIXABLE_RULE_IDS) {
+      const seed = SEEDS.find((s) => s.ruleId === ruleId)?.seed;
+      if (seed === undefined) continue;
+      const { output } = linter.verifyAndFix(
+        seed,
+        baseConfig({ [ruleId]: "error" }),
+        { filename: "test.ts" },
+      );
+      const after = lintOne(output, ruleId);
+      expect(after, `Fixer for ${ruleId} not idempotent: ${after.length} report(s) remain`).toHaveLength(0);
+    }
+  });
+});
