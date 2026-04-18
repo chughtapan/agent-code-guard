@@ -1,43 +1,119 @@
-# Safer by default
+# agent-code-guard
 
-[![npm](https://img.shields.io/npm/v/eslint-plugin-safer-by-default.svg)](https://www.npmjs.com/package/eslint-plugin-safer-by-default)
-[![license](https://img.shields.io/npm/l/eslint-plugin-safer-by-default.svg)](./LICENSE)
-
-Your coding agent is miscalibrated.
-
-It was trained on human TypeScript: decades of a language written under one constraint that no longer applies to it, which is that ceremony was expensive for humans. That is why the training corpus is saturated with `async`/`await` and `Promise<T>` return types. That is why it reaches for `throw new Error("bad")` and `as Record<string, unknown>` and `try { ... } catch {}` and `vi.mock(...)`. Those were the right calls when engineering time was scarce. Engineering time is not scarce for an agent. An agent can write two hundred lines of Effect with tagged errors as easily as twenty lines of `async`/`await`.
-
-The agent is calibrated to a workload that does not exist for it. The shortcuts it learned to call "good code" were cost-optimizations for human attention, not quality choices. It defaults to them anyway, because that is what the training data looked like.
-
-This repo is how you recalibrate the agent, on your codebase, automatically.
-
-## How it works
-
-`safer-by-default` is a Claude Code plugin. It ships two skills and an ESLint plugin underneath them.
-
-The first skill, `/safer-by-default:setup`, is invoked once per repo. It detects your existing state, installs `eslint-plugin-safer-by-default` and the rules that pair well with it, writes an `eslint.config.js` you can actually read, flips the TypeScript strict flags, and verifies that the whole thing fires before it calls itself done. If the repo is already wired up, it notices and asks whether you want to verify, reconfigure, update, or walk away.
-
-The second skill, `safer-by-default:typescript`, is invoked automatically whenever the agent writes or reviews TypeScript code in your repo. It carries the full recalibration: the principles, the decision table, the phrases to reject, the mapping from each rule back to the reasoning behind it. The agent reads it before it starts writing, so that when it faces a fork like "do I write an Effect with a tagged error or just `throw new Error`," it picks the one this repo was set up to enforce.
-
-The ESLint plugin is the floor. The skill is the ceiling. The plugin catches the patterns an agent must not ship. The skill describes the patterns it should actively reach for.
-
-## Install
+ESLint plugin that catches the patterns your coding agent must not ship.
 
 ```
-/plugin marketplace add chughtapan/safer-by-default
-/plugin install safer-by-default@safer-by-default
+npm  install --save-dev eslint-plugin-agent-code-guard
+pnpm add -D eslint-plugin-agent-code-guard
 ```
 
-Two slash commands inside Claude Code. No shell, no `mkdir`, no `cp`. Once the plugin is installed, run the setup skill once:
+## What it catches
+
+Your coding agent is miscalibrated. It was trained on human-written TypeScript — decades of it — written under one constraint that does not apply to it: typing was expensive for humans. That is why its training corpus is saturated with `throw new Error("bad")`, `as Record<string, unknown>`, `try { ... } catch {}`, `Promise<T>` return types, `process.env.FOO!`, raw SQL strings, and `vi.mock` inside integration tests. Those were the compromises humans made when keyboard time was scarce. An agent does not pay the scarcity; it inherits the patterns anyway.
+
+This plugin is the floor. Nine rules, all errors by default under the `recommended` preset, plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
+
+| Rule | Catches |
+|---|---|
+| `safer-by-default/async-keyword` | `async` functions outside Effect/Kysely patterns |
+| `safer-by-default/promise-type` | `Promise<T>` return types that erase the error channel |
+| `safer-by-default/then-chain` | `.then(...)` chains that hide error propagation |
+| `safer-by-default/bare-catch` | `try { ... } catch {}` that swallows the error silently |
+| `safer-by-default/record-cast` | `as Record<string, unknown>` and similar unsafe casts |
+| `safer-by-default/no-raw-sql` | Raw SQL strings that bypass the typed query builder |
+| `safer-by-default/no-manual-enum-cast` | `as "a" \| "b"` string-union casts that should be generated unions |
+| `safer-by-default/no-hardcoded-secrets` | Literal secret-shaped values in source |
+| `safer-by-default/no-vitest-mocks` | `vi.mock(...)` inside files that match the integration-tests glob |
+
+Each rule ships a Before/After doc at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`.
+
+## Configure
+
+Flat config (ESLint ≥ 9):
+
+```js
+// eslint.config.js
+import guard from "eslint-plugin-agent-code-guard";
+import tsParser from "@typescript-eslint/parser";
+
+export default [
+  // Application source
+  {
+    files: ["src/**/*.ts"],
+    ignores: ["**/*.test.ts", "**/*.spec.ts"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
+    },
+    plugins: { "safer-by-default": guard },
+    rules: guard.configs.recommended.rules,
+  },
+
+  // Integration tests: no mocks allowed
+  {
+    files: ["**/*.integration.test.ts"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
+    },
+    plugins: { "safer-by-default": guard },
+    rules: guard.configs.integrationTests.rules,
+  },
+];
+```
+
+Peer dependencies: `eslint` ≥ 9, `typescript` ≥ 5.
+
+## Presets
+
+- `guard.configs.recommended.rules` — application source. All rules except `no-vitest-mocks`.
+- `guard.configs.integrationTests.rules` — integration-test glob only. Enforces `no-vitest-mocks` so integration tests actually hit real dependencies.
+
+## Disabling a rule
+
+If a rule is wrong for your codebase, disable it in flat config:
+
+```js
+rules: {
+  ...guard.configs.recommended.rules,
+  "safer-by-default/async-keyword": "off",
+}
+```
+
+Every disable in source should carry a written reason via `@eslint-community/eslint-plugin-eslint-comments` and the `require-description` rule. The companion Claude Code skill (see below) wires that pairing automatically.
+
+## Name notes
+
+- **npm package**: `eslint-plugin-agent-code-guard`.
+- **Rule namespace**: `safer-by-default/<rule>`. The namespace matches the companion Claude Code plugin (the ceiling), not the npm package (the floor). Users who install both see a consistent mental model: `safer-by-default` is the philosophy family; `agent-code-guard` is the npm distribution of the lint half.
+
+## Companion
+
+This plugin is the floor — the patterns an agent must not ship. The ceiling is the [`safer-by-default` Claude Code plugin](https://github.com/chughtapan/safer-by-default), which recalibrates the agent in-band when it writes TypeScript. Install both:
 
 ```
-/safer-by-default:setup
+# The floor (this repo):
+pnpm add -D eslint-plugin-agent-code-guard
+
+# The ceiling (skills + binaries):
+git clone --single-branch --depth 1 \
+  https://github.com/chughtapan/safer-by-default.git \
+  ~/.claude/skills/safer-by-default
+cd ~/.claude/skills/safer-by-default && ./setup
 ```
 
-After that, the typescript skill applies itself whenever the agent touches a `.ts` file. You do not invoke it; you do not need to think about it. The floor is enforced every time the lint runs, and the ceiling is pulled into context every time the agent writes TS.
+The skills plugin ships a `/safer:setup` skill that installs this lint plugin and wires it into `eslint.config.js` on your behalf.
 
-Requires `eslint >= 9` and `typescript >= 5`.
+## Development
+
+```
+pnpm install
+pnpm build
+pnpm test
+```
+
+Each rule has an independent test file under `tests/`. The test harness uses `@typescript-eslint/rule-tester`.
 
 ## License
 
-MIT
+MIT.
