@@ -155,6 +155,8 @@ Stryker (with the vitest runner and typescript checker) mutates every source fil
 
 Mutation testing is a **required CI gate**. Every PR runs `pnpm mutation`; dropping below the break threshold fails the check. If you weaken a test, Stryker catches it before the lint rule ships.
 
+Runs are incremental on PR and a full sweep runs nightly. Stryker persists state to `.stryker-tmp/incremental.json`, cached in CI across runs. Expected wall-clock: **under 2 minutes** for a typical PR (changed files only), **under 10 minutes** for a full sweep when the cache is cold.
+
 ## License
 
 MIT.

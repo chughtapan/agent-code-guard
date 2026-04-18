@@ -33,4 +33,11 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: .stryker-tmp
+          key: stryker-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.ref }}
+          restore-keys: |
+            stryker-${{ hashFiles('pnpm-lock.yaml') }}-
+            stryker-
       - run: pnpm mutation
