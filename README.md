@@ -143,6 +143,18 @@ pnpm test
 
 Each rule has an independent test file under `tests/`. The test harness uses `@typescript-eslint/rule-tester`.
 
+## Mutation testing
+
+Scope: `src/**/*.ts` (every rule, utility, and the plugin entry). Run:
+
+```
+pnpm mutation
+```
+
+Stryker (with the vitest runner and typescript checker) mutates every source file and replays the vitest suite against each mutant. The default thresholds apply: **high 80, low 60, break 50**. A run that drops the overall score below 50 exits non-zero.
+
+Mutation testing is a **required CI gate**. Every PR runs `pnpm mutation`; dropping below the break threshold fails the check. If you weaken a test, Stryker catches it before the lint rule ships.
+
 ## License
 
 MIT.
