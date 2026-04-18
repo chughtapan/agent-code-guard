@@ -2,8 +2,11 @@ import { createRequire } from "node:module";
 import type { TSESLint } from "@typescript-eslint/utils";
 import asyncKeyword from "./rules/async-keyword.js";
 import bareCatch from "./rules/bare-catch.js";
+import noCoverageThresholdGate from "./rules/no-coverage-threshold-gate.js";
 import noHardcodedSecrets from "./rules/no-hardcoded-secrets.js";
 import noManualEnumCast from "./rules/no-manual-enum-cast.js";
+import noRawThrowNewError from "./rules/no-raw-throw-new-error.js";
+import noTestSkipOnly from "./rules/no-test-skip-only.js";
 import noVitestMocks from "./rules/no-vitest-mocks.js";
 import noRawSql from "./rules/no-raw-sql.js";
 import promiseType from "./rules/promise-type.js";
@@ -20,6 +23,9 @@ const rules = {
   "no-manual-enum-cast": noManualEnumCast,
   "no-vitest-mocks": noVitestMocks,
   "no-hardcoded-secrets": noHardcodedSecrets,
+  "no-raw-throw-new-error": noRawThrowNewError,
+  "no-test-skip-only": noTestSkipOnly,
+  "no-coverage-threshold-gate": noCoverageThresholdGate,
 } as const;
 
 const require = createRequire(import.meta.url);
@@ -59,6 +65,9 @@ const plugin: Plugin = {
         "safer-by-default/no-raw-sql": "error",
         "safer-by-default/no-manual-enum-cast": "error",
         "safer-by-default/no-hardcoded-secrets": "error",
+        "safer-by-default/no-raw-throw-new-error": "error",
+        "safer-by-default/no-test-skip-only": "error",
+        "safer-by-default/no-coverage-threshold-gate": "warn",
       },
     },
     integrationTests: {
