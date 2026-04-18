@@ -9,7 +9,7 @@ const RECOMMENDED_RULE_IDS = Object.keys(plugin.configs.recommended.rules);
 
 function baseConfig(rules: Linter.RulesRecord): Linter.Config {
   return {
-    files: ["**/*.ts"],
+    files: ["**/*.ts", "**/*.js"],
     languageOptions: {
       parser: tsParser as unknown as Linter.Parser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
@@ -21,15 +21,15 @@ function baseConfig(rules: Linter.RulesRecord): Linter.Config {
 
 const linter = new Linter();
 
-function lintAll(code: string): Linter.LintMessage[] {
+function lintAll(code: string, filename: string = "test.ts"): Linter.LintMessage[] {
   return linter.verify(code, baseConfig(plugin.configs.recommended.rules), {
-    filename: "test.ts",
+    filename,
   });
 }
 
-function lintOne(code: string, ruleId: string): Linter.LintMessage[] {
+function lintOne(code: string, ruleId: string, filename: string = "test.ts"): Linter.LintMessage[] {
   return linter.verify(code, baseConfig({ [ruleId]: "error" }), {
-    filename: "test.ts",
+    filename,
   });
 }
 
@@ -123,6 +123,7 @@ describe("property: rule correctness", () => {
     ruleId: string;
     seed: string;
     coFire: ReadonlyArray<string>;
+    filename?: string;
   }> = [
     { ruleId: "safer-by-default/async-keyword", seed: "async function foo() {}", coFire: [] },
     {
@@ -160,6 +161,23 @@ describe("property: rule correctness", () => {
       seed: "const apiKey = 'sk_live_abc123xyz0987654321';",
       coFire: [],
     },
+    {
+      ruleId: "safer-by-default/no-raw-throw-new-error",
+      seed: "throw new Error('boom');",
+      coFire: [],
+    },
+    {
+      ruleId: "safer-by-default/no-test-skip-only",
+      seed: "it.skip('wip', () => {});",
+      coFire: [],
+      filename: "src/auth.test.ts",
+    },
+    {
+      ruleId: "safer-by-default/no-coverage-threshold-gate",
+      seed: "module.exports = { coverageThreshold: { global: { lines: 80 } } };",
+      coFire: [],
+      filename: "jest.config.js",
+    },
   ];
 
   const renameArb = fc
@@ -191,17 +209,25 @@ describe("property: rule correctness", () => {
     "safer-by-default/record-cast": "r",
     "safer-by-default/no-raw-sql": "db",
     "safer-by-default/no-manual-enum-cast": "s",
-    "safer-by-default/no-hardcoded-secrets": "apiKey",
+    // Name-gated: rule keys on the LHS identifier matching SECRET_KEY_NAMES.
+    // Rename to a non-matching ident is a true negative by design — skip the
+    // rename mutation so Property 2 tests the invariant the rule actually
+    // promises. Senior follow-up (acg#10) tracks whether value-shape detection
+    // should complement name-based triggering.
+    "safer-by-default/no-hardcoded-secrets": "",
+    "safer-by-default/no-raw-throw-new-error": "",
+    "safer-by-default/no-test-skip-only": "",
+    "safer-by-default/no-coverage-threshold-gate": "",
   };
 
-  for (const { ruleId, seed, coFire } of SEEDS) {
+  for (const { ruleId, seed, coFire, filename } of SEEDS) {
     it(`Property 2: ${ruleId} fires on its anti-pattern across mutations`, () => {
       const targetIdent = IDENTS_BY_SEED[ruleId] ?? "";
       fc.assert(
         fc.property(paddingArb, renameArb, (pad, rename) => {
           const code = mutate(seed, pad, targetIdent, rename);
           if (!isSyntacticallyValid(code)) return;
-          const allMessages = lintAll(code);
+          const allMessages = lintAll(code, filename);
           const firedIds = new Set(
             allMessages
               .map((m) => m.ruleId)
@@ -242,14 +268,15 @@ describe("property: rule correctness", () => {
       return;
     }
     for (const ruleId of FIXABLE_RULE_IDS) {
-      const seed = SEEDS.find((s) => s.ruleId === ruleId)?.seed;
-      if (seed === undefined) continue;
+      const entry = SEEDS.find((s) => s.ruleId === ruleId);
+      if (entry === undefined) continue;
+      const filename = entry.filename ?? "test.ts";
       const { output } = linter.verifyAndFix(
-        seed,
+        entry.seed,
         baseConfig({ [ruleId]: "error" }),
-        { filename: "test.ts" },
+        { filename },
       );
-      const after = lintOne(output, ruleId);
+      const after = lintOne(output, ruleId, filename);
       expect(after, `Fixer for ${ruleId} not idempotent: ${after.length} report(s) remain`).toHaveLength(0);
     }
   });
