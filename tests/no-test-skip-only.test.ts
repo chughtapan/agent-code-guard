@@ -93,5 +93,15 @@ ruleTester.run("no-test-skip-only", rule, {
       options: [{ allow: ["skip"] }],
       errors: [{ messageId: "skipOrOnly", data: { modifier: "only" } }],
     },
+    {
+      filename: "/repo/src/auth.test.ts",
+      code: "it.skip.each([1, 2])('wip %s', (n) => {});",
+      errors: [{ messageId: "skipOrOnly", data: { modifier: "skip" } }],
+    },
+    {
+      filename: "/repo/src/auth.test.ts",
+      code: "describe.only.each([[1, 2]])('focus %s', (a, b) => {});",
+      errors: [{ messageId: "skipOrOnly", data: { modifier: "only" } }],
+    },
   ],
 });

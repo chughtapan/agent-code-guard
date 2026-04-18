@@ -2,8 +2,11 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 
+// Matches `jest.config.ts`, `vitest.config.unit.ts`, `jest.config.integration.cjs`,
+// plus `package.json`. Users can lint package.json if they wire a JSON parser
+// (e.g. `jsonc-eslint-parser`); the default JS parser will skip it silently.
 const CONFIG_FILE_PATTERN =
-  /(?:^|[\\/])(?:jest|vitest|vite)\.config\.[cm]?[jt]sx?$/;
+  /(?:^|[\\/])(?:(?:jest|vitest|vite)\.config(?:\.[a-z0-9-]+)?\.(?:js|ts|mjs|cjs|mts|cts)|package\.json)$/i;
 
 function isConfigFile(filename: string): boolean {
   return CONFIG_FILE_PATTERN.test(filename);
@@ -37,7 +40,7 @@ export default createRule({
     },
     messages: {
       coverageGate:
-        "Per sbd#32: coverage is diagnostic, not a gate. Remove `{{key}}` and read the number on the dashboard.",
+        "Coverage is a diagnostic, not a merge gate. Remove `{{key}}` — threshold gates invite trivial tests that move the number without testing behavior. See docs/rules/no-coverage-threshold-gate.md.",
     },
     schema: [],
     fixable: undefined,

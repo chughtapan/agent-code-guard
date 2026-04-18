@@ -8,7 +8,7 @@
 
 **Why:** Coverage is a diagnostic, not a merge gate. A threshold turns a useful signal into Goodhart bait: developers add trivial tests that touch a line without asserting behavior, the number goes up, and the class of bug the threshold was meant to catch still ships. Read the number on the dashboard. Use it to find code that is not tested; do not use it to block merges.
 
-Background: see sbd#32 — research on coverage-as-gate vs coverage-as-signal.
+Background: research on coverage-as-gate vs coverage-as-signal in the companion plugin ([sbd#32](https://github.com/chughtapan/safer-by-default/issues/32)). Short version: thresholds measure the easy-to-game variable, not the one you want to move.
 
 ## Before (flagged) — `jest.config.js`
 
@@ -47,7 +47,11 @@ Report, do not gate. If a PR materially drops coverage, the reviewer sees it in 
 
 ## Scope
 
-This rule runs only inside `jest.config.*`, `vitest.config.*`, and `vite.config.*` (JS/TS). Threshold gates in `package.json` (Jest's `jest.coverageThreshold`) are not linted by this rule — JSON needs a separate parser plugin. Track as follow-up if you need that.
+This rule runs on filenames matching:
+
+- `jest.config.*`, `vitest.config.*`, `vite.config.*` — including named variants like `vitest.config.unit.ts` or `jest.config.integration.cjs`.
+- Extensions: `.js`, `.ts`, `.mjs`, `.cjs`, `.mts`, `.cts`.
+- `package.json` — listed for future compatibility. The stock ESLint JS parser will not parse JSON; wire [`jsonc-eslint-parser`](https://www.npmjs.com/package/jsonc-eslint-parser) or `eslint-plugin-jsonc` and re-run to lint Jest's `jest.coverageThreshold` key in `package.json`.
 
 ## Exceptions
 

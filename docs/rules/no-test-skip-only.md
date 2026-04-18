@@ -26,6 +26,36 @@ it("passes now", () => { expect(thing()).toBe(1); });
 
 If you're not ready to land the test, delete it. Git preserves the draft. A skipped test in CI is worse than no test — it signals coverage you do not have.
 
+## Install pattern
+
+This rule only fires in test files, so your flat config should include a dedicated block that *covers* test files — not one that excludes them. The `recommended` preset excludes tests from prod rules, so a second block is required:
+
+```js
+// eslint.config.js
+import guard from "eslint-plugin-agent-code-guard";
+import tsParser from "@typescript-eslint/parser";
+
+export default [
+  // Prod rules — excludes test files
+  {
+    files: ["src/**/*.ts"],
+    ignores: ["**/*.test.ts", "**/*.spec.ts"],
+    languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
+    plugins: { "safer-by-default": guard },
+    rules: guard.configs.recommended.rules,
+  },
+  // Test hygiene — covers test files
+  {
+    files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts"],
+    languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
+    plugins: { "safer-by-default": guard },
+    rules: { "safer-by-default/no-test-skip-only": "error" },
+  },
+];
+```
+
+If your repo's `files:`/`ignores:` globs exclude test files from every linted block, this rule will never fire. See the README for the full recommended layout.
+
 ## Options
 
 `{ allow?: ('skip' | 'only')[] }` — default `[]`. Allows per-repo opt-in if you deliberately use one modifier as a workflow (rare; prefer per-line suppression).
@@ -48,4 +78,4 @@ One-off local focus during debugging — suppress per-line and remove before com
 it.only("the failing case", () => { /* ... */ });
 ```
 
-See `PRINCIPLES.md` → Principle 7: stop rules are literal. A disabled test is a stop-rule-adjacent signal; escalate or delete, do not skip.
+Rationale: a disabled test is a stop-rule-adjacent signal — the thing you almost-but-did-not-commit. Delete it, or commit it green, or suppress per-line with a concrete reason. See the companion plugin's [PRINCIPLES.md — "Stop rules are literal"](https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md).

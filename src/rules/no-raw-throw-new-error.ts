@@ -51,7 +51,7 @@ export default createRule({
     },
     messages: {
       rawThrow:
-        "Principle 3: return a tagged error or Effect.fail; raw `throw new {{ctor}}` erases the error channel.",
+        "Return a tagged error or Effect.fail; raw `throw new {{ctor}}` erases the error channel and forces callers to catch-all. See docs/rules/no-raw-throw-new-error.md.",
     },
     schema: [],
     fixable: undefined,

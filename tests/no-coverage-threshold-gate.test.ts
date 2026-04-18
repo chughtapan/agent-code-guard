@@ -63,5 +63,15 @@ ruleTester.run("no-coverage-threshold-gate", rule, {
       code: "export default { test: { coverage: { thresholds: { branches: 70, lines: 80 } } } };",
       errors: [{ messageId: "coverageGate", data: { key: "thresholds" } }],
     },
+    {
+      filename: "/repo/vitest.config.unit.ts",
+      code: "export default { test: { coverage: { thresholds: { lines: 80 } } } };",
+      errors: [{ messageId: "coverageGate", data: { key: "thresholds" } }],
+    },
+    {
+      filename: "/repo/jest.config.integration.cjs",
+      code: "module.exports = { coverageThreshold: { global: { lines: 80 } } };",
+      errors: [{ messageId: "coverageGate", data: { key: "coverageThreshold" } }],
+    },
   ],
 });

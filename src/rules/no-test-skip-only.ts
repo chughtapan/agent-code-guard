@@ -1,3 +1,4 @@
+import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 
@@ -12,7 +13,6 @@ function isTestFile(filename: string): boolean {
 }
 
 const TEST_FNS = new Set(["it", "test", "describe"]);
-const MODIFIERS = new Set(["skip", "only"]);
 const ALIASES: Record<string, "skip"> = {
   xit: "skip",
   xtest: "skip",
@@ -23,6 +23,26 @@ export type Modifier = "skip" | "only";
 
 export interface Options {
   allow?: Modifier[];
+}
+
+function extractModifier(node: TSESTree.Node): Modifier | null {
+  if (node.type !== AST_NODE_TYPES.MemberExpression || node.computed) return null;
+  if (node.property.type !== AST_NODE_TYPES.Identifier) return null;
+  const prop = node.property.name;
+  if (prop === "skip" || prop === "only") {
+    if (
+      node.object.type === AST_NODE_TYPES.Identifier &&
+      TEST_FNS.has(node.object.name)
+    ) {
+      return prop;
+    }
+    return null;
+  }
+  // `it.skip.each([...])` / `describe.only.each([...])` — descend through `.each`
+  if (prop === "each") {
+    return extractModifier(node.object);
+  }
+  return null;
 }
 
 export default createRule<[Options], "skipOrOnly">({
@@ -72,17 +92,8 @@ export default createRule<[Options], "skipOrOnly">({
           return;
         }
         if (callee.type !== AST_NODE_TYPES.MemberExpression) return;
-        if (callee.computed) return;
-        if (
-          callee.object.type !== AST_NODE_TYPES.Identifier ||
-          !TEST_FNS.has(callee.object.name)
-        ) {
-          return;
-        }
-        if (callee.property.type !== AST_NODE_TYPES.Identifier) return;
-        const prop = callee.property.name;
-        if (!MODIFIERS.has(prop)) return;
-        const mod = prop as Modifier;
+        const mod = extractModifier(callee);
+        if (!mod) return;
         if (allowed.has(mod)) return;
         context.report({
           node: callee,

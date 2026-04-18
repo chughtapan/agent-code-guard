@@ -64,4 +64,4 @@ If you genuinely need a one-off raw throw (e.g. a boot-time invariant that must 
 throw new Error("FATAL: config missing");
 ```
 
-See `PRINCIPLES.md` → Principle 3: errors are typed, not thrown.
+Rationale: errors are part of a function's type. Tagged errors or discriminated-union results make failure modes exhaustive at the call site; a raw throw does not. See the companion plugin's [PRINCIPLES.md — "Errors are typed, not thrown"](https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md) for the full treatment.
