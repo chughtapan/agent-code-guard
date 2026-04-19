@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# safer-load-context — load a GitHub issue (and optionally its parent) as JSON.
+#
+# Args:
+#   --issue <n>       required
+#   --parent          also fetch the parent epic (inferred from issue body "Parent: #N")
+#   --repo <o/r>      override repo (defaults to gh-detected)
+# Output: JSON — either {"issue":{...}} or {"issue":{...}, "parent":{...}|null}
+# Exit: 0 on success, 1 on gh failure
+set -uo pipefail
+
+ISSUE=""
+INCLUDE_PARENT=0
+REPO=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --issue)  ISSUE="$2"; shift 2 ;;
+    --parent) INCLUDE_PARENT=1; shift ;;
+    --repo)   REPO="$2"; shift 2 ;;
+    *)        shift ;;
+  esac
+done
+
+[ -z "$ISSUE" ] && { echo "ERROR: --issue required" >&2; exit 1; }
+
+if ! command -v gh >/dev/null 2>&1; then
+  echo '{"error":"gh not installed"}'
+  exit 1
+fi
+
+REPO_FLAG=()
+[ -n "$REPO" ] && REPO_FLAG=(--repo "$REPO")
+
+OUT=$(gh issue view "$ISSUE" "${REPO_FLAG[@]}" --json number,title,body,labels,comments,state,url 2>&1)
+RC=$?
+if [ $RC -ne 0 ]; then
+  printf '{"error":"gh issue view failed","detail":"%s"}\n' "$(printf '%s' "$OUT" | head -1 | sed 's/"/\\"/g')"
+  exit 1
+fi
+
+if [ "$INCLUDE_PARENT" -eq 1 ]; then
+  PARENT_NUM=$(printf '%s' "$OUT" | grep -oE 'Parent: #[0-9]+' | head -1 | grep -oE '[0-9]+' || true)
+  if [ -n "$PARENT_NUM" ]; then
+    PARENT_OUT=$(gh issue view "$PARENT_NUM" "${REPO_FLAG[@]}" --json number,title,body,labels,state,url 2>/dev/null || echo 'null')
+    printf '{"issue":%s,"parent":%s}\n' "$OUT" "$PARENT_OUT"
+  else
+    printf '{"issue":%s,"parent":null}\n' "$OUT"
+  fi
+else
+  printf '{"issue":%s}\n' "$OUT"
+fi

@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+# safer-diff-scope — classify a diff against implement-* tier rules.
+#
+# Tier rules:
+#   junior  — internals of 1 module; no exported-signature changes; no new deps; <= 10 files
+#   senior  — crosses modules (2+) OR changes exported signatures; no new deps; <= 30 files
+#   staff   — introduces new modules OR adds new dependencies OR > 30 files
+#
+# Input sources (choose one):
+#   --pr <n>           classify a GitHub PR (uses gh pr diff)
+#   --diff <path>      classify a local diff file
+#   --head <ref>       classify git diff $BASE..$HEAD
+#   (default: use current working diff; --cached first, then unstaged)
+#
+# Flags:
+#   --base <ref>       base ref for --head (default: origin/main)
+#   --repo <o/r>       override repo for --pr
+#
+# Output: JSON
+#   {"tier":"junior|senior|staff","files":N,"modules":N,"exports":N,
+#    "new_deps":N,"rationale":"..."}
+set -uo pipefail
+
+PR=""
+DIFF_FILE=""
+HEAD=""
+BASE="origin/main"
+REPO=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --pr)   PR="$2"; shift 2 ;;
+    --diff) DIFF_FILE="$2"; shift 2 ;;
+    --head) HEAD="$2"; shift 2 ;;
+    --base) BASE="$2"; shift 2 ;;
+    --repo) REPO="$2"; shift 2 ;;
+    *)      shift ;;
+  esac
+done
+
+TMP=$(mktemp)
+trap 'rm -f "$TMP"' EXIT
+
+if [ -n "$PR" ]; then
+  if ! command -v gh >/dev/null 2>&1; then
+    echo '{"error":"gh not installed"}' >&2; exit 1
+  fi
+  REPO_FLAG=()
+  [ -n "$REPO" ] && REPO_FLAG=(--repo "$REPO")
+  gh pr diff "$PR" "${REPO_FLAG[@]}" > "$TMP" 2>/dev/null || {
+    echo '{"error":"gh pr diff failed"}' >&2; exit 1
+  }
+elif [ -n "$DIFF_FILE" ]; then
+  cp "$DIFF_FILE" "$TMP"
+elif [ -n "$HEAD" ]; then
+  git diff "$BASE".."$HEAD" > "$TMP" 2>/dev/null || {
+    echo '{"error":"git diff failed"}' >&2; exit 1
+  }
+else
+  git diff --cached > "$TMP" 2>/dev/null || true
+  if [ ! -s "$TMP" ]; then
+    git diff > "$TMP" 2>/dev/null || {
+      echo '{"error":"no diff input"}' >&2; exit 1
+    }
+  fi
+fi
+
+if [ ! -s "$TMP" ]; then
+  printf '{"tier":"junior","files":0,"modules":0,"exports":0,"new_deps":0,"rationale":"empty diff"}\n'
+  exit 0
+fi
+
+# File count: one per `diff --git` header
+FILES=$(awk '/^diff --git/ { c++ } END { print c+0 }' "$TMP")
+
+# Modules: first two path segments of each changed file (e.g., src/auth), or the first if only one
+MODULES=$(grep -E '^diff --git a/' "$TMP" \
+  | awk '{print $3}' \
+  | sed 's|^a/||' \
+  | awk -F'/' 'NF>=2 {print $1"/"$2} NF==1 {print $1}' \
+  | sort -u | awk 'END { print NR }')
+
+# Exported-signature changes (TS-centric).
+# An added line (starts with "+" but not "+++") that contains `export ... (function|const|class|interface|type|enum|let|var)` as whole words.
+EXPORTS=$(awk '
+  /^\+\+\+/ { next }
+  /^\+/ && /[[:<:]]export[[:>:]][[:space:]]+((default|async)[[:space:]]+)*(function|const|class|interface|type|enum|let|var)[[:>:]]/ { c++ }
+  END { print c+0 }
+' "$TMP" 2>/dev/null)
+# Fallback for awks that lack BSD word-boundary syntax [[:<:]]
+if [ -z "$EXPORTS" ] || [ "$EXPORTS" = "0" ]; then
+  EXPORTS=$(awk '
+    /^\+\+\+/ { next }
+    /^\+/ {
+      line = $0
+      # Look for " export <kw> " or line starting with "+export <kw> "
+      if (match(line, /(^|[^A-Za-z0-9_])export[[:space:]]+(default[[:space:]]+)?(async[[:space:]]+)?(function|const|class|interface|type|enum|let|var)([^A-Za-z0-9_]|$)/)) c++
+    }
+    END { print c+0 }
+  ' "$TMP" 2>/dev/null)
+fi
+[ -z "$EXPORTS" ] && EXPORTS=0
+
+# New deps: added lines within package.json dependencies/devDependencies blocks.
+# Count only lines where we're adding a dep and the prior block content did not have it.
+NEW_DEPS=$(awk '
+  /^diff --git.*package\.json/ { in_pkg=1; next }
+  /^diff --git/              { in_pkg=0; next }
+  in_pkg && /^\+[[:space:]]*"[@a-zA-Z][^"]*"[[:space:]]*:[[:space:]]*"[0-9\^~>=\* ]/ {
+    # Strip leading "+" and extract package name
+    line = $0
+    sub(/^\+[[:space:]]*"/, "", line)
+    name = line
+    sub(/".*/, "", name)
+    # Track which names appeared as additions
+    added[name]++
+  }
+  in_pkg && /^-[[:space:]]*"[@a-zA-Z][^"]*"[[:space:]]*:[[:space:]]*"[0-9\^~>=\* ]/ {
+    line = $0
+    sub(/^-[[:space:]]*"/, "", line)
+    name = line
+    sub(/".*/, "", name)
+    removed[name]++
+  }
+  END {
+    c = 0
+    for (n in added) { if (!(n in removed)) c++ }
+    print c+0
+  }
+' "$TMP")
+[ -z "$NEW_DEPS" ] && NEW_DEPS=0
+
+# Classify
+TIER="junior"
+RATIONALE="single module, no exported-signature changes, no new deps"
+
+if [ "${MODULES:-0}" -gt 1 ] 2>/dev/null; then
+  TIER="senior"
+  RATIONALE="spans $MODULES modules"
+fi
+if [ "${EXPORTS:-0}" -gt 0 ] 2>/dev/null; then
+  TIER="senior"
+  RATIONALE="changes $EXPORTS exported signature(s)"
+fi
+if [ "${NEW_DEPS:-0}" -gt 0 ] 2>/dev/null; then
+  TIER="staff"
+  RATIONALE="adds $NEW_DEPS new dependency(ies)"
+fi
+if [ "${FILES:-0}" -gt 30 ] 2>/dev/null; then
+  TIER="staff"
+  RATIONALE="$FILES files changed — large-surface diff"
+fi
+
+esc_json() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
+
+printf '{"tier":"%s","files":%s,"modules":%s,"exports":%s,"new_deps":%s,"rationale":"%s"}\n' \
+  "$TIER" "${FILES:-0}" "${MODULES:-0}" "${EXPORTS:-0}" "${NEW_DEPS:-0}" "$(esc_json "$RATIONALE")"

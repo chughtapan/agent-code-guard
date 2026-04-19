@@ -1,0 +1,433 @@
+#!/usr/bin/env bash
+# safer-publish — publish an artifact to GitHub.
+#
+# Identity routing: when zapbot is detected on the host, route the single
+# inner `gh` call through zapbot's bot-token broker so the resulting
+# issue/PR/comment is authored by the GitHub App installation identity.
+# When zapbot is not detected, fall back silently to the user's gh auth.
+#
+# Strict mode is the default: any broker failure halts the invocation
+# unless --allow-pat-fallback is explicitly set.
+#
+# Args (existing):
+#   --kind <epic|issue|comment|pr-comment>    required
+#   --title <title>                           required for epic, issue
+#   --body-file <path>                        body source (for all kinds)
+#   --body <text>                             inline body (for short comments)
+#   --labels <comma,separated>                labels (epic, issue)
+#   --parent <n>                              parent epic number (sub-issues; stored in body)
+#   --issue <n>                               target issue (comment)
+#   --pr <n>                                  target PR (pr-comment)
+#   --repo <o/r>                              override repo
+#
+# Args (new, per spec #15 / design #19):
+#   --allow-pat-fallback                      if broker non-2xx, warn + use PAT
+#   --attribute-to-user                       skip broker + verify; use PAT
+#
+# Exit codes (see docs/arch/bot-token-routing.md §Errors):
+#   0   success
+#   1   validation / gh failure under user mode
+#   10  bridge TCP fail
+#   11  bridge 401
+#   12  bridge 409 app_not_configured
+#   13  bridge 5xx
+#   14  bridge schema-invalid
+#   20  attribution mismatch
+#   21  gh failure under bot mode
+#   22  flags conflict (--allow-pat-fallback + --attribute-to-user)
+
+set -uo pipefail
+
+# ── Identity helpers (new) ──────────────────────────────────────────
+
+SAFER_ALLOW_PAT_FALLBACK=0
+SAFER_ATTRIBUTE_TO_USER=0
+ZAPBOT_DETECTED=0
+
+# detect_zapbot — filesystem probe. Sets ZAPBOT_DETECTED. Always exits 0.
+detect_zapbot() {
+  if [ -f "$HOME/.zapbot/.env" ] || [ -f "$HOME/.zapbot/config.json" ]; then
+    ZAPBOT_DETECTED=1
+  else
+    ZAPBOT_DETECTED=0
+  fi
+  return 0
+}
+
+# resolve_bridge_url — yaml → env → default. Mirrors zapbot-publish.sh:11-20.
+# Echoes the URL. Exits non-zero only if yaml exists but parse produces empty.
+resolve_bridge_url() {
+  local url=""
+  if [ -f "agent-orchestrator.yaml" ]; then
+    url=$(grep -E '^bridge_url:[[:space:]]*' agent-orchestrator.yaml | awk '{print $2}')
+    if [ -z "$url" ] && grep -qE '^bridge_url:' agent-orchestrator.yaml; then
+      echo "safer-publish: agent-orchestrator.yaml bridge_url: is empty" >&2
+      return 1
+    fi
+  fi
+  if [ -z "$url" ]; then
+    url="${ZAPBOT_BRIDGE_URL:-http://localhost:3000}"
+  fi
+  echo "$url"
+}
+
+# handle_fallback_flags — parse --allow-pat-fallback, --attribute-to-user.
+# Sets SAFER_ALLOW_PAT_FALLBACK, SAFER_ATTRIBUTE_TO_USER. Populates the
+# SAFER_RESIDUAL_ARGS global array with positional args after the identity
+# flags have been stripped. Returns 22 on co-presence.
+handle_fallback_flags() {
+  SAFER_RESIDUAL_ARGS=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --allow-pat-fallback) SAFER_ALLOW_PAT_FALLBACK=1; shift ;;
+      --attribute-to-user)  SAFER_ATTRIBUTE_TO_USER=1; shift ;;
+      *) SAFER_RESIDUAL_ARGS+=("$1"); shift ;;
+    esac
+  done
+  if [ "$SAFER_ALLOW_PAT_FALLBACK" = "1" ] && [ "$SAFER_ATTRIBUTE_TO_USER" = "1" ]; then
+    echo "safer-publish: --allow-pat-fallback and --attribute-to-user are mutually exclusive" >&2
+    return 22
+  fi
+  return 0
+}
+
+# fetch_broker_token — GET <url>/api/tokens/installation with Bearer auth.
+# Echoes the bare token on stdout. Exit codes: 0 ok, 10 TCP, 11 401,
+# 12 409, 13 5xx, 14 schema-invalid.
+fetch_broker_token() {
+  local base="$1"
+  local url="${base%/}/api/tokens/installation"
+  local body status
+  local tmp
+  tmp=$(mktemp)
+  # -sS shows errors but not progress; -w writes status to stdout; body goes to tmp.
+  status=$(curl -sS -o "$tmp" -w '%{http_code}' \
+    -H "Authorization: Bearer ${ZAPBOT_API_KEY:-}" \
+    "$url" 2>/dev/null)
+  local rc=$?
+  if [ $rc -ne 0 ] || [ -z "$status" ] || [ "$status" = "000" ]; then
+    rm -f "$tmp"
+    echo "safer-publish: broker connection_refused at $url" >&2
+    return 10
+  fi
+  body=$(cat "$tmp")
+  rm -f "$tmp"
+  case "$status" in
+    200)
+      # Schema: require .token string AND .expires_at string. expires_at parsed
+      # then discarded (design §Architect-flagged).
+      if ! echo "$body" | jq -e '(.token | type == "string") and (.expires_at | type == "string")' >/dev/null 2>&1; then
+        echo "safer-publish: broker schema_invalid at $url" >&2
+        return 14
+      fi
+      echo "$body" | jq -r '.token'
+      return 0
+      ;;
+    401)
+      echo "safer-publish: broker unauthorized at $url" >&2
+      return 11
+      ;;
+    409)
+      echo "safer-publish: broker app_not_configured at $url" >&2
+      return 12
+      ;;
+    5??)
+      echo "safer-publish: broker server_error at $url" >&2
+      return 13
+      ;;
+    *)
+      # 404 from older zapbots without the endpoint, 4xx from misconfig, etc.
+      # Design §Migration order: these map to server_error.
+      echo "safer-publish: broker server_error at $url" >&2
+      return 13
+      ;;
+  esac
+}
+
+# verify_attribution — `gh api $RESOURCE --jq .user.type` == "Bot".
+# Emits stderr with the resource URL on mismatch.
+verify_attribution() {
+  local resource_url="$1"
+  # gh api accepts the full URL form (api.github.com) or owner/repo/issues/N;
+  # normalize by converting a browser URL into the API path.
+  local api_path
+  api_path=$(_resource_url_to_api_path "$resource_url")
+  local user_type
+  user_type=$(gh api "$api_path" --jq '.user.type' 2>/dev/null || echo "")
+  if [ "$user_type" = "Bot" ]; then
+    return 0
+  fi
+  echo "safer-publish: attribution verify failed $resource_url" >&2
+  return 20
+}
+
+# _resource_url_to_api_path — turn a browser URL into the gh api path.
+# Issue:   https://github.com/O/R/issues/N           -> repos/O/R/issues/N
+# PR:      https://github.com/O/R/pull/N             -> repos/O/R/pulls/N
+# Issue comment: https://github.com/O/R/issues/N#issuecomment-ID
+#                                                    -> repos/O/R/issues/comments/ID
+# PR comment:  https://github.com/O/R/pull/N#issuecomment-ID
+#                                                    -> repos/O/R/issues/comments/ID
+_resource_url_to_api_path() {
+  local u="$1"
+  # Strip https://github.com/
+  local path="${u#https://github.com/}"
+  # Comment anchor → comments path (issue + PR comments share /issues/comments/ID)
+  if [[ "$path" == *"#issuecomment-"* ]]; then
+    local owner_repo="${path%%/issues/*}"
+    owner_repo="${owner_repo%%/pull/*}"
+    local comment_id="${path##*#issuecomment-}"
+    echo "repos/$owner_repo/issues/comments/$comment_id"
+    return 0
+  fi
+  # Plain PR
+  if [[ "$path" == */pull/* ]]; then
+    echo "repos/${path/\/pull\//\/pulls\/}"
+    return 0
+  fi
+  # Plain issue
+  if [[ "$path" == */issues/* ]]; then
+    echo "repos/$path"
+    return 0
+  fi
+  # Unknown shape — fall through; let gh surface its own error.
+  echo "$u"
+}
+
+# resolve_identity_mode — echo bot | user | user-fallback.
+# Inputs: ZAPBOT_DETECTED, SAFER_ATTRIBUTE_TO_USER, SAFER_ALLOW_PAT_FALLBACK,
+#         and $1 = broker_outcome ("hit" | "miss" | "na").
+# Deterministic by the decision table in docs/arch/bot-token-routing.md.
+resolve_identity_mode() {
+  local broker="$1"
+  if [ "$ZAPBOT_DETECTED" = "0" ]; then
+    echo "user"
+    return 0
+  fi
+  if [ "$SAFER_ATTRIBUTE_TO_USER" = "1" ]; then
+    echo "user"
+    return 0
+  fi
+  if [ "$broker" = "hit" ]; then
+    echo "bot"
+    return 0
+  fi
+  # broker == miss (or na, which shouldn't occur in D=1 U=0); fallback decides.
+  if [ "$SAFER_ALLOW_PAT_FALLBACK" = "1" ]; then
+    echo "user-fallback"
+    return 0
+  fi
+  # Strict mode: hard fail; caller turns this into exit 10-14.
+  echo "strict-fail"
+  return 0
+}
+
+# run_gh_as_bot — invoke gh with GH_TOKEN=<token>, GITHUB_TOKEN unset.
+# Bounded to the child process; no parent-env leakage.
+run_gh_as_bot() {
+  local token="$1"
+  shift
+  env -u GITHUB_TOKEN GH_TOKEN="$token" gh "$@"
+}
+
+# ── Fallback-flag parse (must run before existing option parser) ────
+
+# Guard: when sourced by tests (SAFER_PUBLISH_SOURCE=1), do not parse argv
+# or run the dispatch. Tests call the functions directly.
+if [ "${SAFER_PUBLISH_SOURCE:-0}" = "1" ]; then
+  return 0 2>/dev/null || true
+fi
+
+handle_fallback_flags "$@" || exit $?
+set -- "${SAFER_RESIDUAL_ARGS[@]}"
+
+# ── Existing arg parser (unchanged below) ───────────────────────────
+
+KIND=""
+TITLE=""
+BODY_FILE=""
+BODY=""
+LABELS=""
+PARENT=""
+ISSUE=""
+PR=""
+REPO=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --kind)      KIND="$2"; shift 2 ;;
+    --title)     TITLE="$2"; shift 2 ;;
+    --body-file) BODY_FILE="$2"; shift 2 ;;
+    --body)      BODY="$2"; shift 2 ;;
+    --labels)    LABELS="$2"; shift 2 ;;
+    --parent)    PARENT="$2"; shift 2 ;;
+    --issue)     ISSUE="$2"; shift 2 ;;
+    --pr)        PR="$2"; shift 2 ;;
+    --repo)      REPO="$2"; shift 2 ;;
+    *)           shift ;;
+  esac
+done
+
+[ -z "$KIND" ] && { echo "ERROR: --kind required" >&2; exit 1; }
+
+if [ -n "$BODY_FILE" ] && [ ! -f "$BODY_FILE" ]; then
+  echo "ERROR: --body-file not found: $BODY_FILE" >&2
+  exit 1
+fi
+
+if ! command -v gh >/dev/null 2>&1; then
+  echo "ERROR: gh not installed" >&2
+  exit 1
+fi
+
+REPO_FLAG=()
+[ -n "$REPO" ] && REPO_FLAG=(--repo "$REPO")
+
+body_args=()
+if [ -n "$BODY_FILE" ]; then
+  body_args=(--body-file "$BODY_FILE")
+elif [ -n "$BODY" ]; then
+  body_args=(--body "$BODY")
+fi
+
+TMP_BODY=""
+if [ "$KIND" = "issue" ] && [ -n "$PARENT" ]; then
+  TMP_BODY=$(mktemp)
+  {
+    echo "Parent: #$PARENT"
+    echo ""
+    if [ -n "$BODY_FILE" ]; then
+      cat "$BODY_FILE"
+    elif [ -n "$BODY" ]; then
+      echo "$BODY"
+    fi
+  } > "$TMP_BODY"
+  body_args=(--body-file "$TMP_BODY")
+  trap 'rm -f "$TMP_BODY"' EXIT
+fi
+
+label_args=()
+if [ -n "$LABELS" ]; then
+  IFS=',' read -ra LBL_ARR <<< "$LABELS"
+  for L in "${LBL_ARR[@]}"; do label_args+=(--label "$L"); done
+fi
+
+# ── Identity resolution ─────────────────────────────────────────────
+
+detect_zapbot
+
+BOT_TOKEN=""
+BROKER_OUTCOME="na"
+FETCH_RC=0
+BRIDGE_URL=""
+
+if [ "$ZAPBOT_DETECTED" = "1" ] && [ "$SAFER_ATTRIBUTE_TO_USER" = "0" ]; then
+  BRIDGE_URL=$(resolve_bridge_url) || exit 1
+  if BOT_TOKEN=$(fetch_broker_token "$BRIDGE_URL"); then
+    BROKER_OUTCOME="hit"
+  else
+    FETCH_RC=$?
+    BROKER_OUTCOME="miss"
+  fi
+fi
+
+IDENTITY_MODE=$(resolve_identity_mode "$BROKER_OUTCOME")
+
+case "$IDENTITY_MODE" in
+  strict-fail)
+    # fetch_broker_token already emitted the structured single-line error on
+    # stderr. Supplement with the multi-line UX block (design §Errors).
+    probe_desc=""
+    case "$FETCH_RC" in
+      10) probe_desc="connection_refused" ;;
+      11) probe_desc="401 unauthorized" ;;
+      12) probe_desc="409 app_not_configured" ;;
+      13) probe_desc="5xx server_error" ;;
+      14) probe_desc="schema_invalid" ;;
+      *)  probe_desc="unknown" ;;
+    esac
+    detected_path="$HOME/.zapbot/.env"
+    [ -f "$HOME/.zapbot/config.json" ] && [ ! -f "$HOME/.zapbot/.env" ] && detected_path="$HOME/.zapbot/config.json"
+    {
+      echo ""
+      echo "safer-publish: cannot reach zapbot token broker."
+      echo ""
+      echo "  Bridge:    $BRIDGE_URL"
+      echo "  Probe:     $probe_desc"
+      echo "  Detected:  $detected_path"
+      echo ""
+      echo "  Hint: re-run with --allow-pat-fallback to use your gh auth,"
+      echo "        or start the bridge: ~/.zapbot/start.sh"
+    } >&2
+    exit $FETCH_RC
+    ;;
+  user-fallback)
+    echo "safer-publish: broker unreachable ($FETCH_RC) at $BRIDGE_URL; falling back to gh default auth" >&2
+    ;;
+  user|bot)
+    : # handled below
+    ;;
+  *)
+    echo "safer-publish: internal error: unknown identity mode '$IDENTITY_MODE'" >&2
+    exit 1
+    ;;
+esac
+
+# ── Dispatch (existing gh commands, gated by identity mode) ─────────
+
+_run_gh() {
+  if [ "$IDENTITY_MODE" = "bot" ]; then
+    run_gh_as_bot "$BOT_TOKEN" "$@"
+  else
+    gh "$@"
+  fi
+}
+
+OUT=""
+RC=0
+case "$KIND" in
+  epic|issue)
+    [ -z "$TITLE" ] && { echo "ERROR: --title required for $KIND" >&2; exit 1; }
+    OUT=$(_run_gh issue create "${REPO_FLAG[@]}" --title "$TITLE" "${body_args[@]}" "${label_args[@]}" 2>&1)
+    RC=$?
+    ;;
+  comment)
+    [ -z "$ISSUE" ] && { echo "ERROR: --issue required for comment" >&2; exit 1; }
+    OUT=$(_run_gh issue comment "$ISSUE" "${REPO_FLAG[@]}" "${body_args[@]}" 2>&1)
+    RC=$?
+    ;;
+  pr-comment)
+    [ -z "$PR" ] && { echo "ERROR: --pr required for pr-comment" >&2; exit 1; }
+    OUT=$(_run_gh pr comment "$PR" "${REPO_FLAG[@]}" "${body_args[@]}" 2>&1)
+    RC=$?
+    ;;
+  *)
+    echo "ERROR: unknown --kind: $KIND (expected epic|issue|comment|pr-comment)" >&2
+    exit 1
+    ;;
+esac
+
+if [ $RC -ne 0 ]; then
+  if [ "$IDENTITY_MODE" = "bot" ]; then
+    echo "$OUT" >&2
+    echo "safer-publish: gh failed under bot mode" >&2
+    exit 21
+  fi
+  echo "ERROR: gh command failed: $OUT" >&2
+  exit 1
+fi
+
+echo "$OUT"
+
+# ── Post-hoc attribution verify (bot mode only) ─────────────────────
+
+if [ "$IDENTITY_MODE" = "bot" ]; then
+  RESOURCE_URL=$(echo "$OUT" | grep -oE 'https://github\.com/[^ ]+' | head -1)
+  if [ -n "$RESOURCE_URL" ]; then
+    if ! verify_attribution "$RESOURCE_URL"; then
+      exit 20
+    fi
+  fi
+fi
+
+exit 0

@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# safer-update-check — poll remote VERSION with 1h cache.
+#
+# Output:
+#   (empty)                               — up to date or cache fresh
+#   UPGRADE_AVAILABLE <local> <remote>    — version mismatch
+# Exit: 0 always (network failures are silent)
+#
+# Env:
+#   SAFER_STATE_DIR   — override ~/.safer
+#   SAFER_REMOTE_URL  — override remote VERSION URL
+#   SAFER_FORCE_POLL  — if set, ignore cache
+set -uo pipefail
+
+PLUGIN_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+LOCAL_VERSION_FILE="$PLUGIN_DIR/VERSION"
+STATE_DIR="${SAFER_STATE_DIR:-$HOME/.safer}"
+CACHE_FILE="$STATE_DIR/last-update-check"
+REMOTE_VERSION_URL="${SAFER_REMOTE_URL:-https://raw.githubusercontent.com/chughtapan/safer-by-default/main/VERSION}"
+
+LOCAL_VERSION=""
+[ -f "$LOCAL_VERSION_FILE" ] && LOCAL_VERSION=$(tr -d '[:space:]' < "$LOCAL_VERSION_FILE")
+[ -z "$LOCAL_VERSION" ] && exit 0
+
+mkdir -p "$STATE_DIR"
+NOW=$(date +%s)
+LAST=0
+[ -f "$CACHE_FILE" ] && LAST=$(cat "$CACHE_FILE" 2>/dev/null || echo 0)
+case "$LAST" in *[!0-9]*) LAST=0 ;; esac
+AGE=$(( NOW - LAST ))
+
+if [ -z "${SAFER_FORCE_POLL:-}" ] && [ "$AGE" -lt 3600 ]; then
+  exit 0
+fi
+
+REMOTE_VERSION=$(curl -fsSL --max-time 3 "$REMOTE_VERSION_URL" 2>/dev/null | tr -d '[:space:]' || echo "")
+echo "$NOW" > "$CACHE_FILE"
+
+[ -z "$REMOTE_VERSION" ] && exit 0
+if echo "$REMOTE_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+'; then
+  if [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
+    echo "UPGRADE_AVAILABLE $LOCAL_VERSION $REMOTE_VERSION"
+  fi
+fi
+exit 0

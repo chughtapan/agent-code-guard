@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# safer-calibration — per-modality health dashboard from events.jsonl.
+#
+# Usage: safer-calibration [7d|30d|all]
+#
+# Tags:
+#   HEALTHY            — default
+#   GATE_CANDIDATE     — 10+ runs with 0 stop-rule fires AND 0 escalations
+#                        (modality is either bulletproof or being ignored)
+#   CALIBRATION_ISSUE  — 5+ runs with scope_reverted/runs > 20%
+#                        (claimed tier differs from actual tier too often)
+#   OVER_ESCALATING    — 5+ runs with escalations/runs > 50%
+#                        (modality under-resourced — inputs missing upstream)
+set -uo pipefail
+
+WINDOW="${1:-7d}"
+STATE_DIR="${SAFER_STATE_DIR:-$HOME/.safer}"
+EVENTS_FILE="$STATE_DIR/analytics/events.jsonl"
+
+if [ ! -f "$EVENTS_FILE" ] || [ ! -s "$EVENTS_FILE" ]; then
+  echo "safer-calibration — no events yet ($EVENTS_FILE)"
+  exit 0
+fi
+
+case "$WINDOW" in
+  7d)  DAYS=7 ;;
+  30d) DAYS=30 ;;
+  all) DAYS=99999 ;;
+  *)   DAYS=7 ;;
+esac
+
+CUTOFF=$(date -u -d "$DAYS days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+  || date -v-"$DAYS"d -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+  || echo "1970-01-01T00:00:00Z")
+
+echo "safer-calibration ($WINDOW)  [events since $CUTOFF]"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+printf '%-22s %6s %6s %6s %6s  %s\n' "modality" "runs" "stop" "escl" "rev" "tag"
+
+awk -F'"' -v cutoff="$CUTOFF" '
+  {
+    ts=""; modality=""; event=""
+    for (i=1; i<=NF; i++) {
+      if ($i == "ts"         && $(i+1) ~ /^:/) ts = $(i+2)
+      if ($i == "modality"   && $(i+1) ~ /^:/) modality = $(i+2)
+      if ($i == "event_type" && $(i+1) ~ /^:/) event = $(i+2)
+    }
+    if (ts == "" || ts < cutoff) next
+    if (modality == "") next
+    if (event == "safer.skill_run") runs[modality]++
+    if (event == "safer.stop_rule_fired") stops[modality]++
+    if (event == "safer.escalation_triggered") escs[modality]++
+    if (event == "safer.scope_reverted") revs[modality]++
+    seen[modality]=1
+  }
+  END {
+    n=0
+    # Sort modalities
+    ordered = ""
+    for (m in seen) ordered = ordered m "\n"
+    cmd = "printf \"%s\" \"" ordered "\" | sort"
+    while ((cmd | getline m) > 0) {
+      if (m == "") continue
+      n++
+      r = runs[m]+0; s = stops[m]+0; e = escs[m]+0; v = revs[m]+0
+      tag = "HEALTHY"
+      if (r >= 10 && s == 0 && e == 0) tag = "GATE_CANDIDATE"
+      if (r >= 5 && v*5 > r) tag = "CALIBRATION_ISSUE"     # >20% revert
+      if (r >= 5 && e*2 > r) tag = "OVER_ESCALATING"       # >50% escalation
+      printf "%-22s %6d %6d %6d %6d  %s\n", m, r, s, e, v, tag
+    }
+    close(cmd)
+    if (n == 0) print "(no skill_run events in window)"
+  }
+' "$EVENTS_FILE"

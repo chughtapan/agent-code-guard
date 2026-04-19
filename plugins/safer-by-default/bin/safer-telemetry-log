@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# safer-telemetry-log — append a JSONL event to ~/.safer/analytics/events.jsonl.
+#
+# Args:
+#   --event-type <type>     required (e.g., safer.skill_run)
+#   --modality <m>
+#   --session <s>
+#   --outcome <o>
+#   --duration-s <n>
+#   --issue <n>
+#   --pr <n>
+#   --cause <c>
+#   --from-modality <m>     # for safer.escalation_triggered / safer.modality_handoff
+#   --to-modality <m>
+#   --claimed-tier <t>      # for safer.scope_classified / safer.scope_reverted
+#   --actual-tier <t>
+#   --extra <json>          # raw JSON fragment (inserted as-is)
+#
+# Exit: 0 on success, 1 on missing --event-type
+set -uo pipefail
+
+STATE_DIR="${SAFER_STATE_DIR:-$HOME/.safer}"
+ANALYTICS_DIR="$STATE_DIR/analytics"
+EVENTS_FILE="$ANALYTICS_DIR/events.jsonl"
+
+EVENT_TYPE=""
+MODALITY=""
+SESSION=""
+OUTCOME=""
+DURATION=""
+ISSUE=""
+PR=""
+CAUSE=""
+FROM_MOD=""
+TO_MOD=""
+CLAIMED=""
+ACTUAL=""
+EXTRA=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --event-type)    EVENT_TYPE="$2"; shift 2 ;;
+    --modality)      MODALITY="$2"; shift 2 ;;
+    --session)       SESSION="$2"; shift 2 ;;
+    --outcome)       OUTCOME="$2"; shift 2 ;;
+    --duration-s)    DURATION="$2"; shift 2 ;;
+    --issue)         ISSUE="$2"; shift 2 ;;
+    --pr)            PR="$2"; shift 2 ;;
+    --cause)         CAUSE="$2"; shift 2 ;;
+    --from-modality) FROM_MOD="$2"; shift 2 ;;
+    --to-modality)   TO_MOD="$2"; shift 2 ;;
+    --claimed-tier)  CLAIMED="$2"; shift 2 ;;
+    --actual-tier)   ACTUAL="$2"; shift 2 ;;
+    --extra)         EXTRA="$2"; shift 2 ;;
+    *)               shift ;;
+  esac
+done
+
+if [ -z "$EVENT_TYPE" ]; then
+  echo "ERROR: --event-type is required" >&2
+  exit 1
+fi
+
+mkdir -p "$ANALYTICS_DIR"
+
+esc() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
+is_num() { case "$1" in ''|*[!0-9]*) return 1 ;; *) return 0 ;; esac; }
+
+TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+REPO=""
+if command -v git >/dev/null 2>&1; then
+  REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+  [ -n "$REPO_ROOT" ] && REPO=$(basename "$REPO_ROOT")
+fi
+
+LINE="{\"event_type\":\"$(esc "$EVENT_TYPE")\",\"ts\":\"$TS\""
+[ -n "$REPO" ]     && LINE="$LINE,\"repo\":\"$(esc "$REPO")\""
+[ -n "$MODALITY" ] && LINE="$LINE,\"modality\":\"$(esc "$MODALITY")\""
+[ -n "$SESSION" ]  && LINE="$LINE,\"session\":\"$(esc "$SESSION")\""
+[ -n "$OUTCOME" ]  && LINE="$LINE,\"outcome\":\"$(esc "$OUTCOME")\""
+if [ -n "$DURATION" ] && is_num "$DURATION"; then
+  LINE="$LINE,\"duration_s\":$DURATION"
+fi
+if [ -n "$ISSUE" ] && is_num "$ISSUE"; then
+  LINE="$LINE,\"issue\":$ISSUE"
+fi
+if [ -n "$PR" ] && is_num "$PR"; then
+  LINE="$LINE,\"pr\":$PR"
+fi
+[ -n "$CAUSE" ]    && LINE="$LINE,\"cause\":\"$(esc "$CAUSE")\""
+[ -n "$FROM_MOD" ] && LINE="$LINE,\"from_modality\":\"$(esc "$FROM_MOD")\""
+[ -n "$TO_MOD" ]   && LINE="$LINE,\"to_modality\":\"$(esc "$TO_MOD")\""
+[ -n "$CLAIMED" ]  && LINE="$LINE,\"claimed_tier\":\"$(esc "$CLAIMED")\""
+[ -n "$ACTUAL" ]   && LINE="$LINE,\"actual_tier\":\"$(esc "$ACTUAL")\""
+[ -n "$EXTRA" ]    && LINE="$LINE,\"extra\":$EXTRA"
+LINE="$LINE}"
+
+echo "$LINE" >> "$EVENTS_FILE"

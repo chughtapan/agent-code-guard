@@ -1,0 +1,27 @@
+{
+  "name": "safer-by-default",
+  "version": "0.1.1",
+  "description": "Claude Code plugin: modality-based skills that recalibrate agents toward compiler-grade craft and scope discipline. Thirteen skills across spec, architect, implement (junior/senior/staff), investigate, spike, research, review, verify, orchestrate, typescript-floor, setup. Composes with eslint-plugin-agent-code-guard (lint floor) and zapbot (GitHub publish).",
+  "author": {
+    "name": "Tapan Chugh"
+  },
+  "homepage": "https://github.com/chughtapan/safer-by-default",
+  "repository": "https://github.com/chughtapan/safer-by-default",
+  "license": "MIT",
+  "files": [
+    "bin",
+    "skills",
+    "VERSION"
+  ],
+  "keywords": [
+    "claude-code",
+    "claude-skills",
+    "agent-discipline",
+    "scope-discipline",
+    "typescript",
+    "eslint",
+    "effect",
+    "kysely",
+    "zapbot"
+  ]
+}

@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# safer-vp — VP-level dashboard: funnel, throughput, calibration, in-flight.
+#
+# Usage: safer-vp [7d|30d|all] [--repo <o/r>]
+set -uo pipefail
+
+WINDOW="7d"
+REPO=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --repo)      REPO="$2"; shift 2 ;;
+    7d|30d|all)  WINDOW="$1"; shift ;;
+    *)           shift ;;
+  esac
+done
+
+STATE_DIR="${SAFER_STATE_DIR:-$HOME/.safer}"
+EVENTS_FILE="$STATE_DIR/analytics/events.jsonl"
+BIN_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [ -z "$REPO" ] && command -v gh >/dev/null 2>&1; then
+  REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo "")
+fi
+[ -z "$REPO" ] && REPO="unknown"
+
+case "$WINDOW" in
+  7d)  DAYS=7 ;;
+  30d) DAYS=30 ;;
+  all) DAYS=99999 ;;
+  *)   DAYS=7 ;;
+esac
+
+CUTOFF=$(date -u -d "$DAYS days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+  || date -v-"$DAYS"d -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+  || echo "1970-01-01T00:00:00Z")
+
+echo "VP Engineering — safer-by-default ($WINDOW)"
+echo "Repo: $REPO"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Throughput (from gh)
+echo ""
+echo "Throughput"
+if command -v gh >/dev/null 2>&1 && [ "$REPO" != "unknown" ]; then
+  PR_MERGED_JSON=$(gh pr list --repo "$REPO" --state=merged --limit 200 --json number,mergedAt 2>/dev/null || echo '[]')
+  PR_COUNT=$(printf '%s' "$PR_MERGED_JSON" \
+    | tr ',' '\n' \
+    | grep -E '"mergedAt":"[0-9]' \
+    | awk -F'"' -v cutoff="$CUTOFF" '$4 >= cutoff' \
+    | wc -l | tr -d ' ')
+  ISSUE_CLOSED_JSON=$(gh issue list --repo "$REPO" --state=closed --limit 200 --json number,closedAt --search "is:closed" 2>/dev/null || echo '[]')
+  ISSUE_COUNT=$(printf '%s' "$ISSUE_CLOSED_JSON" \
+    | tr ',' '\n' \
+    | grep -E '"closedAt":"[0-9]' \
+    | awk -F'"' -v cutoff="$CUTOFF" '$4 >= cutoff' \
+    | wc -l | tr -d ' ')
+  printf '  PRs merged:              %s\n' "$PR_COUNT"
+  printf '  Issues closed:           %s\n' "$ISSUE_COUNT"
+else
+  echo "  (gh unavailable or repo unknown — skipped)"
+fi
+
+# In flight
+if command -v gh >/dev/null 2>&1 && [ "$REPO" != "unknown" ]; then
+  echo ""
+  echo "In flight (open issues by state label)"
+  HAD_ANY=0
+  for LABEL in planning review plan-approved implementing verifying; do
+    # gh counts via JSON length
+    COUNT=$(gh issue list --repo "$REPO" --state=open --label "$LABEL" --json number --limit 100 2>/dev/null \
+      | grep -cE '"number"' || echo 0)
+    COUNT=$(echo "$COUNT" | tr -d ' ')
+    if [ "$COUNT" != "0" ]; then
+      printf '  %-18s %s\n' "$LABEL:" "$COUNT"
+      HAD_ANY=1
+    fi
+  done
+  [ "$HAD_ANY" -eq 0 ] && echo "  (no open issues with state labels)"
+fi
+
+# Calibration
+echo ""
+echo "Calibration"
+if [ -f "$EVENTS_FILE" ] && [ -s "$EVENTS_FILE" ]; then
+  "$BIN_DIR/safer-calibration" "$WINDOW" | tail -n +2
+else
+  echo "  (no events yet at $EVENTS_FILE)"
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

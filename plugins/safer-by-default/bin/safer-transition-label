@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# safer-transition-label — atomic state transition on a GitHub issue.
+#
+# Args: --issue <n> --from <label> --to <label> [--repo <o/r>]
+# Output: TRANSITIONED #<n>: <from> → <to>
+# Exit: 0 on success, 1 on gh failure or missing args
+set -uo pipefail
+
+ISSUE=""
+FROM=""
+TO=""
+REPO=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --issue) ISSUE="$2"; shift 2 ;;
+    --from)  FROM="$2"; shift 2 ;;
+    --to)    TO="$2"; shift 2 ;;
+    --repo)  REPO="$2"; shift 2 ;;
+    *)       shift ;;
+  esac
+done
+
+if [ -z "$ISSUE" ] || [ -z "$FROM" ] || [ -z "$TO" ]; then
+  echo "ERROR: --issue, --from, --to are required" >&2
+  exit 1
+fi
+
+if ! command -v gh >/dev/null 2>&1; then
+  echo "ERROR: gh not installed" >&2
+  exit 1
+fi
+
+REPO_FLAG=()
+[ -n "$REPO" ] && REPO_FLAG=(--repo "$REPO")
+
+if gh issue edit "$ISSUE" "${REPO_FLAG[@]}" --remove-label "$FROM" --add-label "$TO" >/dev/null 2>&1; then
+  echo "TRANSITIONED #$ISSUE: $FROM → $TO"
+  exit 0
+fi
+
+# Retry path: maybe the FROM label wasn't set. Try add-only.
+if gh issue edit "$ISSUE" "${REPO_FLAG[@]}" --add-label "$TO" >/dev/null 2>&1; then
+  echo "TRANSITIONED #$ISSUE: (no $FROM) → $TO"
+  exit 0
+fi
+
+echo "ERROR: gh issue edit failed for #$ISSUE" >&2
+exit 1

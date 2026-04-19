@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# safer-slug — emit SLUG=<owner>-<repo> from the current git repo's origin.
+#
+# Output: SLUG=<slug>     (sh-evalable)
+# Exit:   0 always (emits SLUG=unknown outside a repo)
+set -uo pipefail
+
+REMOTE=""
+if command -v git >/dev/null 2>&1; then
+  REMOTE=$(git remote get-url origin 2>/dev/null || true)
+fi
+
+if [ -z "$REMOTE" ]; then
+  echo "SLUG=unknown"
+  exit 0
+fi
+
+# Strip protocol, host, .git, trailing slash; convert / to -
+SLUG=$(printf '%s' "$REMOTE" \
+  | sed -E 's#^git@github\.com:##' \
+  | sed -E 's#^https?://github\.com/##' \
+  | sed -E 's#\.git$##' \
+  | sed -E 's#/$##' \
+  | sed -E 's#/#-#g')
+
+[ -z "$SLUG" ] && SLUG=unknown
+echo "SLUG=$SLUG"

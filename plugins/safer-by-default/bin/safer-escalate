@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# safer-escalate — emit the standard escalation markdown artifact to stdout.
+#
+# Args (required): --from <modality> --to <target> --cause <cause>
+# Args (optional):
+#   --status ESCALATED|BLOCKED|NEEDS_CONTEXT   (default: ESCALATED)
+#   --issue <n>
+#   --parent <n>
+#   --context <text>
+#   --attempted <text>      # multi-line; use \n between bullets
+#   --blocked <text>
+#   --recommendation <text>
+#   --confidence LOW|MED|HIGH   (default: MED)
+set -uo pipefail
+
+FROM=""
+TO=""
+CAUSE=""
+STATUS="ESCALATED"
+ISSUE=""
+PARENT=""
+CONTEXT=""
+ATTEMPTED=""
+BLOCKED=""
+RECOMMENDATION=""
+CONFIDENCE="MED"
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --from)           FROM="$2"; shift 2 ;;
+    --to)             TO="$2"; shift 2 ;;
+    --cause)          CAUSE="$2"; shift 2 ;;
+    --status)         STATUS="$2"; shift 2 ;;
+    --issue)          ISSUE="$2"; shift 2 ;;
+    --parent)         PARENT="$2"; shift 2 ;;
+    --context)        CONTEXT="$2"; shift 2 ;;
+    --attempted)      ATTEMPTED="$2"; shift 2 ;;
+    --blocked)        BLOCKED="$2"; shift 2 ;;
+    --recommendation) RECOMMENDATION="$2"; shift 2 ;;
+    --confidence)     CONFIDENCE="$2"; shift 2 ;;
+    *)                shift ;;
+  esac
+done
+
+if [ -z "$FROM" ] || [ -z "$TO" ] || [ -z "$CAUSE" ]; then
+  echo "ERROR: --from, --to, --cause are required" >&2
+  exit 1
+fi
+
+# Validate status
+case "$STATUS" in
+  ESCALATED|BLOCKED|NEEDS_CONTEXT) ;;
+  *) echo "ERROR: invalid --status: $STATUS" >&2; exit 1 ;;
+esac
+case "$CONFIDENCE" in
+  LOW|MED|HIGH) ;;
+  *) echo "ERROR: invalid --confidence: $CONFIDENCE" >&2; exit 1 ;;
+esac
+
+expand_bullets() {
+  if [ -z "$1" ]; then
+    echo "- (not stated)"
+  else
+    # Support \n for newlines → bullets
+    printf '%s' "$1" | awk -v RS='\\\\n' '{ if ($0 != "") printf("- %s\n", $0) }'
+  fi
+}
+
+cat <<EOF
+# Escalation from $FROM
+
+**Status:** \`$STATUS\`
+**Routing:** $FROM → $TO
+
+**Cause:** $CAUSE
+
+## Context
+${ISSUE:+- Issue: #$ISSUE
+}${PARENT:+- Parent epic: #$PARENT
+}${CONTEXT:+- $CONTEXT
+}
+
+## What was attempted
+$(expand_bullets "$ATTEMPTED")
+
+## What blocked progress
+$(expand_bullets "$BLOCKED")
+
+## Recommended next action
+$(expand_bullets "$RECOMMENDATION")
+
+## Confidence
+\`$CONFIDENCE\`
+EOF
