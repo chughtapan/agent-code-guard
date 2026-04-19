@@ -22,6 +22,16 @@ ruleTester.run("no-raw-sql", rule, {
     {
       code: "// eslint-disable-next-line @rule-tester/no-raw-sql -- suppression test\ndb.query('SELECT * FROM users');",
     },
+    // Non-.query() method calls are not flagged even with SQL content
+    { code: "db.exec(`SELECT * FROM users`);" },
+    // Bracket-notation .query() is not flagged — only dot-notation .query() calls are in scope
+    { code: "db['query'](`SELECT * FROM users`);" },
+    // Pure-interpolation template with no static SQL keyword in the head is not flagged
+    { code: "client.query(`${foo}`);" },
+    // Tagged template with an unknown tag (not sql/SQL) is not flagged
+    { code: "db.query(myTag`SELECT * FROM users`);" },
+    // Call with no arguments is not flagged
+    { code: "db.query();" },
   ],
   invalid: [
     {
@@ -42,6 +52,16 @@ ruleTester.run("no-raw-sql", rule, {
     },
     {
       code: "conn.query('DROP TABLE temp');",
+      errors: [{ messageId: "rawSql" }],
+    },
+    // Tagged template with sql tag is flagged as raw SQL
+    {
+      code: "db.query(sql`SELECT * FROM users`);",
+      errors: [{ messageId: "rawSql" }],
+    },
+    // Tagged template with SQL tag (uppercase) is also flagged
+    {
+      code: "db.query(SQL`INSERT INTO logs VALUES ($1)`);",
       errors: [{ messageId: "rawSql" }],
     },
   ],
