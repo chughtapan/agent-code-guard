@@ -20,6 +20,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "pnpm clean && tsc",
+    "lint": "eslint .",
     "test": "vitest run",
     "mutation": "stryker run",
     "prepublishOnly": "pnpm build && pnpm test"
@@ -58,6 +59,7 @@
     "@typescript-eslint/parser": "^8.0.0",
     "@typescript-eslint/rule-tester": "^8.0.0",
     "eslint": "^9.0.0",
+    "eslint-plugin-agent-code-guard": "^0.0.2",
     "fast-check": "^4.7.0",
     "typescript": "^5.4.0",
     "vitest": "^2.0.0"
