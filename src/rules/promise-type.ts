@@ -14,10 +14,12 @@ function isReturnTypeAnnotation(
   node: TSESTree.TSTypeReference,
 ): boolean {
   const annotation = node.parent;
+  // Stryker disable next-line ConditionalExpression,BlockStatement -- equivalent: if annotation.type !== TSTypeAnnotation, owner falls to switch default (returns false) in all reachable TypeScript AST inputs
   if (!annotation || annotation.type !== AST_NODE_TYPES.TSTypeAnnotation) {
     return false;
   }
   const owner = annotation.parent;
+  // Stryker disable next-line ConditionalExpression,BooleanLiteral -- equivalent: annotation.parent is never null in ESLint AST traversal
   if (!owner) return false;
 
   switch (owner.type) {
@@ -28,6 +30,7 @@ function isReturnTypeAnnotation(
     case AST_NODE_TYPES.TSMethodSignature:
     case AST_NODE_TYPES.TSDeclareFunction:
     case AST_NODE_TYPES.TSEmptyBodyFunctionExpression:
+      // Stryker disable next-line ConditionalExpression -- equivalent: when owner is a function-type node, owner.returnType === annotation is a structural tautology of the @typescript-eslint AST
       return owner.returnType === annotation;
     default:
       return false;
