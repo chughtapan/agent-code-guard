@@ -179,7 +179,7 @@ describe("property: rule correctness", () => {
       filename: "jest.config.js",
     },
     {
-      ruleId: "safer-by-default/no-hardcoded-assertion-literals",
+      ruleId: "agent-code-guard/no-hardcoded-assertion-literals",
       seed: 'expect(result).toBe("processed");',
       coFire: [],
       filename: "src/foo.test.ts",
@@ -265,7 +265,7 @@ describe("property: rule correctness", () => {
   // Property 4: no-hardcoded-assertion-literals does not fire on structural assertions.
   // Structural = identifier or member-expression as the expected arg, never a literal.
   it("Property 4: no-hardcoded-assertion-literals: structural assertions are not flagged", () => {
-    const RULE_ID = "safer-by-default/no-hardcoded-assertion-literals";
+    const RULE_ID = "agent-code-guard/no-hardcoded-assertion-literals";
     const MATCHER_ARB = fc.constantFrom("toBe", "toEqual", "toStrictEqual", "toContain");
     fc.assert(
       fc.property(identArb, identArb, MATCHER_ARB, (actual, expected, matcher) => {
