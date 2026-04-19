@@ -33,6 +33,9 @@ importers:
       eslint:
         specifier: ^9.0.0
         version: 9.39.4
+      eslint-plugin-agent-code-guard:
+        specifier: ^0.0.2
+        version: 0.0.2(eslint@9.39.4)(typescript@5.9.3)
       fast-check:
         specifier: ^4.7.0
         version: 4.7.0
@@ -980,6 +983,12 @@ packages:
   escape-string-regexp@4.0.0:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
     engines: {node: '>=10'}
+
+  eslint-plugin-agent-code-guard@0.0.2:
+    resolution: {integrity: sha512-tMsSmZRy2LGEDsRwDVNI3ejDPga30UcWDfLPwf7UpJSwa5qljskMcneAZxnDWbt4ASzt8hZVCRT2Jkm7hl30gA==}
+    peerDependencies:
+      eslint: '>=9'
+      typescript: '>=5'
 
   eslint-scope@8.4.0:
     resolution: {integrity: sha512-sNXOfKCn74rt8RICKMvJS7XKV/Xk9kA7DyJr8mJik3S7Cwgy3qlkkmyS2uQB3jiJg6VNdZd/pDBJu0nvG2NlTg==}
@@ -2557,6 +2566,14 @@ snapshots:
   escalade@3.2.0: {}
 
   escape-string-regexp@4.0.0: {}
+
+  eslint-plugin-agent-code-guard@0.0.2(eslint@9.39.4)(typescript@5.9.3):
+    dependencies:
+      '@typescript-eslint/utils': 8.58.2(eslint@9.39.4)(typescript@5.9.3)
+      eslint: 9.39.4
+      typescript: 5.9.3
+    transitivePeerDependencies:
+      - supports-color
 
   eslint-scope@8.4.0:
     dependencies:
