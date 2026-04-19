@@ -45,7 +45,7 @@ ruleTester.run("promise-type", rule, {
     { code: "function f() { return Promise.resolve(1); }" },
     // Suppression test
     {
-      code: "// eslint-disable-next-line @rule-tester/promise-type -- suppression test (real prefix in production is `safer-by-default/promise-type`)\nfunction suppressed(): Promise<number> { return Promise.resolve(1); }",
+      code: "// eslint-disable-next-line @rule-tester/promise-type -- suppression test (real prefix in production is `agent-code-guard/promise-type`)\nfunction suppressed(): Promise<number> { return Promise.resolve(1); }",
     },
     // Promise nested in an intersection in return position — not direct annotation
     { code: "function f(): Promise<number> & { tag: string } { return Promise.resolve(1) as any; }" },

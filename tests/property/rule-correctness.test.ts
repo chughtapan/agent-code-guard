@@ -14,7 +14,7 @@ function baseConfig(rules: Linter.RulesRecord): Linter.Config {
       parser: tsParser as unknown as Linter.Parser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: { "safer-by-default": plugin as unknown as NonNullable<Linter.Config["plugins"]>[string] },
+    plugins: { "agent-code-guard": plugin as unknown as NonNullable<Linter.Config["plugins"]>[string] },
     rules,
   };
 }
@@ -125,55 +125,55 @@ describe("property: rule correctness", () => {
     coFire: ReadonlyArray<string>;
     filename?: string;
   }> = [
-    { ruleId: "safer-by-default/async-keyword", seed: "async function foo() {}", coFire: [] },
+    { ruleId: "agent-code-guard/async-keyword", seed: "async function foo() {}", coFire: [] },
     {
-      ruleId: "safer-by-default/promise-type",
+      ruleId: "agent-code-guard/promise-type",
       seed: "function foo(): Promise<number> { return Promise.resolve(1); }",
       coFire: [],
     },
     {
-      ruleId: "safer-by-default/then-chain",
+      ruleId: "agent-code-guard/then-chain",
       seed: "Promise.resolve(1).then((v) => v);",
       coFire: [],
     },
     {
-      ruleId: "safer-by-default/bare-catch",
+      ruleId: "agent-code-guard/bare-catch",
       seed: "try { doThing(); } catch {}",
       coFire: [],
     },
     {
-      ruleId: "safer-by-default/record-cast",
+      ruleId: "agent-code-guard/record-cast",
       seed: "const r = {} as Record<string, unknown>;",
       coFire: [],
     },
     {
-      ruleId: "safer-by-default/no-raw-sql",
+      ruleId: "agent-code-guard/no-raw-sql",
       seed: "db.query('SELECT * FROM users');",
       coFire: [],
     },
     {
-      ruleId: "safer-by-default/no-manual-enum-cast",
+      ruleId: "agent-code-guard/no-manual-enum-cast",
       seed: "const s = x as 'active' | 'inactive';",
       coFire: [],
     },
     {
-      ruleId: "safer-by-default/no-hardcoded-secrets",
+      ruleId: "agent-code-guard/no-hardcoded-secrets",
       seed: "const apiKey = 'sk_live_abc123xyz0987654321';",
       coFire: [],
     },
     {
-      ruleId: "safer-by-default/no-raw-throw-new-error",
+      ruleId: "agent-code-guard/no-raw-throw-new-error",
       seed: "throw new Error('boom');",
       coFire: [],
     },
     {
-      ruleId: "safer-by-default/no-test-skip-only",
+      ruleId: "agent-code-guard/no-test-skip-only",
       seed: "it.skip('wip', () => {});",
       coFire: [],
       filename: "src/auth.test.ts",
     },
     {
-      ruleId: "safer-by-default/no-coverage-threshold-gate",
+      ruleId: "agent-code-guard/no-coverage-threshold-gate",
       seed: "module.exports = { coverageThreshold: { global: { lines: 80 } } };",
       coFire: [],
       filename: "jest.config.js",
@@ -208,23 +208,23 @@ describe("property: rule correctness", () => {
   }
 
   const IDENTS_BY_SEED: Record<string, string> = {
-    "safer-by-default/async-keyword": "foo",
-    "safer-by-default/promise-type": "foo",
-    "safer-by-default/then-chain": "", // no rename target — `.then` is the trigger
-    "safer-by-default/bare-catch": "doThing",
-    "safer-by-default/record-cast": "r",
-    "safer-by-default/no-raw-sql": "db",
-    "safer-by-default/no-manual-enum-cast": "s",
+    "agent-code-guard/async-keyword": "foo",
+    "agent-code-guard/promise-type": "foo",
+    "agent-code-guard/then-chain": "", // no rename target — `.then` is the trigger
+    "agent-code-guard/bare-catch": "doThing",
+    "agent-code-guard/record-cast": "r",
+    "agent-code-guard/no-raw-sql": "db",
+    "agent-code-guard/no-manual-enum-cast": "s",
     // Rename exercises the value-shape detector added in acg#10: the seed's
     // LHS is `apiKey`, mutation renames it to a random non-secret-looking
     // ident, and the rule still fires because `sk_live_...` matches the
     // Stripe canonical shape regex.
-    "safer-by-default/no-hardcoded-secrets": "apiKey",
-    "safer-by-default/no-raw-throw-new-error": "",
-    "safer-by-default/no-test-skip-only": "",
-    "safer-by-default/no-coverage-threshold-gate": "",
+    "agent-code-guard/no-hardcoded-secrets": "apiKey",
+    "agent-code-guard/no-raw-throw-new-error": "",
+    "agent-code-guard/no-test-skip-only": "",
+    "agent-code-guard/no-coverage-threshold-gate": "",
     // Rename exercises the argument identifier; the string literal "processed" still fires
-    "safer-by-default/no-hardcoded-assertion-literals": "result",
+    "agent-code-guard/no-hardcoded-assertion-literals": "result",
   };
 
   for (const { ruleId, seed, coFire, filename } of SEEDS) {
@@ -288,7 +288,7 @@ describe("property: rule correctness", () => {
   // light up once a fixer lands.
   const FIXABLE_RULE_IDS = Object.entries(plugin.rules)
     .filter(([, r]) => r.meta.fixable)
-    .map(([name]) => `safer-by-default/${name}`);
+    .map(([name]) => `agent-code-guard/${name}`);
 
   it("Property 3: fixer idempotence (skipped if no fixable rules)", () => {
     if (FIXABLE_RULE_IDS.length === 0) {

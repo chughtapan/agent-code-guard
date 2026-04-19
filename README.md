@@ -15,19 +15,19 @@ This plugin is the floor. Thirteen rules under the `recommended` preset (eleven 
 
 | Rule | Catches |
 |---|---|
-| `safer-by-default/async-keyword` | `async` functions outside Effect/Kysely patterns |
-| `safer-by-default/promise-type` | `Promise<T>` return types that erase the error channel |
-| `safer-by-default/then-chain` | `.then(...)` chains that hide error propagation |
-| `safer-by-default/bare-catch` | `try { ... } catch {}` that swallows the error silently |
-| `safer-by-default/record-cast` | `as Record<string, unknown>` and similar unsafe casts |
-| `safer-by-default/no-raw-sql` | Raw SQL strings that bypass the typed query builder |
-| `safer-by-default/no-manual-enum-cast` | `as "a" \| "b"` string-union casts that should be generated unions |
-| `safer-by-default/no-hardcoded-secrets` | Literal secret-shaped values in source |
-| `safer-by-default/no-raw-throw-new-error` | `throw new Error(...)` outside tests — return a tagged error instead |
-| `safer-by-default/no-test-skip-only` | `.skip` / `.only` / `xit` / `xdescribe` in committed test files |
-| `safer-by-default/no-coverage-threshold-gate` | `coverageThreshold` gates in jest/vitest/vite configs (warn) |
-| `safer-by-default/no-hardcoded-assertion-literals` | Hardcoded string/number literals in test assertions (warn) |
-| `safer-by-default/no-vitest-mocks` | `vi.mock(...)` inside files that match the integration-tests glob |
+| `agent-code-guard/async-keyword` | `async` functions outside Effect/Kysely patterns |
+| `agent-code-guard/promise-type` | `Promise<T>` return types that erase the error channel |
+| `agent-code-guard/then-chain` | `.then(...)` chains that hide error propagation |
+| `agent-code-guard/bare-catch` | `try { ... } catch {}` that swallows the error silently |
+| `agent-code-guard/record-cast` | `as Record<string, unknown>` and similar unsafe casts |
+| `agent-code-guard/no-raw-sql` | Raw SQL strings that bypass the typed query builder |
+| `agent-code-guard/no-manual-enum-cast` | `as "a" \| "b"` string-union casts that should be generated unions |
+| `agent-code-guard/no-hardcoded-secrets` | Literal secret-shaped values in source |
+| `agent-code-guard/no-raw-throw-new-error` | `throw new Error(...)` outside tests — return a tagged error instead |
+| `agent-code-guard/no-test-skip-only` | `.skip` / `.only` / `xit` / `xdescribe` in committed test files |
+| `agent-code-guard/no-coverage-threshold-gate` | `coverageThreshold` gates in jest/vitest/vite configs (warn) |
+| `agent-code-guard/no-hardcoded-assertion-literals` | Hardcoded string/number literals in test assertions (warn) |
+| `agent-code-guard/no-vitest-mocks` | `vi.mock(...)` inside files that match the integration-tests glob |
 
 Each rule ships a Before/After doc at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`.
 
@@ -49,7 +49,7 @@ export default [
       parser: tsParser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: { "safer-by-default": guard },
+    plugins: { "agent-code-guard": guard },
     rules: guard.configs.recommended.rules,
   },
 
@@ -60,10 +60,10 @@ export default [
       parser: tsParser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: { "safer-by-default": guard },
+    plugins: { "agent-code-guard": guard },
     rules: {
-      "safer-by-default/no-test-skip-only": "error",
-      "safer-by-default/no-hardcoded-assertion-literals": "warn",
+      "agent-code-guard/no-test-skip-only": "error",
+      "agent-code-guard/no-hardcoded-assertion-literals": "warn",
     },
   },
 
@@ -74,9 +74,9 @@ export default [
       parser: tsParser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: { "safer-by-default": guard },
+    plugins: { "agent-code-guard": guard },
     rules: {
-      "safer-by-default/no-coverage-threshold-gate": "warn",
+      "agent-code-guard/no-coverage-threshold-gate": "warn",
     },
   },
 
@@ -87,7 +87,7 @@ export default [
       parser: tsParser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: { "safer-by-default": guard },
+    plugins: { "agent-code-guard": guard },
     rules: guard.configs.integrationTests.rules,
   },
 ];
@@ -107,7 +107,7 @@ If a rule is wrong for your codebase, disable it in flat config:
 ```js
 rules: {
   ...guard.configs.recommended.rules,
-  "safer-by-default/async-keyword": "off",
+  "agent-code-guard/async-keyword": "off",
 }
 ```
 
@@ -116,11 +116,11 @@ Every disable in source should carry a written reason via `@eslint-community/esl
 ## Name notes
 
 - **npm package**: `eslint-plugin-agent-code-guard`.
-- **Rule namespace**: `safer-by-default/<rule>`. The namespace matches the companion Claude Code plugin (the ceiling), not the npm package (the floor). Users who install both see a consistent mental model: `safer-by-default` is the philosophy family; `agent-code-guard` is the npm distribution of the lint half.
+- **Rule namespace**: `agent-code-guard/<rule>`. The namespace matches the companion Claude Code plugin (the ceiling), not the npm package (the floor). Users who install both see a consistent mental model: `agent-code-guard` is the philosophy family; `agent-code-guard` is the npm distribution of the lint half.
 
 ## Companion
 
-This plugin is the floor — the patterns an agent must not ship. The ceiling is the [`safer-by-default` Claude Code plugin](https://github.com/chughtapan/safer-by-default), which recalibrates the agent in-band when it writes TypeScript. Install both:
+This plugin is the floor — the patterns an agent must not ship. The ceiling is the [`agent-code-guard` Claude Code plugin](https://github.com/chughtapan/agent-code-guard), which recalibrates the agent in-band when it writes TypeScript. Install both:
 
 ```
 # The floor (this repo):
@@ -128,9 +128,9 @@ pnpm add -D eslint-plugin-agent-code-guard
 
 # The ceiling (skills + binaries):
 git clone --single-branch --depth 1 \
-  https://github.com/chughtapan/safer-by-default.git \
-  ~/.claude/skills/safer-by-default
-cd ~/.claude/skills/safer-by-default && ./setup
+  https://github.com/chughtapan/agent-code-guard.git \
+  ~/.claude/skills/agent-code-guard
+cd ~/.claude/skills/agent-code-guard && ./setup
 ```
 
 The skills plugin ships a `/safer:setup` skill that installs this lint plugin and wires it into `eslint.config.js` on your behalf.

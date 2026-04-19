@@ -23,7 +23,7 @@ ruleTester.run("record-cast", rule, {
     { code: "const r = {} as { [k: string]: unknown };" },
     { code: "type R = Record<string, unknown>; const r: R = {};" },
     {
-      code: "// eslint-disable-next-line @rule-tester/record-cast -- suppression test (real prefix in production is `safer-by-default/record-cast`)\nconst r = {} as Record<string, unknown>;",
+      code: "// eslint-disable-next-line @rule-tester/record-cast -- suppression test (real prefix in production is `agent-code-guard/record-cast`)\nconst r = {} as Record<string, unknown>;",
     },
   ],
   invalid: [
