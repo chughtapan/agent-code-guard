@@ -40,12 +40,20 @@ ruleTester.run("promise-type", rule, {
     // TSTypeAnnotation. Exercises the annotation.type !== TSTypeAnnotation branch (line 17).
     { code: "function f(): Promise<number> | string { return ''; }" },
     { code: "const f = (): Promise<number> | null => null;" },
+    // Promise nested inside a generic return type — annotation is TSTypeParameterInstantiation,
+    // not TSTypeAnnotation. Exercises annotation.type !== TSTypeAnnotation branch (line 17).
+    { code: "function f(): Array<Promise<number>> { return []; }" },
+    // Promise as element type of array return — annotation is TSArrayType.
+    { code: "function f(): Promise<number>[] { return []; }" },
+    // Promise in object-literal return type property — annotation is TSTypeAnnotation but
+    // owner is TSPropertySignature (not in the function-owner switch cases).
+    { code: "function f(): { x: Promise<number> } { return { x: Promise.resolve(1) }; }" },
     // Function with no return annotation — Promise only in body, no TSTypeReference visited
     // for the function's return annotation at all.
     { code: "function f() { return Promise.resolve(1); }" },
     // Suppression test
     {
-      code: "// eslint-disable-next-line @rule-tester/promise-type -- suppression test (real prefix in production is `safer-by-default/promise-type`)\nfunction suppressed(): Promise<number> { return Promise.resolve(1); }",
+      code: "// eslint-disable-next-line @rule-tester/promise-type -- suppression test (real prefix in production is `agent-code-guard/promise-type`)\nfunction suppressed(): Promise<number> { return Promise.resolve(1); }",
     },
     // Promise nested in an intersection in return position — not direct annotation
     { code: "function f(): Promise<number> & { tag: string } { return Promise.resolve(1) as any; }" },
