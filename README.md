@@ -15,25 +15,27 @@ This plugin is the floor. Thirteen rules under the `recommended` preset (eleven 
 
 | Rule | Catches |
 |---|---|
-| `agent-code-guard/async-keyword` | `async` functions outside Effect/Kysely patterns |
-| `agent-code-guard/promise-type` | `Promise<T>` return types that erase the error channel |
-| `agent-code-guard/then-chain` | `.then(...)` chains that hide error propagation |
-| `agent-code-guard/bare-catch` | `try { ... } catch {}` that swallows the error silently |
-| `agent-code-guard/record-cast` | `as Record<string, unknown>` and similar unsafe casts |
-| `agent-code-guard/no-raw-sql` | Raw SQL strings that bypass the typed query builder |
-| `agent-code-guard/no-manual-enum-cast` | `as "a" \| "b"` string-union casts that should be generated unions |
-| `agent-code-guard/no-hardcoded-secrets` | Literal secret-shaped values in source |
-| `agent-code-guard/no-raw-throw-new-error` | `throw new Error(...)` outside tests — return a tagged error instead |
-| `agent-code-guard/no-test-skip-only` | `.skip` / `.only` / `xit` / `xdescribe` in committed test files |
-| `agent-code-guard/no-coverage-threshold-gate` | `coverageThreshold` gates in jest/vitest/vite configs (warn) |
-| `agent-code-guard/no-hardcoded-assertion-literals` | Hardcoded string/number literals in test assertions (warn) |
-| `agent-code-guard/no-vitest-mocks` | `vi.mock(...)` inside files that match the integration-tests glob |
+| [`agent-code-guard/async-keyword`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/async-keyword.md) | `async` functions outside Effect/Kysely patterns |
+| [`agent-code-guard/promise-type`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/promise-type.md) | `Promise<T>` return types that erase the error channel |
+| [`agent-code-guard/then-chain`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/then-chain.md) | `.then(...)` chains that hide error propagation |
+| [`agent-code-guard/bare-catch`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/bare-catch.md) | `try { ... } catch {}` that swallows the error silently |
+| [`agent-code-guard/record-cast`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/record-cast.md) | `as Record<string, unknown>` and similar unsafe casts |
+| [`agent-code-guard/no-raw-sql`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-raw-sql.md) | Raw SQL strings that bypass the typed query builder |
+| [`agent-code-guard/no-manual-enum-cast`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-manual-enum-cast.md) | `as "a" \| "b"` string-union casts that should be generated unions |
+| [`agent-code-guard/no-hardcoded-secrets`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-hardcoded-secrets.md) | AWS/GCP/Azure keys, API tokens, passwords — see doc for patterns and entropy thresholds |
+| [`agent-code-guard/no-raw-throw-new-error`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-raw-throw-new-error.md) | `throw new Error(...)` outside tests — return a tagged error instead |
+| [`agent-code-guard/no-test-skip-only`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-test-skip-only.md) | `.skip` / `.only` / `xit` / `xdescribe` in committed test files |
+| [`agent-code-guard/no-coverage-threshold-gate`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-coverage-threshold-gate.md) | `coverageThreshold` gates in jest/vitest/vite configs (warn) |
+| [`agent-code-guard/no-hardcoded-assertion-literals`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-hardcoded-assertion-literals.md) | Hardcoded string/number literals in test assertions (warn) |
+| [`agent-code-guard/no-vitest-mocks`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-vitest-mocks.md) | `vi.mock(...)` inside files that match the integration-tests glob |
 
-Each rule ships a Before/After doc at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`.
+Each rule ships a Before/After doc at the GitHub link above and locally at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`.
 
 ## Configure
 
-Flat config (ESLint ≥ 9):
+This plugin uses **ESLint flat config** (required; ESLint ≥ 9). If you have a legacy `.eslintrc`, migrate to flat config first; see [ESLint migration guide](https://eslint.org/docs/latest/use/configure/migration-guide).
+
+**Flat config**:
 
 ```js
 // eslint.config.js
@@ -97,8 +99,10 @@ Peer dependencies: `eslint` ≥ 9, `typescript` ≥ 5.
 
 ## Presets
 
-- `guard.configs.recommended.rules` — application source. All rules except `no-vitest-mocks`.
-- `guard.configs.integrationTests.rules` — integration-test glob only. Enforces `no-vitest-mocks` so integration tests actually hit real dependencies.
+The import alias (e.g., `guard` in the example above) is your choice; adjust the `<import>.configs.*` path accordingly. Access presets via your import identifier:
+
+- `<import>.configs.recommended.rules` — application source. All rules except `no-vitest-mocks`.
+- `<import>.configs.integrationTests.rules` — integration-test glob only. Enforces `no-vitest-mocks` so integration tests actually hit real dependencies.
 
 ## Disabling a rule
 
@@ -120,20 +124,25 @@ Every disable in source should carry a written reason via `@eslint-community/esl
 
 ## Companion
 
-This plugin is the floor — the patterns an agent must not ship. The ceiling is the [`agent-code-guard` Claude Code plugin](https://github.com/chughtapan/agent-code-guard), which recalibrates the agent in-band when it writes TypeScript. Install both:
+**floor** — this ESLint plugin (lint-time checks). Catches patterns your agent must not ship: `throw new Error(...)`, `as Record<string, unknown>`, bare `catch {}`, etc.
+
+**ceiling** — the [`agent-code-guard` Claude Code plugin](https://github.com/chughtapan/agent-code-guard). A Claude Code plugin is a skill that instruments the Claude Code IDE and directs the coding agent at **write-time**, before code is committed. This plugin recalibrates the agent in-band when it writes TypeScript, using the floor rules as a teaching signal.
+
+Install both for the full calibration loop:
 
 ```
-# The floor (this repo):
-pnpm add -D eslint-plugin-agent-code-guard
+# The floor (this repo) — lint checks:
+pnpm add -D eslint-plugin-agent-code-guard@^0.0.2
 
-# The ceiling (skills + binaries):
-git clone --single-branch --depth 1 \
+# The ceiling (Claude Code skills + binaries):
+mkdir -p ~/.claude/skills
+git clone --single-branch --depth 1 --branch v0.0.2 \
   https://github.com/chughtapan/agent-code-guard.git \
   ~/.claude/skills/agent-code-guard
-cd ~/.claude/skills/agent-code-guard && ./setup
+cd ~/.claude/skills/agent-code-guard && pnpm install
 ```
 
-The skills plugin ships a `/safer:setup` skill that installs this lint plugin and wires it into `eslint.config.js` on your behalf.
+**Alternatively**, invoke the `/safer:setup` skill to automate both steps on your behalf (wires floor → `eslint.config.js`, installs ceiling skill).
 
 ## Development
 
