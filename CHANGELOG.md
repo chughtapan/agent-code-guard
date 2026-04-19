@@ -2,35 +2,34 @@
 
 ## [Unreleased]
 
-## [0.0.4] - 2026-04-19
+## [0.0.2] - 2026-04-19
+
+### BREAKING
+
+- **Rule prefix normalized from `safer-by-default/*` to `agent-code-guard/*`.** Consumer configs must update `plugins: { 'safer-by-default': guard }` → `plugins: { 'agent-code-guard': guard }` and all rule IDs from `safer-by-default/<rule>` → `agent-code-guard/<rule>`. The rule namespace now matches the npm package name.
+- **Package renamed to `eslint-plugin-agent-code-guard`** (previously `eslint-plugin-safer-by-default`). Rule namespace now matches the package name after the rename above.
+
+### Added
+
+Four new rules:
+
+- **`no-raw-throw-new-error`** — flags `throw new Error(...)` and encourages tagged error types.
+- **`no-test-skip-only`** — flags `.skip` and `.only` in test files (ships broken tests silently).
+- **`no-coverage-threshold-gate`** — flags coverage-threshold config as a test-quality proxy (Goodhart's law).
+- **`no-hardcoded-assertion-literals`** — flags magic-literal values in test assertions (e.g. `expect(x).toBe(42)` where `42` should be a named constant or computed). Includes `isTestFile` utility for test-file detection (supports `/e2e/` patterns).
 
 ### Changed
 
-- **BREAKING: Rule prefix normalized from `safer-by-default/*` to `agent-code-guard/*`.** Consumer configs must update `plugins: { 'safer-by-default': guard }` → `plugins: { 'agent-code-guard': guard }` and all rule IDs from `safer-by-default/<rule>` → `agent-code-guard/<rule>`. The rule namespace now matches the npm package name.
+- **`no-hardcoded-secrets` widened to value-shape detection** — now flags long string literals by shape, not just by variable name.
+- **Removed `.claude-plugin/` directory.** ACG is ESLint-plugin-only. The safer-by-default Claude Code plugin is distributed from [`chughtapan/safer-by-default`](https://github.com/chughtapan/safer-by-default).
+- **`plugin.meta.version` reads from `package.json` at runtime** via `createRequire` (was previously hardcoded and drifted).
 
-## [0.0.3] - 2026-04-18
+### Testing
 
-### Changed
-
-- **Package renamed to `eslint-plugin-agent-code-guard`.** Previously `eslint-plugin-safer-by-default`. The rename finishes the split started in commit 789a861, which separated the lint plugin (this repo, `chughtapan/agent-code-guard`) from the `/safer` Claude Code skills (`chughtapan/safer-by-default`). The rule namespace remains `safer-by-default/<rule>` because that is the philosophy family; the npm distribution name now matches the repo. Drift fixed in `package.json`, `src/utils/create-rule.ts` (doc-path comment), and `.claude-plugin/marketplace.json` (description).
-
-## [0.0.2] - 2026-04-17
-
-### Fixed
-
-- **`plugin.meta.version` is no longer hardcoded.** It used to say `"0.1.0"` in `dist/index.js` even after the package was at `0.0.1`. Now it reads from `package.json` at runtime via `createRequire`, so it always matches the installed version.
-
-### Changed — safer-by-default:setup skill
-
-Dogfooded the skill against a fresh TS repo and closed the agent-execution gaps the test surfaced.
-
-- **Step 1 now defaults to pnpm** when no lockfile exists, instead of punting to "ask the user." The skill is agent-run by design; silent punting blocks automated setup.
-- **Step 2 now includes the exact `<pm> ls` command** and tells the agent to install `eslint` and `typescript` as devDeps when missing, instead of just checking and leaving the user stuck.
-- **Step 4 makes the compose-once pattern explicit.** The `eslint.config.js` is composed in your head across Steps 4, 5, 6, and 7 and written to disk exactly once at the end of Step 7. Previously the steps read as three separate writes.
-- **Step 5 spells out the exact `"off"` syntax** (spread the preset, then override with `"off"` entries below the spread). No more guessing about whether to mutate in place vs. spread-then-override.
-- **Step 6 has a one-line comment** explaining why `files: ["**/*.ts"]` intentionally overlaps with the application-source and integration-test blocks.
-- **Step 8 now captures a `tsc --noEmit` baseline before and after** the strict-flag flip, so the user gets a concrete delta ("12 errors before, 23 after, new errors are all from `noUncheckedIndexedAccess`") instead of vague "surface the breakage."
-- **Step 9 mandates `<pm> exec eslint .`** for the baseline report. Deferring to the user's existing lint script silently skipped integration-test scopes (because many `"lint": "eslint src"` configs don't reach tests). The full scope catches more.
+- **Stryker mutation testing wired as required CI gate** (incremental + ignoreStatic + concurrency 4 + CI cache).
+- **fast-check property tests** added for rule correctness.
+- `no-raw-sql` mutation score hardened 40.63% → 93.75%.
+- `promise-type` mutation score hardened to 100%.
 
 ## [0.0.1] - 2026-04-17
 
