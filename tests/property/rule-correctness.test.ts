@@ -178,6 +178,12 @@ describe("property: rule correctness", () => {
       coFire: [],
       filename: "jest.config.js",
     },
+    {
+      ruleId: "safer-by-default/no-hardcoded-assertion-literals",
+      seed: 'expect(result).toBe("processed");',
+      coFire: [],
+      filename: "src/foo.test.ts",
+    },
   ];
 
   const renameArb = fc
@@ -217,6 +223,8 @@ describe("property: rule correctness", () => {
     "safer-by-default/no-raw-throw-new-error": "",
     "safer-by-default/no-test-skip-only": "",
     "safer-by-default/no-coverage-threshold-gate": "",
+    // Rename exercises the argument identifier; the string literal "processed" still fires
+    "safer-by-default/no-hardcoded-assertion-literals": "result",
   };
 
   for (const { ruleId, seed, coFire, filename } of SEEDS) {
@@ -253,6 +261,27 @@ describe("property: rule correctness", () => {
       );
     });
   }
+
+  // Property 4: no-hardcoded-assertion-literals does not fire on structural assertions.
+  // Structural = identifier or member-expression as the expected arg, never a literal.
+  it("Property 4: no-hardcoded-assertion-literals: structural assertions are not flagged", () => {
+    const RULE_ID = "safer-by-default/no-hardcoded-assertion-literals";
+    const MATCHER_ARB = fc.constantFrom("toBe", "toEqual", "toStrictEqual", "toContain");
+    fc.assert(
+      fc.property(identArb, identArb, MATCHER_ARB, (actual, expected, matcher) => {
+        const code = `expect(${actual}).${matcher}(${expected});`;
+        if (!isSyntacticallyValid(code)) return;
+        const messages = lintOne(code, RULE_ID, "src/foo.test.ts");
+        if (messages.length !== 0) {
+          throw new Error(
+            `Structural assertion falsely flagged:\n--- source ---\n${code}\n` +
+              messages.map((m) => `  [${m.ruleId ?? "?"}] ${m.message}`).join("\n"),
+          );
+        }
+      }),
+      { numRuns: 100 },
+    );
+  });
 
   // Property 3: fixer idempotence. Scoped to rules that declare `fixable`.
   // No recommended rule currently declares one — this is a guard that will

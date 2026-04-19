@@ -1,18 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
-
-const TEST_FILE_PATTERNS = [
-  /\.test\.[cm]?[jt]sx?$/,
-  /\.spec\.[cm]?[jt]sx?$/,
-  /[\\/]tests?[\\/]/,
-  /[\\/]__tests__[\\/]/,
-  /[\\/]e2e[\\/]/,
-];
-
-function isTestFile(filename: string): boolean {
-  return TEST_FILE_PATTERNS.some((p) => p.test(filename));
-}
+import { isTestFile } from "../utils/is-test-file.js";
 
 const TEST_FNS = new Set(["it", "test", "describe"]);
 const ALIASES: Record<string, "skip"> = {
