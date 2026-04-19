@@ -8,6 +8,7 @@ import noManualEnumCast from "./rules/no-manual-enum-cast.js";
 import noRawThrowNewError from "./rules/no-raw-throw-new-error.js";
 import noTestSkipOnly from "./rules/no-test-skip-only.js";
 import noVitestMocks from "./rules/no-vitest-mocks.js";
+import noHardcodedAssertionLiterals from "./rules/no-hardcoded-assertion-literals.js";
 import noRawSql from "./rules/no-raw-sql.js";
 import promiseType from "./rules/promise-type.js";
 import recordCast from "./rules/record-cast.js";
@@ -26,6 +27,7 @@ const rules = {
   "no-raw-throw-new-error": noRawThrowNewError,
   "no-test-skip-only": noTestSkipOnly,
   "no-coverage-threshold-gate": noCoverageThresholdGate,
+  "no-hardcoded-assertion-literals": noHardcodedAssertionLiterals,
 } as const;
 
 const require = createRequire(import.meta.url);
@@ -68,6 +70,7 @@ const plugin: Plugin = {
         "safer-by-default/no-raw-throw-new-error": "error",
         "safer-by-default/no-test-skip-only": "error",
         "safer-by-default/no-coverage-threshold-gate": "warn",
+        "safer-by-default/no-hardcoded-assertion-literals": "warn",
       },
     },
     integrationTests: {
