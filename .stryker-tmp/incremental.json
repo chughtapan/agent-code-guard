@@ -1,0 +1,2167 @@
+{
+  "files": {
+    "src/rules/promise-type.ts": {
+      "language": "typescript",
+      "mutants": [
+        {
+          "id": "0",
+          "mutatorName": "BlockStatement",
+          "replacement": "{}",
+          "statusReason": "src/rules/promise-type.ts(5,55): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 2,
+              "line": 11
+            },
+            "start": {
+              "column": 63,
+              "line": 5
+            }
+          }
+        },
+        {
+          "id": "1",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "true",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: '@rule-tester/promise-type',\n    severity: 2,\n    message: 'Promise<> return type — prefer Effect',\n    line: 1,\n    column: 15,\n    nodeType: 'TSTypeReference',\n    messageId: 'promiseReturn',\n    endLine: 1,\n    endColumn: 34\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 3,
+          "static": false,
+          "killedBy": [
+            "13"
+          ],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 37,
+              "line": 9
+            },
+            "start": {
+              "column": 5,
+              "line": 7
+            }
+          }
+        },
+        {
+          "id": "2",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "false",
+          "statusReason": "Property failed after 1 tests\n{ seed: 2133280523, path: \"0:0:0\", endOnFailure: true }\nCounterexample: [\"\",\"a\"]\nShrunk 2 time(s)\n\nHint: Enable verbose mode in order to have the list of all failing values encountered during the run",
+          "status": "Killed",
+          "testsCompleted": 1,
+          "static": false,
+          "killedBy": [
+            "2"
+          ],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 37,
+              "line": 9
+            },
+            "start": {
+              "column": 5,
+              "line": 7
+            }
+          }
+        },
+        {
+          "id": "3",
+          "mutatorName": "LogicalOperator",
+          "replacement": "node.type === AST_NODE_TYPES.TSTypeReference && node.typeName.type === AST_NODE_TYPES.Identifier || node.typeName.name === \"Promise\"",
+          "statusReason": "src/rules/promise-type.ts(7,110): error TS2339: Property 'typeName' does not exist on type 'Node'.\n  Property 'typeName' does not exist on type 'AccessorPropertyComputedName'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 37,
+              "line": 9
+            },
+            "start": {
+              "column": 5,
+              "line": 7
+            }
+          }
+        },
+        {
+          "id": "4",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "true",
+          "statusReason": "src/rules/promise-type.ts(8,10): error TS2339: Property 'typeName' does not exist on type 'Node'.\n  Property 'typeName' does not exist on type 'AccessorPropertyComputedName'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 53,
+              "line": 8
+            },
+            "start": {
+              "column": 5,
+              "line": 7
+            }
+          }
+        },
+        {
+          "id": "5",
+          "mutatorName": "LogicalOperator",
+          "replacement": "node.type === AST_NODE_TYPES.TSTypeReference || node.typeName.type === AST_NODE_TYPES.Identifier",
+          "statusReason": "src/rules/promise-type.ts(7,58): error TS2339: Property 'typeName' does not exist on type 'AccessorProperty | ArrayExpression | ArrayPattern | ArrowFunctionExpression | AssignmentExpression | ... 161 more ... | YieldExpression'.\n  Property 'typeName' does not exist on type 'AccessorPropertyComputedName'.\nsrc/rules/promise-type.ts(8,10): error TS2339: Property 'typeName' does not exist on type 'AccessorProperty | ArrayExpression | ArrayPattern | ArrowFunctionExpression | AssignmentExpression | ... 161 more ... | YieldExpression'.\n  Property 'typeName' does not exist on type 'AccessorPropertyComputedName'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 53,
+              "line": 8
+            },
+            "start": {
+              "column": 5,
+              "line": 7
+            }
+          }
+        },
+        {
+          "id": "6",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "true",
+          "statusReason": "src/rules/promise-type.ts(8,10): error TS2339: Property 'typeName' does not exist on type 'Node'.\n  Property 'typeName' does not exist on type 'AccessorPropertyComputedName'.\nsrc/rules/promise-type.ts(9,10): error TS2339: Property 'typeName' does not exist on type 'Node'.\n  Property 'typeName' does not exist on type 'AccessorPropertyComputedName'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 49,
+              "line": 7
+            },
+            "start": {
+              "column": 5,
+              "line": 7
+            }
+          }
+        },
+        {
+          "id": "7",
+          "mutatorName": "EqualityOperator",
+          "replacement": "node.type !== AST_NODE_TYPES.TSTypeReference",
+          "statusReason": "src/rules/promise-type.ts(8,10): error TS2339: Property 'typeName' does not exist on type 'AccessorProperty | ArrayExpression | ArrayPattern | ArrowFunctionExpression | AssignmentExpression | ... 161 more ... | YieldExpression'.\n  Property 'typeName' does not exist on type 'AccessorPropertyComputedName'.\nsrc/rules/promise-type.ts(9,10): error TS2339: Property 'typeName' does not exist on type 'AccessorProperty | ArrayExpression | ArrayPattern | ArrowFunctionExpression | AssignmentExpression | ... 161 more ... | YieldExpression'.\n  Property 'typeName' does not exist on type 'AccessorPropertyComputedName'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 49,
+              "line": 7
+            },
+            "start": {
+              "column": 5,
+              "line": 7
+            }
+          }
+        },
+        {
+          "id": "8",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "true",
+          "statusReason": "src/rules/promise-type.ts(9,19): error TS2339: Property 'name' does not exist on type 'EntityName'.\n  Property 'name' does not exist on type 'ThisExpression'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 53,
+              "line": 8
+            },
+            "start": {
+              "column": 5,
+              "line": 8
+            }
+          }
+        },
+        {
+          "id": "9",
+          "mutatorName": "EqualityOperator",
+          "replacement": "node.typeName.type !== AST_NODE_TYPES.Identifier",
+          "statusReason": "src/rules/promise-type.ts(9,19): error TS2339: Property 'name' does not exist on type 'ThisExpression | TSQualifiedName'.\n  Property 'name' does not exist on type 'ThisExpression'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 53,
+              "line": 8
+            },
+            "start": {
+              "column": 5,
+              "line": 8
+            }
+          }
+        },
+        {
+          "id": "10",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "true",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: '@rule-tester/promise-type',\n    severity: 2,\n    message: 'Promise<> return type — prefer Effect',\n    line: 1,\n    column: 15,\n    nodeType: 'TSTypeReference',\n    messageId: 'promiseReturn',\n    endLine: 1,\n    endColumn: 34\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 3,
+          "static": false,
+          "killedBy": [
+            "13"
+          ],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 37,
+              "line": 9
+            },
+            "start": {
+              "column": 5,
+              "line": 9
+            }
+          }
+        },
+        {
+          "id": "11",
+          "mutatorName": "EqualityOperator",
+          "replacement": "node.typeName.name !== \"Promise\"",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: '@rule-tester/promise-type',\n    severity: 2,\n    message: 'Promise<> return type — prefer Effect',\n    line: 1,\n    column: 15,\n    nodeType: 'TSTypeReference',\n    messageId: 'promiseReturn',\n    endLine: 1,\n    endColumn: 34\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 1,
+          "static": false,
+          "killedBy": [
+            "13"
+          ],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 37,
+              "line": 9
+            },
+            "start": {
+              "column": 5,
+              "line": 9
+            }
+          }
+        },
+        {
+          "id": "12",
+          "mutatorName": "StringLiteral",
+          "replacement": "\"\"",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: null,\n    message: \"Unused eslint-disable directive (no problems were reported from '@rule-tester/promise-type').\",\n    line: 1,\n    column: 1,\n    severity: 1,\n    nodeType: null,\n    fix: { range: [Array], text: ' ' }\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 9,
+          "static": false,
+          "killedBy": [
+            "23"
+          ],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 37,
+              "line": 9
+            },
+            "start": {
+              "column": 28,
+              "line": 9
+            }
+          }
+        },
+        {
+          "id": "13",
+          "mutatorName": "BlockStatement",
+          "replacement": "{}",
+          "statusReason": "src/rules/promise-type.ts(15,4): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 2,
+              "line": 35
+            },
+            "start": {
+              "column": 12,
+              "line": 15
+            }
+          }
+        },
+        {
+          "id": "14",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "true",
+          "statusReason": "src/rules/promise-type.ts(23,11): error TS18048: 'owner' is possibly 'undefined'.\nsrc/rules/promise-type.ts(31,14): error TS18048: 'owner' is possibly 'undefined'.\nsrc/rules/promise-type.ts(31,20): error TS2339: Property 'returnType' does not exist on type 'TSTypeReference | AccessorPropertyComputedName | AccessorPropertyNonComputedName | ArrayExpression | ... 204 more ... | YieldExpression'.\n  Property 'returnType' does not exist on type 'TSTypeReference'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 73,
+              "line": 17
+            },
+            "start": {
+              "column": 7,
+              "line": 17
+            }
+          }
+        },
+        {
+          "id": "15",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "false",
+          "status": "Survived",
+          "testsCompleted": 19,
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 73,
+              "line": 17
+            },
+            "start": {
+              "column": 7,
+              "line": 17
+            }
+          }
+        },
+        {
+          "id": "16",
+          "mutatorName": "LogicalOperator",
+          "replacement": "!annotation && annotation.type !== AST_NODE_TYPES.TSTypeAnnotation",
+          "statusReason": "src/rules/promise-type.ts(17,33): error TS2339: Property 'type' does not exist on type 'never'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 73,
+              "line": 17
+            },
+            "start": {
+              "column": 7,
+              "line": 17
+            }
+          }
+        },
+        {
+          "id": "17",
+          "mutatorName": "BooleanLiteral",
+          "replacement": "annotation",
+          "statusReason": "src/rules/promise-type.ts(17,32): error TS2339: Property 'type' does not exist on type 'never'.\nsrc/rules/promise-type.ts(20,28): error TS2339: Property 'parent' does not exist on type 'never'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 18,
+              "line": 17
+            },
+            "start": {
+              "column": 7,
+              "line": 17
+            }
+          }
+        },
+        {
+          "id": "18",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "false",
+          "status": "Survived",
+          "testsCompleted": 19,
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 73,
+              "line": 17
+            },
+            "start": {
+              "column": 22,
+              "line": 17
+            }
+          }
+        },
+        {
+          "id": "19",
+          "mutatorName": "EqualityOperator",
+          "replacement": "annotation.type === AST_NODE_TYPES.TSTypeAnnotation",
+          "statusReason": "src/rules/promise-type.ts(31,14): error TS2367: This comparison appears to be unintentional because the types 'TSTypeAnnotation | undefined' and 'TSTypeReference | AccessorProperty | ArrayExpression | ArrayPattern | ArrowFunctionExpression | ... 160 more ... | YieldExpression' have no overlap.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 73,
+              "line": 17
+            },
+            "start": {
+              "column": 22,
+              "line": 17
+            }
+          }
+        },
+        {
+          "id": "20",
+          "mutatorName": "BlockStatement",
+          "replacement": "{}",
+          "status": "Survived",
+          "testsCompleted": 5,
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "15",
+            "16",
+            "20",
+            "21",
+            "24"
+          ],
+          "location": {
+            "end": {
+              "column": 4,
+              "line": 19
+            },
+            "start": {
+              "column": 75,
+              "line": 17
+            }
+          }
+        },
+        {
+          "id": "21",
+          "mutatorName": "BooleanLiteral",
+          "replacement": "true",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: '@rule-tester/promise-type',\n    severity: 2,\n    message: 'Promise<> return type — prefer Effect',\n    line: 1,\n    column: 22,\n    nodeType: 'TSTypeReference',\n    messageId: 'promiseReturn',\n    endLine: 1,\n    endColumn: 37\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 1,
+          "static": false,
+          "killedBy": [
+            "15"
+          ],
+          "coveredBy": [
+            "15",
+            "16",
+            "20",
+            "21",
+            "24"
+          ],
+          "location": {
+            "end": {
+              "column": 17,
+              "line": 18
+            },
+            "start": {
+              "column": 12,
+              "line": 18
+            }
+          }
+        },
+        {
+          "id": "22",
+          "mutatorName": "BooleanLiteral",
+          "replacement": "owner",
+          "statusReason": "src/rules/promise-type.ts(23,17): error TS2339: Property 'type' does not exist on type 'never'.\nsrc/rules/promise-type.ts(31,20): error TS2339: Property 'returnType' does not exist on type 'never'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "17",
+            "18",
+            "19",
+            "23",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 13,
+              "line": 21
+            },
+            "start": {
+              "column": 7,
+              "line": 21
+            }
+          }
+        },
+        {
+          "id": "23",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "true",
+          "statusReason": "src/rules/promise-type.ts(31,20): error TS2339: Property 'returnType' does not exist on type 'Node'.\n  Property 'returnType' does not exist on type 'TSTypeReference'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "17",
+            "18",
+            "19",
+            "23",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 13,
+              "line": 21
+            },
+            "start": {
+              "column": 7,
+              "line": 21
+            }
+          }
+        },
+        {
+          "id": "24",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "false",
+          "status": "Survived",
+          "testsCompleted": 14,
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "17",
+            "18",
+            "19",
+            "23",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 13,
+              "line": 21
+            },
+            "start": {
+              "column": 7,
+              "line": 21
+            }
+          }
+        },
+        {
+          "id": "25",
+          "mutatorName": "BooleanLiteral",
+          "replacement": "true",
+          "status": "NoCoverage",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 27,
+              "line": 21
+            },
+            "start": {
+              "column": 22,
+              "line": 21
+            }
+          }
+        },
+        {
+          "id": "26",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "case AST_NODE_TYPES.TSEmptyBodyFunctionExpression:",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: null,\n    message: \"Unused eslint-disable directive (no problems were reported from '@rule-tester/promise-type').\",\n    line: 1,\n    column: 1,\n    severity: 1,\n    nodeType: null,\n    fix: { range: [Array], text: ' ' }\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 1,
+          "static": false,
+          "killedBy": [
+            "23"
+          ],
+          "coveredBy": [
+            "2",
+            "23",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 46,
+              "line": 31
+            },
+            "start": {
+              "column": 5,
+              "line": 30
+            }
+          }
+        },
+        {
+          "id": "27",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "true",
+          "status": "Survived",
+          "testsCompleted": 11,
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "23",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 45,
+              "line": 31
+            },
+            "start": {
+              "column": 14,
+              "line": 31
+            }
+          }
+        },
+        {
+          "id": "28",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "false",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: null,\n    message: \"Unused eslint-disable directive (no problems were reported from '@rule-tester/promise-type').\",\n    line: 1,\n    column: 1,\n    severity: 1,\n    nodeType: null,\n    fix: { range: [Array], text: ' ' }\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 1,
+          "static": false,
+          "killedBy": [
+            "23"
+          ],
+          "coveredBy": [
+            "2",
+            "23",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 45,
+              "line": 31
+            },
+            "start": {
+              "column": 14,
+              "line": 31
+            }
+          }
+        },
+        {
+          "id": "29",
+          "mutatorName": "EqualityOperator",
+          "replacement": "owner.returnType !== annotation",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: null,\n    message: \"Unused eslint-disable directive (no problems were reported from '@rule-tester/promise-type').\",\n    line: 1,\n    column: 1,\n    severity: 1,\n    nodeType: null,\n    fix: { range: [Array], text: ' ' }\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 1,
+          "static": false,
+          "killedBy": [
+            "23"
+          ],
+          "coveredBy": [
+            "2",
+            "23",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 45,
+              "line": 31
+            },
+            "start": {
+              "column": 14,
+              "line": 31
+            }
+          }
+        },
+        {
+          "id": "30",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "default:",
+          "statusReason": "src/rules/promise-type.ts(15,4): error TS2366: Function lacks ending return statement and return type does not include 'undefined'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "17",
+            "18",
+            "19"
+          ],
+          "location": {
+            "end": {
+              "column": 20,
+              "line": 33
+            },
+            "start": {
+              "column": 5,
+              "line": 32
+            }
+          }
+        },
+        {
+          "id": "31",
+          "mutatorName": "BooleanLiteral",
+          "replacement": "true",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: '@rule-tester/promise-type',\n    severity: 2,\n    message: 'Promise<> return type — prefer Effect',\n    line: 1,\n    column: 10,\n    nodeType: 'TSTypeReference',\n    messageId: 'promiseReturn',\n    endLine: 1,\n    endColumn: 25\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 1,
+          "static": false,
+          "killedBy": [
+            "17"
+          ],
+          "coveredBy": [
+            "17",
+            "18",
+            "19"
+          ],
+          "location": {
+            "end": {
+              "column": 19,
+              "line": 33
+            },
+            "start": {
+              "column": 14,
+              "line": 33
+            }
+          }
+        },
+        {
+          "id": "32",
+          "mutatorName": "ObjectLiteral",
+          "replacement": "{}",
+          "statusReason": "Static mutant (and \"ignoreStatic\" was enabled)",
+          "status": "Ignored",
+          "static": true,
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 2,
+              "line": 62
+            },
+            "start": {
+              "column": 27,
+              "line": 37
+            }
+          }
+        },
+        {
+          "id": "33",
+          "mutatorName": "StringLiteral",
+          "replacement": "\"\"",
+          "statusReason": "Static mutant (and \"ignoreStatic\" was enabled)",
+          "status": "Ignored",
+          "static": true,
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 23,
+              "line": 38
+            },
+            "start": {
+              "column": 9,
+              "line": 38
+            }
+          }
+        },
+        {
+          "id": "34",
+          "mutatorName": "ObjectLiteral",
+          "replacement": "{}",
+          "statusReason": "Static mutant (and \"ignoreStatic\" was enabled)",
+          "status": "Ignored",
+          "static": true,
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 4,
+              "line": 51
+            },
+            "start": {
+              "column": 9,
+              "line": 39
+            }
+          }
+        },
+        {
+          "id": "35",
+          "mutatorName": "StringLiteral",
+          "replacement": "\"\"",
+          "statusReason": "Static mutant (and \"ignoreStatic\" was enabled)",
+          "status": "Ignored",
+          "static": true,
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 20,
+              "line": 40
+            },
+            "start": {
+              "column": 11,
+              "line": 40
+            }
+          }
+        },
+        {
+          "id": "36",
+          "mutatorName": "ObjectLiteral",
+          "replacement": "{}",
+          "statusReason": "Static mutant (and \"ignoreStatic\" was enabled)",
+          "status": "Ignored",
+          "static": true,
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 6,
+              "line": 44
+            },
+            "start": {
+              "column": 11,
+              "line": 41
+            }
+          }
+        },
+        {
+          "id": "37",
+          "mutatorName": "StringLiteral",
+          "replacement": "\"\"",
+          "statusReason": "Static mutant (and \"ignoreStatic\" was enabled)",
+          "status": "Ignored",
+          "static": true,
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 77,
+              "line": 43
+            },
+            "start": {
+              "column": 9,
+              "line": 43
+            }
+          }
+        },
+        {
+          "id": "38",
+          "mutatorName": "ObjectLiteral",
+          "replacement": "{}",
+          "statusReason": "Static mutant (and \"ignoreStatic\" was enabled)",
+          "status": "Ignored",
+          "static": true,
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 6,
+              "line": 47
+            },
+            "start": {
+              "column": 15,
+              "line": 45
+            }
+          }
+        },
+        {
+          "id": "39",
+          "mutatorName": "StringLiteral",
+          "replacement": "\"\"",
+          "statusReason": "Static mutant (and \"ignoreStatic\" was enabled)",
+          "status": "Ignored",
+          "static": true,
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 61,
+              "line": 46
+            },
+            "start": {
+              "column": 22,
+              "line": 46
+            }
+          }
+        },
+        {
+          "id": "40",
+          "mutatorName": "ArrayDeclaration",
+          "replacement": "[\"Stryker was here\"]",
+          "statusReason": "Static mutant (and \"ignoreStatic\" was enabled)",
+          "status": "Ignored",
+          "static": true,
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 15,
+              "line": 48
+            },
+            "start": {
+              "column": 13,
+              "line": 48
+            }
+          }
+        },
+        {
+          "id": "41",
+          "mutatorName": "BooleanLiteral",
+          "replacement": "true",
+          "statusReason": "Static mutant (and \"ignoreStatic\" was enabled)",
+          "status": "Ignored",
+          "static": true,
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 26,
+              "line": 50
+            },
+            "start": {
+              "column": 21,
+              "line": 50
+            }
+          }
+        },
+        {
+          "id": "42",
+          "mutatorName": "ArrayDeclaration",
+          "replacement": "[\"Stryker was here\"]",
+          "statusReason": "Static mutant (and \"ignoreStatic\" was enabled)",
+          "status": "Ignored",
+          "static": true,
+          "coveredBy": [],
+          "location": {
+            "end": {
+              "column": 21,
+              "line": 52
+            },
+            "start": {
+              "column": 19,
+              "line": 52
+            }
+          }
+        },
+        {
+          "id": "43",
+          "mutatorName": "BlockStatement",
+          "replacement": "{}",
+          "statusReason": "src/rules/promise-type.ts(53,3): error TS2322: Type '(context: Readonly<RuleContext<\"promiseReturn\", []>>) => void' is not assignable to type '(context: Readonly<RuleContext<\"promiseReturn\", []>>, optionsWithDefault: readonly []) => RuleListener'.\n  Type 'void' is not assignable to type 'RuleListener'.\n    Type 'void' is not assignable to type 'RuleListenerBaseSelectors'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "22",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 4,
+              "line": 61
+            },
+            "start": {
+              "column": 19,
+              "line": 53
+            }
+          }
+        },
+        {
+          "id": "44",
+          "mutatorName": "ObjectLiteral",
+          "replacement": "{}",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: null,\n    message: \"Unused eslint-disable directive (no problems were reported from '@rule-tester/promise-type').\",\n    line: 1,\n    column: 1,\n    severity: 1,\n    nodeType: null,\n    fix: { range: [Array], text: ' ' }\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 11,
+          "static": false,
+          "killedBy": [
+            "23"
+          ],
+          "coveredBy": [
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "22",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 6,
+              "line": 60
+            },
+            "start": {
+              "column": 12,
+              "line": 54
+            }
+          }
+        },
+        {
+          "id": "45",
+          "mutatorName": "BlockStatement",
+          "replacement": "{}",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: null,\n    message: \"Unused eslint-disable directive (no problems were reported from '@rule-tester/promise-type').\",\n    line: 1,\n    column: 1,\n    severity: 1,\n    nodeType: null,\n    fix: { range: [Array], text: ' ' }\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 9,
+          "static": false,
+          "killedBy": [
+            "23"
+          ],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 8,
+              "line": 59
+            },
+            "start": {
+              "column": 29,
+              "line": 55
+            }
+          }
+        },
+        {
+          "id": "46",
+          "mutatorName": "BooleanLiteral",
+          "replacement": "isPromiseTypeReference(node)",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: '@rule-tester/promise-type',\n    severity: 2,\n    message: 'Promise<> return type — prefer Effect',\n    line: 1,\n    column: 15,\n    nodeType: 'TSTypeReference',\n    messageId: 'promiseReturn',\n    endLine: 1,\n    endColumn: 34\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 1,
+          "static": false,
+          "killedBy": [
+            "13"
+          ],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 42,
+              "line": 56
+            },
+            "start": {
+              "column": 13,
+              "line": 56
+            }
+          }
+        },
+        {
+          "id": "47",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "true",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: null,\n    message: \"Unused eslint-disable directive (no problems were reported from '@rule-tester/promise-type').\",\n    line: 1,\n    column: 1,\n    severity: 1,\n    nodeType: null,\n    fix: { range: [Array], text: ' ' }\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 9,
+          "static": false,
+          "killedBy": [
+            "23"
+          ],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 42,
+              "line": 56
+            },
+            "start": {
+              "column": 13,
+              "line": 56
+            }
+          }
+        },
+        {
+          "id": "48",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "false",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: '@rule-tester/promise-type',\n    severity: 2,\n    message: 'Promise<> return type — prefer Effect',\n    line: 1,\n    column: 15,\n    nodeType: 'TSTypeReference',\n    messageId: 'promiseReturn',\n    endLine: 1,\n    endColumn: 34\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 1,
+          "static": false,
+          "killedBy": [
+            "13"
+          ],
+          "coveredBy": [
+            "2",
+            "5",
+            "13",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 42,
+              "line": 56
+            },
+            "start": {
+              "column": 13,
+              "line": 56
+            }
+          }
+        },
+        {
+          "id": "49",
+          "mutatorName": "BooleanLiteral",
+          "replacement": "isReturnTypeAnnotation(node)",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: '@rule-tester/promise-type',\n    severity: 2,\n    message: 'Promise<> return type — prefer Effect',\n    line: 1,\n    column: 22,\n    nodeType: 'TSTypeReference',\n    messageId: 'promiseReturn',\n    endLine: 1,\n    endColumn: 37\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 1,
+          "static": false,
+          "killedBy": [
+            "15"
+          ],
+          "coveredBy": [
+            "2",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 42,
+              "line": 57
+            },
+            "start": {
+              "column": 13,
+              "line": 57
+            }
+          }
+        },
+        {
+          "id": "50",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "true",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: null,\n    message: \"Unused eslint-disable directive (no problems were reported from '@rule-tester/promise-type').\",\n    line: 1,\n    column: 1,\n    severity: 1,\n    nodeType: null,\n    fix: { range: [Array], text: ' ' }\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 8,
+          "static": false,
+          "killedBy": [
+            "23"
+          ],
+          "coveredBy": [
+            "2",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 42,
+              "line": 57
+            },
+            "start": {
+              "column": 13,
+              "line": 57
+            }
+          }
+        },
+        {
+          "id": "51",
+          "mutatorName": "ConditionalExpression",
+          "replacement": "false",
+          "statusReason": "Should have no errors but had 1: [\n  {\n    ruleId: '@rule-tester/promise-type',\n    severity: 2,\n    message: 'Promise<> return type — prefer Effect',\n    line: 1,\n    column: 22,\n    nodeType: 'TSTypeReference',\n    messageId: 'promiseReturn',\n    endLine: 1,\n    endColumn: 37\n  }\n]\n\n1 !== 0\n",
+          "status": "Killed",
+          "testsCompleted": 1,
+          "static": false,
+          "killedBy": [
+            "15"
+          ],
+          "coveredBy": [
+            "2",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 42,
+              "line": 57
+            },
+            "start": {
+              "column": 13,
+              "line": 57
+            }
+          }
+        },
+        {
+          "id": "52",
+          "mutatorName": "ObjectLiteral",
+          "replacement": "{}",
+          "statusReason": "src/rules/promise-type.ts(58,24): error TS2345: Argument of type '{}' is not assignable to parameter of type 'ReportDescriptor<\"promiseReturn\">'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "23",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 60,
+              "line": 58
+            },
+            "start": {
+              "column": 24,
+              "line": 58
+            }
+          }
+        },
+        {
+          "id": "53",
+          "mutatorName": "StringLiteral",
+          "replacement": "\"\"",
+          "statusReason": "src/rules/promise-type.ts(58,32): error TS2322: Type '\"\"' is not assignable to type '\"promiseReturn\"'.\n",
+          "status": "CompileError",
+          "static": false,
+          "killedBy": [],
+          "coveredBy": [
+            "2",
+            "23",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "30",
+            "31",
+            "32",
+            "33"
+          ],
+          "location": {
+            "end": {
+              "column": 58,
+              "line": 58
+            },
+            "start": {
+              "column": 43,
+              "line": 58
+            }
+          }
+        }
+      ],
+      "source": "import type { TSESTree } from \"@typescript-eslint/utils\";\nimport { AST_NODE_TYPES } from \"@typescript-eslint/utils\";\nimport { createRule } from \"../utils/create-rule.js\";\n\nfunction isPromiseTypeReference(node: TSESTree.Node): boolean {\n  return (\n    node.type === AST_NODE_TYPES.TSTypeReference &&\n    node.typeName.type === AST_NODE_TYPES.Identifier &&\n    node.typeName.name === \"Promise\"\n  );\n}\n\nfunction isReturnTypeAnnotation(\n  node: TSESTree.TSTypeReference,\n): boolean {\n  const annotation = node.parent;\n  if (!annotation || annotation.type !== AST_NODE_TYPES.TSTypeAnnotation) {\n    return false;\n  }\n  const owner = annotation.parent;\n  if (!owner) return false;\n\n  switch (owner.type) {\n    case AST_NODE_TYPES.FunctionDeclaration:\n    case AST_NODE_TYPES.FunctionExpression:\n    case AST_NODE_TYPES.ArrowFunctionExpression:\n    case AST_NODE_TYPES.TSFunctionType:\n    case AST_NODE_TYPES.TSMethodSignature:\n    case AST_NODE_TYPES.TSDeclareFunction:\n    case AST_NODE_TYPES.TSEmptyBodyFunctionExpression:\n      return owner.returnType === annotation;\n    default:\n      return false;\n  }\n}\n\nexport default createRule({\n  name: \"promise-type\",\n  meta: {\n    type: \"problem\",\n    docs: {\n      description:\n        \"Flag `Promise<...>` used as a function return type. Prefer Effect.\",\n    },\n    messages: {\n      promiseReturn: \"Promise<> return type — prefer Effect\",\n    },\n    schema: [],\n    fixable: undefined,\n    hasSuggestions: false,\n  },\n  defaultOptions: [],\n  create(context) {\n    return {\n      TSTypeReference(node) {\n        if (!isPromiseTypeReference(node)) return;\n        if (!isReturnTypeAnnotation(node)) return;\n        context.report({ node, messageId: \"promiseReturn\" });\n      },\n    };\n  },\n});\n"
+    }
+  },
+  "schemaVersion": "1.0",
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 50
+  },
+  "testFiles": {
+    "tests/property/rule-correctness.test.ts": {
+      "tests": [
+        {
+          "id": "0",
+          "name": "property: rule correctness Property 1: no recommended rule fires on safe TS sources"
+        },
+        {
+          "id": "1",
+          "name": "property: rule correctness Property 2: safer-by-default/async-keyword fires on its anti-pattern across mutations"
+        },
+        {
+          "id": "2",
+          "name": "property: rule correctness Property 2: safer-by-default/promise-type fires on its anti-pattern across mutations"
+        },
+        {
+          "id": "3",
+          "name": "property: rule correctness Property 2: safer-by-default/then-chain fires on its anti-pattern across mutations"
+        },
+        {
+          "id": "4",
+          "name": "property: rule correctness Property 2: safer-by-default/bare-catch fires on its anti-pattern across mutations"
+        },
+        {
+          "id": "5",
+          "name": "property: rule correctness Property 2: safer-by-default/record-cast fires on its anti-pattern across mutations"
+        },
+        {
+          "id": "6",
+          "name": "property: rule correctness Property 2: safer-by-default/no-raw-sql fires on its anti-pattern across mutations"
+        },
+        {
+          "id": "7",
+          "name": "property: rule correctness Property 2: safer-by-default/no-manual-enum-cast fires on its anti-pattern across mutations"
+        },
+        {
+          "id": "8",
+          "name": "property: rule correctness Property 2: safer-by-default/no-hardcoded-secrets fires on its anti-pattern across mutations"
+        },
+        {
+          "id": "9",
+          "name": "property: rule correctness Property 2: safer-by-default/no-raw-throw-new-error fires on its anti-pattern across mutations"
+        },
+        {
+          "id": "10",
+          "name": "property: rule correctness Property 2: safer-by-default/no-test-skip-only fires on its anti-pattern across mutations"
+        },
+        {
+          "id": "11",
+          "name": "property: rule correctness Property 2: safer-by-default/no-coverage-threshold-gate fires on its anti-pattern across mutations"
+        },
+        {
+          "id": "12",
+          "name": "property: rule correctness Property 3: fixer idempotence (skipped if no fixable rules)"
+        }
+      ],
+      "source": "import { Linter } from \"eslint\";\nimport * as tsParser from \"@typescript-eslint/parser\";\nimport * as fc from \"fast-check\";\nimport * as ts from \"typescript\";\nimport { describe, expect, it } from \"vitest\";\nimport plugin from \"../../src/index.js\";\n\nconst RECOMMENDED_RULE_IDS = Object.keys(plugin.configs.recommended.rules);\n\nfunction baseConfig(rules: Linter.RulesRecord): Linter.Config {\n  return {\n    files: [\"**/*.ts\", \"**/*.js\"],\n    languageOptions: {\n      parser: tsParser as unknown as Linter.Parser,\n      parserOptions: { ecmaVersion: 2022, sourceType: \"module\" },\n    },\n    plugins: { \"safer-by-default\": plugin as unknown as NonNullable<Linter.Config[\"plugins\"]>[string] },\n    rules,\n  };\n}\n\nconst linter = new Linter();\n\nfunction lintAll(code: string, filename: string = \"test.ts\"): Linter.LintMessage[] {\n  return linter.verify(code, baseConfig(plugin.configs.recommended.rules), {\n    filename,\n  });\n}\n\nfunction lintOne(code: string, ruleId: string, filename: string = \"test.ts\"): Linter.LintMessage[] {\n  return linter.verify(code, baseConfig({ [ruleId]: \"error\" }), {\n    filename,\n  });\n}\n\nfunction isSyntacticallyValid(code: string): boolean {\n  const sf = ts.createSourceFile(\n    \"test.ts\",\n    code,\n    ts.ScriptTarget.Latest,\n    false,\n    ts.ScriptKind.TS,\n  );\n  const diags = (sf as unknown as { parseDiagnostics?: readonly ts.Diagnostic[] })\n    .parseDiagnostics;\n  return !diags || diags.length === 0;\n}\n\n// Safe-grammar generator: syntactically valid TS sources that should not trip\n// any recommended rule. Narrow shapes only: literal const decls, typed decls,\n// and plain (non-async) function decls.\nconst identArb = fc\n  .stringMatching(/^[a-z][a-zA-Z0-9]{0,7}$/)\n  .filter((s) => !RESERVED.has(s));\n\nconst RESERVED = new Set([\n  \"async\", \"await\", \"break\", \"case\", \"catch\", \"class\", \"const\", \"continue\",\n  \"debugger\", \"default\", \"delete\", \"do\", \"else\", \"enum\", \"export\", \"extends\",\n  \"false\", \"finally\", \"for\", \"function\", \"if\", \"import\", \"in\", \"instanceof\",\n  \"let\", \"new\", \"null\", \"of\", \"return\", \"super\", \"switch\", \"this\", \"throw\",\n  \"true\", \"try\", \"typeof\", \"var\", \"void\", \"while\", \"with\", \"yield\", \"as\",\n  \"then\", \"query\", \"mock\", \"spyOn\", \"hoisted\",\n]);\n\nconst safeStringArb = fc\n  .stringMatching(/^[a-z]{0,12}$/)\n  .map((s) => `\"${s}\"`);\nconst safeNumberArb = fc.integer({ min: 0, max: 1000 }).map((n) => String(n));\nconst safeBoolArb = fc.constantFrom(\"true\", \"false\");\n\nconst safeLiteralArb = fc.oneof(safeStringArb, safeNumberArb, safeBoolArb);\n\nconst literalDeclArb = fc\n  .tuple(identArb, safeLiteralArb)\n  .map(([id, lit]) => `const ${id} = ${lit};`);\n\nconst typedDeclArb = fc\n  .tuple(identArb, fc.constantFrom(\"number\", \"string\", \"boolean\"))\n  .chain(([id, ty]) => {\n    const litArb =\n      ty === \"number\" ? safeNumberArb : ty === \"string\" ? safeStringArb : safeBoolArb;\n    return litArb.map((lit) => `const ${id}: ${ty} = ${lit};`);\n  });\n\nconst plainFnArb = fc\n  .tuple(identArb, identArb, safeNumberArb)\n  .map(([fname, pname, n]) =>\n    `function ${fname}(${pname}: number): number { return ${pname} + ${n}; }`,\n  );\n\nconst safeStmtArb = fc.oneof(literalDeclArb, typedDeclArb, plainFnArb);\n\nconst safeSourceArb = fc\n  .array(safeStmtArb, { minLength: 1, maxLength: 5 })\n  .map((stmts) => stmts.join(\"\\n\"));\n\ndescribe(\"property: rule correctness\", () => {\n  it(\"Property 1: no recommended rule fires on safe TS sources\", () => {\n    fc.assert(\n      fc.property(safeSourceArb, (code) => {\n        if (!isSyntacticallyValid(code)) return; // skip, not fail\n        const messages = lintAll(code);\n        if (messages.length !== 0) {\n          throw new Error(\n            `Safe source produced ${messages.length} report(s):\\n` +\n              `--- source ---\\n${code}\\n--- reports ---\\n` +\n              messages\n                .map((m) => `  [${m.ruleId ?? \"?\"}] ${m.message}`)\n                .join(\"\\n\"),\n          );\n        }\n      }),\n      { numRuns: 200 },\n    );\n  });\n\n  // Seed anti-pattern per rule (lifted from the first invalid case of each\n  // rule's hand-written test). Also records ruleIds that may legitimately\n  // co-fire with the seed — empty for all current seeds, but kept as a slot\n  // so a reviewer can whitelist a future co-firing without loosening the\n  // assertion.\n  const SEEDS: ReadonlyArray<{\n    ruleId: string;\n    seed: string;\n    coFire: ReadonlyArray<string>;\n    filename?: string;\n  }> = [\n    { ruleId: \"safer-by-default/async-keyword\", seed: \"async function foo() {}\", coFire: [] },\n    {\n      ruleId: \"safer-by-default/promise-type\",\n      seed: \"function foo(): Promise<number> { return Promise.resolve(1); }\",\n      coFire: [],\n    },\n    {\n      ruleId: \"safer-by-default/then-chain\",\n      seed: \"Promise.resolve(1).then((v) => v);\",\n      coFire: [],\n    },\n    {\n      ruleId: \"safer-by-default/bare-catch\",\n      seed: \"try { doThing(); } catch {}\",\n      coFire: [],\n    },\n    {\n      ruleId: \"safer-by-default/record-cast\",\n      seed: \"const r = {} as Record<string, unknown>;\",\n      coFire: [],\n    },\n    {\n      ruleId: \"safer-by-default/no-raw-sql\",\n      seed: \"db.query('SELECT * FROM users');\",\n      coFire: [],\n    },\n    {\n      ruleId: \"safer-by-default/no-manual-enum-cast\",\n      seed: \"const s = x as 'active' | 'inactive';\",\n      coFire: [],\n    },\n    {\n      ruleId: \"safer-by-default/no-hardcoded-secrets\",\n      seed: \"const apiKey = 'sk_live_abc123xyz0987654321';\",\n      coFire: [],\n    },\n    {\n      ruleId: \"safer-by-default/no-raw-throw-new-error\",\n      seed: \"throw new Error('boom');\",\n      coFire: [],\n    },\n    {\n      ruleId: \"safer-by-default/no-test-skip-only\",\n      seed: \"it.skip('wip', () => {});\",\n      coFire: [],\n      filename: \"src/auth.test.ts\",\n    },\n    {\n      ruleId: \"safer-by-default/no-coverage-threshold-gate\",\n      seed: \"module.exports = { coverageThreshold: { global: { lines: 80 } } };\",\n      coFire: [],\n      filename: \"jest.config.js\",\n    },\n  ];\n\n  const renameArb = fc\n    .stringMatching(/^[a-z][a-zA-Z0-9]{0,6}$/)\n    .filter((s) => !RESERVED.has(s));\n\n  const paddingArb = fc.constantFrom(\"\", \" \", \"\\n\", \"  \", \"\\n\\n\", \"\\t\");\n\n  // Small, rule-preserving mutations: whitespace padding + identifier rename\n  // of a single target ident. Rename is applied as whole-word replace so\n  // substrings of keywords are untouched.\n  function mutate(seed: string, pad: string, ident: string, rename: string): string {\n    const renamed =\n      ident.length > 0\n        ? seed.replace(new RegExp(`\\\\b${escapeRegex(ident)}\\\\b`, \"g\"), rename)\n        : seed;\n    return `${pad}${renamed}${pad}`;\n  }\n\n  function escapeRegex(s: string): string {\n    return s.replace(/[.*+?^${}()|[\\]\\\\]/g, \"\\\\$&\");\n  }\n\n  const IDENTS_BY_SEED: Record<string, string> = {\n    \"safer-by-default/async-keyword\": \"foo\",\n    \"safer-by-default/promise-type\": \"foo\",\n    \"safer-by-default/then-chain\": \"\", // no rename target — `.then` is the trigger\n    \"safer-by-default/bare-catch\": \"doThing\",\n    \"safer-by-default/record-cast\": \"r\",\n    \"safer-by-default/no-raw-sql\": \"db\",\n    \"safer-by-default/no-manual-enum-cast\": \"s\",\n    // Rename exercises the value-shape detector added in acg#10: the seed's\n    // LHS is `apiKey`, mutation renames it to a random non-secret-looking\n    // ident, and the rule still fires because `sk_live_...` matches the\n    // Stripe canonical shape regex.\n    \"safer-by-default/no-hardcoded-secrets\": \"apiKey\",\n    \"safer-by-default/no-raw-throw-new-error\": \"\",\n    \"safer-by-default/no-test-skip-only\": \"\",\n    \"safer-by-default/no-coverage-threshold-gate\": \"\",\n  };\n\n  for (const { ruleId, seed, coFire, filename } of SEEDS) {\n    it(`Property 2: ${ruleId} fires on its anti-pattern across mutations`, () => {\n      const targetIdent = IDENTS_BY_SEED[ruleId] ?? \"\";\n      fc.assert(\n        fc.property(paddingArb, renameArb, (pad, rename) => {\n          const code = mutate(seed, pad, targetIdent, rename);\n          if (!isSyntacticallyValid(code)) return;\n          const allMessages = lintAll(code, filename);\n          const firedIds = new Set(\n            allMessages\n              .map((m) => m.ruleId)\n              .filter((id): id is string => id != null),\n          );\n          const ownFired = firedIds.has(ruleId);\n          const unexpected = [...firedIds].filter(\n            (id) => id !== ruleId && !coFire.includes(id),\n          );\n          if (!ownFired || unexpected.length > 0) {\n            throw new Error(\n              `Mutation broke expectations for ${ruleId}:\\n` +\n                `--- source ---\\n${code}\\n` +\n                `--- own fired: ${ownFired} ---\\n` +\n                `--- unexpected: ${unexpected.join(\", \") || \"(none)\"} ---\\n` +\n                `--- all reports ---\\n` +\n                allMessages\n                  .map((m) => `  [${m.ruleId ?? \"?\"}] ${m.message}`)\n                  .join(\"\\n\"),\n            );\n          }\n        }),\n        { numRuns: 20 },\n      );\n    });\n  }\n\n  // Property 3: fixer idempotence. Scoped to rules that declare `fixable`.\n  // No recommended rule currently declares one — this is a guard that will\n  // light up once a fixer lands.\n  const FIXABLE_RULE_IDS = Object.entries(plugin.rules)\n    .filter(([, r]) => r.meta.fixable)\n    .map(([name]) => `safer-by-default/${name}`);\n\n  it(\"Property 3: fixer idempotence (skipped if no fixable rules)\", () => {\n    if (FIXABLE_RULE_IDS.length === 0) {\n      expect(FIXABLE_RULE_IDS).toHaveLength(0);\n      return;\n    }\n    for (const ruleId of FIXABLE_RULE_IDS) {\n      const entry = SEEDS.find((s) => s.ruleId === ruleId);\n      if (entry === undefined) continue;\n      const filename = entry.filename ?? \"test.ts\";\n      const { output } = linter.verifyAndFix(\n        entry.seed,\n        baseConfig({ [ruleId]: \"error\" }),\n        { filename },\n      );\n      const after = lintOne(output, ruleId, filename);\n      expect(after, `Fixer for ${ruleId} not idempotent: ${after.length} report(s) remain`).toHaveLength(0);\n    }\n  });\n});\n"
+    },
+    "tests/promise-type.test.ts": {
+      "tests": [
+        {
+          "id": "13",
+          "name": "promise-type valid function f(): Map<string, number> { return new Map(); }"
+        },
+        {
+          "id": "14",
+          "name": "promise-type valid function foo(): number { return 1; }"
+        },
+        {
+          "id": "15",
+          "name": "promise-type valid const m: Map<string, Promise<number>> = new Map();"
+        },
+        {
+          "id": "16",
+          "name": "promise-type valid type X = Promise<number>;"
+        },
+        {
+          "id": "17",
+          "name": "promise-type valid const p: Promise<number> = Promise.resolve(1);"
+        },
+        {
+          "id": "18",
+          "name": "promise-type valid function f(p: Promise<number>): void {}"
+        },
+        {
+          "id": "19",
+          "name": "promise-type valid const f = (p: Promise<number>): void => {};"
+        },
+        {
+          "id": "20",
+          "name": "promise-type valid function f(): Promise<number> | string { return ''; }"
+        },
+        {
+          "id": "21",
+          "name": "promise-type valid const f = (): Promise<number> | null => null;"
+        },
+        {
+          "id": "22",
+          "name": "promise-type valid function f() { return Promise.resolve(1); }"
+        },
+        {
+          "id": "23",
+          "name": "promise-type valid // eslint-disable-next-line @rule-tester/promise-type -- suppression test (real prefix in production is `safer-by-default/promise-type`)\nfunction suppressed(): Promise<number> { return Promise.resolve(1); }"
+        },
+        {
+          "id": "24",
+          "name": "promise-type valid function f(): Promise<number> & { tag: string } { return Promise.resolve(1) as any; }"
+        },
+        {
+          "id": "25",
+          "name": "promise-type invalid function foo(): Promise<number> { return Promise.resolve(1); }"
+        },
+        {
+          "id": "26",
+          "name": "promise-type invalid const foo = (): Promise<void> => Promise.resolve();"
+        },
+        {
+          "id": "27",
+          "name": "promise-type invalid class C { m(): Promise<number> { return Promise.resolve(1); } }"
+        },
+        {
+          "id": "28",
+          "name": "promise-type invalid const foo = function (): Promise<number> { return Promise.resolve(1); };"
+        },
+        {
+          "id": "29",
+          "name": "promise-type invalid declare function foo(): Promise<number>;"
+        },
+        {
+          "id": "30",
+          "name": "promise-type invalid interface I { m(): Promise<number>; }"
+        },
+        {
+          "id": "31",
+          "name": "promise-type invalid type F = () => Promise<number>;"
+        },
+        {
+          "id": "32",
+          "name": "promise-type invalid abstract class A { abstract m(): Promise<number>; }"
+        },
+        {
+          "id": "33",
+          "name": "promise-type invalid const g = async (): Promise<void> => {};"
+        }
+      ],
+      "source": "import { RuleTester } from \"@typescript-eslint/rule-tester\";\nimport { afterAll, describe, it } from \"vitest\";\nimport rule from \"../src/rules/promise-type.js\";\n\nRuleTester.afterAll = afterAll;\nRuleTester.it = it;\nRuleTester.itOnly = it.only;\nRuleTester.describe = describe;\n\nconst ruleTester = new RuleTester({\n  languageOptions: {\n    parser: require(\"@typescript-eslint/parser\"),\n    parserOptions: {\n      ecmaVersion: 2022,\n      sourceType: \"module\",\n    },\n  },\n});\n\nruleTester.run(\"promise-type\", rule, {\n  valid: [\n    // Non-Promise TSTypeReference in return position — kills lines 7-9 typeName.name→true\n    // mutation AND line 56 if(false)return mutation: if the isPromiseTypeReference guard is\n    // bypassed, isReturnTypeAnnotation returns true here and the rule would incorrectly fire.\n    { code: \"function f(): Map<string, number> { return new Map(); }\" },\n    // Existing: primitive return\n    { code: \"function foo(): number { return 1; }\" },\n    // Promise as generic argument (not return annotation) — not a function return\n    { code: \"const m: Map<string, Promise<number>> = new Map();\" },\n    // Promise in type alias — parent is TSTypeAliasDeclaration, not TSTypeAnnotation\n    { code: \"type X = Promise<number>;\" },\n    // Variable annotation with Promise — owner is VariableDeclarator, hits switch default.\n    // Kills the `default: return false → return true` mutation (lines 21/31/33).\n    { code: \"const p: Promise<number> = Promise.resolve(1);\" },\n    // Promise in parameter type — annotation IS TSTypeAnnotation but owner is the param\n    // identifier, not a function. Exercises non-return annotation path.\n    { code: \"function f(p: Promise<number>): void {}\" },\n    { code: \"const f = (p: Promise<number>): void => {};\" },\n    // Promise in union return type — TSTypeReference parent is TSUnionType, not\n    // TSTypeAnnotation. Exercises the annotation.type !== TSTypeAnnotation branch (line 17).\n    { code: \"function f(): Promise<number> | string { return ''; }\" },\n    { code: \"const f = (): Promise<number> | null => null;\" },\n    // Function with no return annotation — Promise only in body, no TSTypeReference visited\n    // for the function's return annotation at all.\n    { code: \"function f() { return Promise.resolve(1); }\" },\n    // Suppression test\n    {\n      code: \"// eslint-disable-next-line @rule-tester/promise-type -- suppression test (real prefix in production is `safer-by-default/promise-type`)\\nfunction suppressed(): Promise<number> { return Promise.resolve(1); }\",\n    },\n    // Promise nested in an intersection in return position — not direct annotation\n    { code: \"function f(): Promise<number> & { tag: string } { return Promise.resolve(1) as any; }\" },\n  ],\n  invalid: [\n    // FunctionDeclaration\n    {\n      code: \"function foo(): Promise<number> { return Promise.resolve(1); }\",\n      errors: [{ messageId: \"promiseReturn\" }],\n    },\n    // ArrowFunctionExpression\n    {\n      code: \"const foo = (): Promise<void> => Promise.resolve();\",\n      errors: [{ messageId: \"promiseReturn\" }],\n    },\n    // FunctionExpression inside class method\n    {\n      code: \"class C { m(): Promise<number> { return Promise.resolve(1); } }\",\n      errors: [{ messageId: \"promiseReturn\" }],\n    },\n    // FunctionExpression (named function expression)\n    {\n      code: \"const foo = function (): Promise<number> { return Promise.resolve(1); };\",\n      errors: [{ messageId: \"promiseReturn\" }],\n    },\n    // TSDeclareFunction\n    {\n      code: \"declare function foo(): Promise<number>;\",\n      errors: [{ messageId: \"promiseReturn\" }],\n    },\n    // TSMethodSignature\n    {\n      code: \"interface I { m(): Promise<number>; }\",\n      errors: [{ messageId: \"promiseReturn\" }],\n    },\n    // TSFunctionType — covers the no-cov TSFunctionType switch branch\n    {\n      code: \"type F = () => Promise<number>;\",\n      errors: [{ messageId: \"promiseReturn\" }],\n    },\n    // TSEmptyBodyFunctionExpression — abstract method covers no-cov branch\n    {\n      code: \"abstract class A { abstract m(): Promise<number>; }\",\n      errors: [{ messageId: \"promiseReturn\" }],\n    },\n    // async arrow — ensures async keyword does not suppress the rule\n    {\n      code: \"const g = async (): Promise<void> => {};\",\n      errors: [{ messageId: \"promiseReturn\" }],\n    },\n  ],\n});\n"
+    }
+  },
+  "projectRoot": "/home/tapanc/agent-code-guard",
+  "config": {
+    "mutate": [
+      "src/rules/promise-type.ts"
+    ],
+    "testRunner": "vitest",
+    "checkers": [
+      "typescript"
+    ],
+    "tsconfigFile": "tsconfig.json",
+    "plugins": [
+      "@stryker-mutator/vitest-runner",
+      "@stryker-mutator/typescript-checker"
+    ],
+    "thresholds": {
+      "high": 80,
+      "low": 60,
+      "break": 50
+    },
+    "reporters": [
+      "clear-text",
+      "html",
+      "progress"
+    ],
+    "ignoreStatic": true,
+    "incremental": true,
+    "incrementalFile": ".stryker-tmp/incremental.json",
+    "concurrency": 4,
+    "allowConsoleColors": true,
+    "checkerNodeArgs": [],
+    "commandRunner": {
+      "command": "npm test"
+    },
+    "coverageAnalysis": "perTest",
+    "clearTextReporter": {
+      "allowColor": true,
+      "allowEmojis": false,
+      "logTests": true,
+      "maxTestsToLog": 3,
+      "reportTests": true,
+      "reportMutants": true,
+      "reportScoreTable": true,
+      "skipFull": false
+    },
+    "dashboard": {
+      "baseUrl": "https://dashboard.stryker-mutator.io/api/reports",
+      "reportType": "full"
+    },
+    "dryRunOnly": false,
+    "eventReporter": {
+      "baseDir": "reports/mutation/events"
+    },
+    "ignorePatterns": [],
+    "force": false,
+    "fileLogLevel": "off",
+    "inPlace": false,
+    "logLevel": "info",
+    "maxConcurrentTestRunners": 9007199254740991,
+    "maxTestRunnerReuse": 0,
+    "mutator": {
+      "plugins": null,
+      "excludedMutations": []
+    },
+    "appendPlugins": [],
+    "htmlReporter": {
+      "fileName": "reports/mutation/mutation.html"
+    },
+    "jsonReporter": {
+      "fileName": "reports/mutation/mutation.json"
+    },
+    "disableTypeChecks": true,
+    "symlinkNodeModules": true,
+    "tempDirName": ".stryker-tmp",
+    "cleanTempDir": true,
+    "testRunnerNodeArgs": [],
+    "timeoutFactor": 1.5,
+    "timeoutMS": 5000,
+    "dryRunTimeoutMinutes": 5,
+    "warnings": true,
+    "disableBail": false,
+    "allowEmpty": false,
+    "ignorers": [],
+    "testFiles": [],
+    "vitest": {
+      "related": true
+    },
+    "typescriptChecker": {
+      "prioritizePerformanceOverAccuracy": true
+    }
+  },
+  "framework": {
+    "name": "StrykerJS",
+    "version": "9.6.1",
+    "branding": {
+      "homepageUrl": "https://stryker-mutator.io",
+      "imageUrl": "data:image/svg+xml;utf8,%3Csvg viewBox='0 0 1458 1458' xmlns='http://www.w3.org/2000/svg' fill-rule='evenodd' clip-rule='evenodd' stroke-linejoin='round' stroke-miterlimit='2'%3E%3Cpath fill='none' d='M0 0h1458v1458H0z'/%3E%3CclipPath id='a'%3E%3Cpath d='M0 0h1458v1458H0z'/%3E%3C/clipPath%3E%3Cg clip-path='url(%23a)'%3E%3Cpath d='M1458 729c0 402.655-326.345 729-729 729S0 1131.655 0 729C0 326.445 326.345 0 729 0s729 326.345 729 729' fill='%23e74c3c' fill-rule='nonzero'/%3E%3Cpath d='M778.349 1456.15L576.6 1254.401l233-105 85-78.668v-64.332l-257-257-44-187-50-208 251.806-82.793L1076.6 389.401l380.14 379.15c-19.681 367.728-311.914 663.049-678.391 687.599z' fill-opacity='.3'/%3E%3Cpath d='M753.4 329.503c41.79 0 74.579 7.83 97.925 25.444 23.571 18.015 41.69 43.956 55.167 77.097l11.662 28.679 165.733-58.183-14.137-32.13c-26.688-60.655-64.896-108.61-114.191-144.011-49.329-35.423-117.458-54.302-204.859-54.302-50.78 0-95.646 7.376-134.767 21.542-40.093 14.671-74.09 34.79-102.239 60.259-28.84 26.207-50.646 57.06-65.496 92.701-14.718 35.052-22.101 72.538-22.101 112.401 0 72.536 20.667 133.294 61.165 182.704 38.624 47.255 98.346 88.037 179.861 121.291 42.257 17.475 78.715 33.125 109.227 46.994 27.193 12.361 49.294 26.124 66.157 41.751 15.309 14.186 26.497 30.584 33.63 49.258 7.721 20.214 11.16 45.69 11.16 76.402 0 28.021-4.251 51.787-13.591 71.219-8.832 18.374-20.171 33.178-34.523 44.219-14.787 11.374-31.193 19.591-49.393 24.466-19.68 5.359-39.14 7.993-58.69 7.993-29.359 0-54.387-3.407-75.182-10.747-20.112-7.013-37.144-16.144-51.259-27.486-13.618-11.009-24.971-23.766-33.744-38.279-9.64-15.8-17.272-31.924-23.032-48.408l-10.965-31.376-161.669 60.585 10.734 30.124c10.191 28.601 24.197 56.228 42.059 82.748 18.208 27.144 41.322 51.369 69.525 72.745 27.695 21.075 60.904 38.218 99.481 51.041 37.777 12.664 82.004 19.159 132.552 19.159 49.998 0 95.818-8.321 137.611-24.622 42.228-16.471 78.436-38.992 108.835-67.291 30.719-28.597 54.631-62.103 71.834-100.642 17.263-38.56 25.923-79.392 25.923-122.248 0-54.339-8.368-100.37-24.208-138.32-16.29-38.759-38.252-71.661-65.948-98.797-26.965-26.418-58.269-48.835-93.858-67.175-33.655-17.241-69.196-33.11-106.593-47.533-35.934-13.429-65.822-26.601-89.948-39.525-22.153-11.868-40.009-24.21-53.547-37.309-11.429-11.13-19.83-23.678-24.718-37.664-5.413-15.49-7.98-33.423-7.98-53.577 0-40.883 11.293-71.522 37.086-90.539 28.443-20.825 64.985-30.658 109.311-30.658z' fill='%23f1c40f' fill-rule='nonzero'/%3E%3Cpath d='M720 0h18v113h-18zM1458 738v-18h-113v18h113zM720 1345h18v113h-18zM113 738v-18H0v18h113z'/%3E%3C/g%3E%3C/svg%3E"
+    },
+    "dependencies": {
+      "@stryker-mutator/typescript-checker": "9.6.1",
+      "typescript": "5.9.3"
+    }
+  }
+}

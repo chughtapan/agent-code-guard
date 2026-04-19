@@ -2,9 +2,11 @@
 
 ## [Unreleased]
 
+## [0.0.4] - 2026-04-19
+
 ### Changed
 
-- **Removed `.claude-plugin/` directory.** ACG is ESLint-plugin-only. The safer-by-default Claude Code plugin is distributed from [`chughtapan/safer-by-default`](https://github.com/chughtapan/safer-by-default). See the Companion section in README for installation details.
+- **BREAKING: Rule prefix normalized from `safer-by-default/*` to `agent-code-guard/*`.** Consumer configs must update `plugins: { 'safer-by-default': guard }` → `plugins: { 'agent-code-guard': guard }` and all rule IDs from `safer-by-default/<rule>` → `agent-code-guard/<rule>`. The rule namespace now matches the npm package name.
 
 ## [0.0.3] - 2026-04-18
 

@@ -39,7 +39,7 @@ const meta = {
 };
 
 interface PluginConfig {
-  plugins: { "safer-by-default": Plugin };
+  plugins: { "agent-code-guard": Plugin };
   rules: Record<string, TSESLint.Linter.RuleLevel>;
 }
 
@@ -57,32 +57,32 @@ const plugin: Plugin = {
   rules,
   configs: {
     recommended: {
-      plugins: { "safer-by-default": undefined as unknown as Plugin },
+      plugins: { "agent-code-guard": undefined as unknown as Plugin },
       rules: {
-        "safer-by-default/async-keyword": "error",
-        "safer-by-default/promise-type": "error",
-        "safer-by-default/then-chain": "error",
-        "safer-by-default/bare-catch": "error",
-        "safer-by-default/record-cast": "error",
-        "safer-by-default/no-raw-sql": "error",
-        "safer-by-default/no-manual-enum-cast": "error",
-        "safer-by-default/no-hardcoded-secrets": "error",
-        "safer-by-default/no-raw-throw-new-error": "error",
-        "safer-by-default/no-test-skip-only": "error",
-        "safer-by-default/no-coverage-threshold-gate": "warn",
-        "safer-by-default/no-hardcoded-assertion-literals": "warn",
+        "agent-code-guard/async-keyword": "error",
+        "agent-code-guard/promise-type": "error",
+        "agent-code-guard/then-chain": "error",
+        "agent-code-guard/bare-catch": "error",
+        "agent-code-guard/record-cast": "error",
+        "agent-code-guard/no-raw-sql": "error",
+        "agent-code-guard/no-manual-enum-cast": "error",
+        "agent-code-guard/no-hardcoded-secrets": "error",
+        "agent-code-guard/no-raw-throw-new-error": "error",
+        "agent-code-guard/no-test-skip-only": "error",
+        "agent-code-guard/no-coverage-threshold-gate": "warn",
+        "agent-code-guard/no-hardcoded-assertion-literals": "warn",
       },
     },
     integrationTests: {
-      plugins: { "safer-by-default": undefined as unknown as Plugin },
+      plugins: { "agent-code-guard": undefined as unknown as Plugin },
       rules: {
-        "safer-by-default/no-vitest-mocks": "error",
+        "agent-code-guard/no-vitest-mocks": "error",
       },
     },
   },
 };
 
-plugin.configs.recommended.plugins["safer-by-default"] = plugin;
-plugin.configs.integrationTests.plugins["safer-by-default"] = plugin;
+plugin.configs.recommended.plugins["agent-code-guard"] = plugin;
+plugin.configs.integrationTests.plugins["agent-code-guard"] = plugin;
 
 export default plugin;
