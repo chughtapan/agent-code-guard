@@ -32,7 +32,6 @@ export default createRule({
       TSAsExpression(node) {
         const target = node.typeAnnotation;
         if (target.type !== AST_NODE_TYPES.TSUnionType) return;
-        if (target.types.length < 2) return;
         if (!target.types.every(isStringLiteralType)) return;
         context.report({ node, messageId: "manualEnumCast" });
       },

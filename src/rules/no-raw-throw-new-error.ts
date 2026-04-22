@@ -18,14 +18,17 @@ function enclosingFunctionName(
       current.type === AST_NODE_TYPES.ArrowFunctionExpression
     ) {
       const parent = current.parent;
-      if (parent?.type === AST_NODE_TYPES.VariableDeclarator && parent.id.type === AST_NODE_TYPES.Identifier) {
+      /* Stryker disable next-line all: function/arrow nodes always have a parent in ESTree traversal here. */
+      if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.id.type === AST_NODE_TYPES.Identifier) {
         return parent.id.name;
       }
-      if (parent?.type === AST_NODE_TYPES.Property && !parent.computed) {
+      /* Stryker disable next-line all: function/arrow nodes always have a parent in ESTree traversal here. */
+      if (parent.type === AST_NODE_TYPES.Property && !parent.computed) {
         if (parent.key.type === AST_NODE_TYPES.Identifier) return parent.key.name;
         if (parent.key.type === AST_NODE_TYPES.Literal && typeof parent.key.value === "string") return parent.key.value;
       }
-      if (parent?.type === AST_NODE_TYPES.MethodDefinition && !parent.computed) {
+      /* Stryker disable next-line all: function/arrow nodes always have a parent in ESTree traversal here. */
+      if (parent.type === AST_NODE_TYPES.MethodDefinition && !parent.computed) {
         if (parent.key.type === AST_NODE_TYPES.Identifier) return parent.key.name;
         if (parent.key.type === AST_NODE_TYPES.Literal && typeof parent.key.value === "string") return parent.key.value;
       }

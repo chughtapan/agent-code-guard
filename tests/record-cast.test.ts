@@ -22,6 +22,11 @@ ruleTester.run("record-cast", rule, {
     { code: "const r = {} as Record<string, number>;" },
     { code: "const r = {} as { [k: string]: unknown };" },
     { code: "type R = Record<string, unknown>; const r: R = {};" },
+    { code: "const r = {} as Dictionary<string, unknown>;" },
+    { code: "const r = {} as Lib.Record<string, unknown>;" },
+    { code: "const r = {} as Record<string>;" },
+    { code: "const r = {} as Record<number, unknown>;" },
+    { code: "const r = {} as Record<string, any>;" },
     {
       code: "// eslint-disable-next-line @rule-tester/record-cast -- suppression test (real prefix in production is `agent-code-guard/record-cast`)\nconst r = {} as Record<string, unknown>;",
     },

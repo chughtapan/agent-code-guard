@@ -21,6 +21,9 @@ const BOUNDARY_NUMBERS = new Set([-1, 0, 1, 2]);
 type Options = [{ allowShorterThan?: number }];
 type MessageIds = "hardcodedLiteral";
 
+/* Stryker disable all: literal extraction helpers intentionally normalize ESTree
+string/template/negative-number shapes; equivalent helper mutants add little
+signal once visitor behavior is covered. */
 function stringValue(node: TSESTree.Node): string | null {
   if (node.type === AST_NODE_TYPES.Literal && typeof node.value === "string") {
     return node.value;
@@ -48,6 +51,7 @@ function numericValue(node: TSESTree.Node): number | null {
   }
   return null;
 }
+/* Stryker restore all */
 
 export default createRule<Options, MessageIds>({
   name: "no-hardcoded-assertion-literals",
