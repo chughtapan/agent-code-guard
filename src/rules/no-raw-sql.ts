@@ -9,7 +9,8 @@ function firstArgLooksLikeSql(arg: TSESTree.CallExpressionArgument): boolean {
     );
   }
   if (arg.type === AST_NODE_TYPES.TemplateLiteral) {
-    const head = arg.quasis[0]?.value.raw ?? "";
+    /* Stryker disable next-line all: TemplateLiteral always has at least one quasi. */
+    const head = arg.quasis[0].value.raw;
     return /\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|WITH)\b/i.test(
       head,
     );

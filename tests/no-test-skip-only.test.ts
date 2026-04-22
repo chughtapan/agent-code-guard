@@ -40,6 +40,22 @@ ruleTester.run("no-test-skip-only", rule, {
     },
     {
       filename: "/repo/src/auth.test.ts",
+      code: "suite.skip('wip', () => {});",
+    },
+    {
+      filename: "/repo/src/auth.test.ts",
+      code: "it['skip']('wip', () => {});",
+    },
+    {
+      filename: "/repo/src/auth.test.ts",
+      code: "it.each([1, 2])('ok %s', (n) => {});",
+    },
+    {
+      filename: "/repo/src/auth.test.ts",
+      code: "it.each`\n  a\n  1\n`('ok $a', ({ a }) => {});",
+    },
+    {
+      filename: "/repo/src/auth.test.ts",
       code: "xit('allowed', () => {});",
       options: [{ allow: ["skip"] }],
     },

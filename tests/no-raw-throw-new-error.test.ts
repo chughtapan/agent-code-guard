@@ -33,6 +33,14 @@ ruleTester.run("no-raw-throw-new-error", rule, {
       code: "class Exhaustive { absurd(x: never): never { throw new Error(String(x)); } }",
     },
     {
+      filename: "/repo/src/util.ts",
+      code: "const helpers = { absurd: (x: never): never => { throw new Error(String(x)); } };",
+    },
+    {
+      filename: "/repo/src/util.ts",
+      code: "const helpers = { 'absurd': (x: never): never => { throw new Error(String(x)); } };",
+    },
+    {
       filename: "/repo/src/__tests__/auth.ts",
       code: "throw new Error('fixture setup failed');",
     },
@@ -90,6 +98,21 @@ ruleTester.run("no-raw-throw-new-error", rule, {
     {
       filename: "/repo/src/auth.ts",
       code: "const fail = () => { throw new Error('x'); };",
+      errors: [{ messageId: "rawThrow", data: { ctor: "Error" } }],
+    },
+    {
+      filename: "/repo/src/auth.ts",
+      code: "Promise.resolve().then(function () { throw new Error('x'); });",
+      errors: [{ messageId: "rawThrow", data: { ctor: "Error" } }],
+    },
+    {
+      filename: "/repo/src/auth.ts",
+      code: "const helpers = { 1: (x: never): never => { throw new Error(String(x)); } };",
+      errors: [{ messageId: "rawThrow", data: { ctor: "Error" } }],
+    },
+    {
+      filename: "/repo/src/auth.ts",
+      code: "const helpers = { ['absurd']: (x: never): never => { throw new Error(String(x)); } };",
       errors: [{ messageId: "rawThrow", data: { ctor: "Error" } }],
     },
   ],
