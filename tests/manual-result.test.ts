@@ -32,6 +32,9 @@ ruleTester.run("manual-result", rule, {
       code: 'const result = Either.match({ onLeft: (left) => left, onRight: (right) => right })(either);',
     },
     {
+      code: "function project<T>(value: T) { return { ok: true as const, value }; }",
+    },
+    {
       code: "// eslint-disable-next-line @rule-tester/manual-result -- suppression test\ntype Result<T, E> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E };",
     },
   ],
@@ -66,6 +69,10 @@ ruleTester.run("manual-result", rule, {
         };
       `,
       errors: [{ messageId: "manualResult", data: { name: "helpers" } }],
+    },
+    {
+      code: "function ok<T>(value: T) { return { ok: true as const, value }; }",
+      errors: [{ messageId: "manualResult", data: { name: "ok" } }],
     },
   ],
 });
