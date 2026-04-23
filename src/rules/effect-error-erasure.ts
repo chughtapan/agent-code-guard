@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { isNamedMemberCall } from "../utils/ast-refinement.js";
 
 const GENERIC_ERROR_CTORS = new Set(["Error", "TypeError", "RangeError"]);
 
@@ -15,15 +16,7 @@ function isGenericErrorCtor(
 }
 
 function isEffectCall(node: TSESTree.CallExpression, name: string): boolean {
-  const callee = node.callee;
-  return (
-    callee.type === AST_NODE_TYPES.MemberExpression &&
-    !callee.computed &&
-    callee.object.type === AST_NODE_TYPES.Identifier &&
-    callee.object.name === "Effect" &&
-    callee.property.type === AST_NODE_TYPES.Identifier &&
-    callee.property.name === name
-  );
+  return isNamedMemberCall(node, "Effect", name);
 }
 
 function functionReturnsGenericError(

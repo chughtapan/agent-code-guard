@@ -1,5 +1,5 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { isNamedMemberCall } from "../utils/ast-refinement.js";
 
 export default createRule({
   name: "effect-promise",
@@ -21,22 +21,7 @@ export default createRule({
   create(context) {
     return {
       CallExpression(node) {
-        const callee = node.callee;
-        if (callee.type !== AST_NODE_TYPES.MemberExpression || callee.computed) {
-          return;
-        }
-        if (
-          callee.object.type !== AST_NODE_TYPES.Identifier ||
-          callee.object.name !== "Effect"
-        ) {
-          return;
-        }
-        if (
-          callee.property.type !== AST_NODE_TYPES.Identifier ||
-          callee.property.name !== "promise"
-        ) {
-          return;
-        }
+        if (!isNamedMemberCall(node, "Effect", "promise")) return;
         context.report({ node, messageId: "effectPromise" });
       },
     };

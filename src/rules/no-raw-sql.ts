@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { getFirst } from "../utils/ast-refinement.js";
 
 function firstArgLooksLikeSql(arg: TSESTree.CallExpressionArgument): boolean {
   if (arg.type === AST_NODE_TYPES.Literal && typeof arg.value === "string") {
@@ -9,10 +10,10 @@ function firstArgLooksLikeSql(arg: TSESTree.CallExpressionArgument): boolean {
     );
   }
   if (arg.type === AST_NODE_TYPES.TemplateLiteral) {
-    /* Stryker disable next-line all: TemplateLiteral always has at least one quasi. */
-    const head = arg.quasis[0].value.raw;
+    const head = getFirst(arg.quasis);
+    if (head === null) return false;
     return /\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|WITH)\b/i.test(
-      head,
+      head.value.raw,
     );
   }
   if (

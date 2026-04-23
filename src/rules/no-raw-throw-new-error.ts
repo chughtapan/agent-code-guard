@@ -2,42 +2,9 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
+import { getEnclosingFunctionName } from "../utils/ast-refinement.js";
 
 const ERROR_CTORS = new Set(["Error", "TypeError", "RangeError"]);
-
-function enclosingFunctionName(
-  node: TSESTree.Node,
-): string | null {
-  let current: TSESTree.Node | undefined = node.parent;
-  while (current) {
-    if (current.type === AST_NODE_TYPES.FunctionDeclaration) {
-      return current.id ? current.id.name : null;
-    }
-    if (
-      current.type === AST_NODE_TYPES.FunctionExpression ||
-      current.type === AST_NODE_TYPES.ArrowFunctionExpression
-    ) {
-      const parent = current.parent;
-      /* Stryker disable next-line all: function/arrow nodes always have a parent in ESTree traversal here. */
-      if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.id.type === AST_NODE_TYPES.Identifier) {
-        return parent.id.name;
-      }
-      /* Stryker disable next-line all: function/arrow nodes always have a parent in ESTree traversal here. */
-      if (parent.type === AST_NODE_TYPES.Property && !parent.computed) {
-        if (parent.key.type === AST_NODE_TYPES.Identifier) return parent.key.name;
-        if (parent.key.type === AST_NODE_TYPES.Literal && typeof parent.key.value === "string") return parent.key.value;
-      }
-      /* Stryker disable next-line all: function/arrow nodes always have a parent in ESTree traversal here. */
-      if (parent.type === AST_NODE_TYPES.MethodDefinition && !parent.computed) {
-        if (parent.key.type === AST_NODE_TYPES.Identifier) return parent.key.name;
-        if (parent.key.type === AST_NODE_TYPES.Literal && typeof parent.key.value === "string") return parent.key.value;
-      }
-      return null;
-    }
-    current = current.parent;
-  }
-  return null;
-}
 
 export default createRule({
   name: "no-raw-throw-new-error",
@@ -65,7 +32,7 @@ export default createRule({
         if (arg.callee.type !== AST_NODE_TYPES.Identifier) return;
         const ctor = arg.callee.name;
         if (!ERROR_CTORS.has(ctor)) return;
-        const fnName = enclosingFunctionName(node);
+        const fnName = getEnclosingFunctionName(node);
         if (fnName && fnName.startsWith("absurd")) return;
         context.report({
           node,

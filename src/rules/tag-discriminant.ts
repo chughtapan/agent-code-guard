@@ -1,6 +1,11 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import {
+  getStaticMemberPropertyName,
+  getStringLiteralValue,
+  getTagAccess,
+} from "../utils/ast-refinement.js";
 
 const ERROR_NAME_RE = /^(err|error)$|(?:Error|Failure|Failed|Exception)$/;
 const EQUALITY_OPERATORS = new Set(["==", "===", "!=", "!=="]);
@@ -9,17 +14,12 @@ function looksErrorLike(name: string | null): boolean {
   return typeof name === "string" && ERROR_NAME_RE.test(name);
 }
 
-/* Stryker disable all: helper normalization for chained/member `_tag` access is
-parser-shape plumbing; rule behavior is exercised via the visitor tests. */
 function getExpressionName(node: TSESTree.Expression): string | null {
   switch (node.type) {
     case AST_NODE_TYPES.Identifier:
       return node.name;
     case AST_NODE_TYPES.MemberExpression:
-      if (node.computed) return null;
-      return node.property.type === AST_NODE_TYPES.Identifier
-        ? node.property.name
-        : null;
+      return getStaticMemberPropertyName(node);
     case AST_NODE_TYPES.ChainExpression:
       return node.expression.type === AST_NODE_TYPES.MemberExpression
         ? getExpressionName(node.expression)
@@ -29,39 +29,15 @@ function getExpressionName(node: TSESTree.Expression): string | null {
   }
 }
 
-function unwrapTagAccess(node: TSESTree.Node): TSESTree.MemberExpression | null {
-  if (node.type === AST_NODE_TYPES.ChainExpression) {
-    return node.expression.type === AST_NODE_TYPES.MemberExpression
-      ? unwrapTagAccess(node.expression)
-      : null;
-  }
-  if (
-    node.type !== AST_NODE_TYPES.MemberExpression ||
-    node.computed ||
-    node.property.type !== AST_NODE_TYPES.Identifier ||
-    node.property.name !== "_tag"
-  ) {
-    return null;
-  }
-  return node;
-}
-
 function tagAccessLooksErrorLike(node: TSESTree.Node): boolean {
-  const member = unwrapTagAccess(node);
+  const member = getTagAccess(node);
   if (!member) return false;
   return looksErrorLike(getExpressionName(member.object));
 }
 
 function getStringLiteral(node: TSESTree.Node | null): string | null {
-  if (
-    node?.type === AST_NODE_TYPES.Literal &&
-    typeof node.value === "string"
-  ) {
-    return node.value;
-  }
-  return null;
+  return getStringLiteralValue(node);
 }
-/* Stryker restore all */
 
 export default createRule({
   name: "tag-discriminant",
@@ -88,19 +64,20 @@ export default createRule({
     return {
       BinaryExpression(node) {
         if (!EQUALITY_OPERATORS.has(node.operator)) return;
-        const leftTag = unwrapTagAccess(node.left);
-        const rightTag = unwrapTagAccess(node.right);
-        if ((leftTag === null) === (rightTag === null)) return;
+        const leftTag = getTagAccess(node.left);
+        const rightTag = getTagAccess(node.right);
+        if (leftTag !== null && rightTag !== null) return;
         const tagAccess = leftTag ?? rightTag;
         if (tagAccess === null) return;
-        const literal = getStringLiteral(leftTag ? node.right : node.left);
+        const literal = getStringLiteral(leftTag !== null ? node.right : node.left);
         if (literal === null) return;
         if (!tagAccessLooksErrorLike(tagAccess)) return;
         report(node);
       },
       SwitchStatement(node) {
-        if (unwrapTagAccess(node.discriminant) === null) return;
-        if (!tagAccessLooksErrorLike(node.discriminant)) return;
+        const discriminant = getTagAccess(node.discriminant);
+        if (discriminant === null) return;
+        if (!tagAccessLooksErrorLike(discriminant)) return;
         const hasStringCase = node.cases.some(
           (caseNode) => getStringLiteral(caseNode.test) !== null,
         );

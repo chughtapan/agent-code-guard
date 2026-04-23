@@ -1,6 +1,13 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import {
+  getParent,
+  getStaticMemberPropertyName,
+  getStaticStringKey,
+  getStringLiteralValue,
+  isNamedMemberCall,
+} from "../utils/ast-refinement.js";
 
 const ERROR_NAME_RE = /(Error|Failure|Failed|Exception)$/;
 
@@ -8,31 +15,10 @@ function looksErrorLike(name: string | null | undefined): boolean {
   return typeof name === "string" && ERROR_NAME_RE.test(name);
 }
 
-/* Stryker disable all: helper plumbing for static AST key/callee detection and
-ancestor walks has a high density of equivalent mutants; rule behavior is
-validated through top-level fixtures instead. */
-function getPropertyName(
-  key: TSESTree.Expression | TSESTree.PrivateIdentifier,
-  computed: boolean,
-): string | null {
-  if (!computed && key.type === AST_NODE_TYPES.Identifier) return key.name;
-  if (key.type === AST_NODE_TYPES.Literal && typeof key.value === "string") {
-    return key.value;
-  }
-  if (
-    computed &&
-    key.type === AST_NODE_TYPES.TemplateLiteral &&
-    key.expressions.length === 0
-  ) {
-    return key.quasis[0]?.value.cooked ?? null;
-  }
-  return null;
-}
-
 function classHasManualTagField(node: TSESTree.ClassDeclaration | TSESTree.ClassExpression): boolean {
   return node.body.body.some((member) => {
     if (member.type !== AST_NODE_TYPES.PropertyDefinition) return false;
-    return getPropertyName(member.key, member.computed) === "_tag";
+    return getStaticStringKey(member.key, member.computed) === "_tag";
   });
 }
 
@@ -44,12 +30,9 @@ function superClassLooksErrorLike(
   if (superClass.type === AST_NODE_TYPES.Identifier) {
     return superClass.name === "Error" || looksErrorLike(superClass.name);
   }
-  if (
-    superClass.type === AST_NODE_TYPES.MemberExpression &&
-    !superClass.computed &&
-    superClass.property.type === AST_NODE_TYPES.Identifier
-  ) {
-    const name = superClass.property.name;
+  if (superClass.type === AST_NODE_TYPES.MemberExpression) {
+    const name = getStaticMemberPropertyName(superClass);
+    if (name === null) return false;
     return name === "Error" || looksErrorLike(name);
   }
   return false;
@@ -57,7 +40,7 @@ function superClassLooksErrorLike(
 
 function typeElementIsTag(member: TSESTree.TypeElement): boolean {
   if (member.type !== AST_NODE_TYPES.TSPropertySignature) return false;
-  return getPropertyName(member.key, member.computed) === "_tag";
+  return getStaticStringKey(member.key, member.computed) === "_tag";
 }
 
 function typeContainsManualTag(node: TSESTree.TypeNode): boolean {
@@ -73,7 +56,7 @@ function typeContainsManualTag(node: TSESTree.TypeNode): boolean {
 }
 
 function objectPropertyIsTag(member: TSESTree.Property): boolean {
-  return getPropertyName(member.key, member.computed) === "_tag";
+  return getStaticStringKey(member.key, member.computed) === "_tag";
 }
 
 function objectHasManualTag(node: TSESTree.ObjectExpression): boolean {
@@ -87,13 +70,7 @@ function getObjectTagName(node: TSESTree.ObjectExpression): string | null {
   for (const member of node.properties) {
     if (member.type !== AST_NODE_TYPES.Property) continue;
     if (!objectPropertyIsTag(member)) continue;
-    if (
-      member.value.type === AST_NODE_TYPES.Literal &&
-      typeof member.value.value === "string"
-    ) {
-      return member.value.value;
-    }
-    return null;
+    return getStringLiteralValue(member.value);
   }
   return null;
 }
@@ -103,32 +80,21 @@ function newExpressionLooksErrorLike(node: TSESTree.NewExpression): boolean {
   if (callee.type === AST_NODE_TYPES.Identifier) {
     return callee.name === "Error" || looksErrorLike(callee.name);
   }
-  if (
-    callee.type === AST_NODE_TYPES.MemberExpression &&
-    !callee.computed &&
-    callee.property.type === AST_NODE_TYPES.Identifier
-  ) {
-    return callee.property.name === "Error" || looksErrorLike(callee.property.name);
+  if (callee.type === AST_NODE_TYPES.MemberExpression) {
+    const name = getStaticMemberPropertyName(callee);
+    return name === "Error" || looksErrorLike(name);
   }
   return false;
 }
 
 function isEffectFailCall(node: TSESTree.CallExpression): boolean {
-  const callee = node.callee;
-  return (
-    callee.type === AST_NODE_TYPES.MemberExpression &&
-    !callee.computed &&
-    callee.object.type === AST_NODE_TYPES.Identifier &&
-    callee.object.name === "Effect" &&
-    callee.property.type === AST_NODE_TYPES.Identifier &&
-    callee.property.name === "fail"
-  );
+  return isNamedMemberCall(node, "Effect", "fail");
 }
 
 function objectIsReturnedValue(node: TSESTree.ObjectExpression): boolean {
   let child: TSESTree.Node = node;
-  let current: TSESTree.Node | undefined = node.parent;
-  while (current) {
+  let current = getParent(node);
+  while (current !== null) {
     if (current.type === AST_NODE_TYPES.ReturnStatement) return true;
     if (
       current.type === AST_NODE_TYPES.ArrowFunctionExpression &&
@@ -145,14 +111,14 @@ function objectIsReturnedValue(node: TSESTree.ObjectExpression): boolean {
       return false;
     }
     child = current;
-    current = current.parent;
+    current = getParent(current);
   }
   return false;
 }
 
 function objectIsErrorPayload(node: TSESTree.ObjectExpression): boolean {
-  let current: TSESTree.Node | undefined = node.parent;
-  while (current) {
+  let current = getParent(node);
+  while (current !== null) {
     if (current.type === AST_NODE_TYPES.NewExpression && newExpressionLooksErrorLike(current)) {
       return true;
     }
@@ -166,11 +132,10 @@ function objectIsErrorPayload(node: TSESTree.ObjectExpression): boolean {
     ) {
       return false;
     }
-    current = current.parent;
+    current = getParent(current);
   }
   return false;
 }
-/* Stryker restore all */
 
 export default createRule({
   name: "manual-tagged-error",

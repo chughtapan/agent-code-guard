@@ -2,6 +2,7 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
+import { getStaticMemberPropertyName } from "../utils/ast-refinement.js";
 
 const TEST_FNS = new Set(["it", "test", "describe"]);
 const ALIASES: Record<string, "skip"> = {
@@ -16,18 +17,25 @@ export interface Options {
   allow?: Modifier[];
 }
 
-/* Stryker disable all: modifier extraction is AST-shape normalization for test
-call chains; branch-level mutants here are mostly equivalent to parser forms. */
 function extractModifier(node: TSESTree.Node): Modifier | null {
-  if (node.type !== AST_NODE_TYPES.MemberExpression || node.computed) return null;
-  if (node.property.type !== AST_NODE_TYPES.Identifier) return null;
-  const prop = node.property.name;
-  if (prop === "skip" || prop === "only") {
+  if (node.type !== AST_NODE_TYPES.MemberExpression) return null;
+  const prop = getStaticMemberPropertyName(node);
+  if (prop === null) return null;
+  if (prop === "skip") {
     if (
       node.object.type === AST_NODE_TYPES.Identifier &&
       TEST_FNS.has(node.object.name)
     ) {
-      return prop;
+      return "skip";
+    }
+    return null;
+  }
+  if (prop === "only") {
+    if (
+      node.object.type === AST_NODE_TYPES.Identifier &&
+      TEST_FNS.has(node.object.name)
+    ) {
+      return "only";
     }
     return null;
   }
@@ -37,7 +45,6 @@ function extractModifier(node: TSESTree.Node): Modifier | null {
   }
   return null;
 }
-/* Stryker restore all */
 
 export default createRule<[Options], "skipOrOnly">({
   name: "no-test-skip-only",

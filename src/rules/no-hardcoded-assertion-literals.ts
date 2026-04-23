@@ -2,6 +2,11 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
+import {
+  getNumericLiteralValue,
+  getStaticMemberPropertyName,
+  getStringLiteralValue,
+} from "../utils/ast-refinement.js";
 
 const FIRST_ARG_MATCHERS = new Set([
   "toBe",
@@ -20,38 +25,6 @@ const BOUNDARY_NUMBERS = new Set([-1, 0, 1, 2]);
 
 type Options = [{ allowShorterThan?: number }];
 type MessageIds = "hardcodedLiteral";
-
-/* Stryker disable all: literal extraction helpers intentionally normalize ESTree
-string/template/negative-number shapes; equivalent helper mutants add little
-signal once visitor behavior is covered. */
-function stringValue(node: TSESTree.Node): string | null {
-  if (node.type === AST_NODE_TYPES.Literal && typeof node.value === "string") {
-    return node.value;
-  }
-  if (
-    node.type === AST_NODE_TYPES.TemplateLiteral &&
-    node.expressions.length === 0
-  ) {
-    return node.quasis[0]?.value.cooked ?? node.quasis[0]?.value.raw ?? "";
-  }
-  return null;
-}
-
-function numericValue(node: TSESTree.Node): number | null {
-  if (node.type === AST_NODE_TYPES.Literal && typeof node.value === "number") {
-    return node.value;
-  }
-  if (
-    node.type === AST_NODE_TYPES.UnaryExpression &&
-    node.operator === "-" &&
-    node.argument.type === AST_NODE_TYPES.Literal &&
-    typeof node.argument.value === "number"
-  ) {
-    return -node.argument.value;
-  }
-  return null;
-}
-/* Stryker restore all */
 
 export default createRule<Options, MessageIds>({
   name: "no-hardcoded-assertion-literals",
@@ -88,11 +61,11 @@ export default createRule<Options, MessageIds>({
     const minLen = options.allowShorterThan ?? 4;
 
     function flaggedRepr(arg: TSESTree.Node): string | null {
-      const str = stringValue(arg);
+      const str = getStringLiteralValue(arg);
       if (str !== null) {
         return str.length >= minLen ? JSON.stringify(str) : null;
       }
-      const num = numericValue(arg);
+      const num = getNumericLiteralValue(arg);
       if (num !== null) {
         return BOUNDARY_NUMBERS.has(num) ? null : String(num);
       }
@@ -109,12 +82,15 @@ export default createRule<Options, MessageIds>({
     return {
       CallExpression(node) {
         const callee = node.callee;
+        const propertyName =
+          callee.type === AST_NODE_TYPES.MemberExpression
+            ? getStaticMemberPropertyName(callee)
+            : null;
 
         if (
           callee.type === AST_NODE_TYPES.MemberExpression &&
-          !callee.computed &&
-          callee.property.type === AST_NODE_TYPES.Identifier &&
-          FIRST_ARG_MATCHERS.has(callee.property.name)
+          propertyName !== null &&
+          FIRST_ARG_MATCHERS.has(propertyName)
         ) {
           const arg = node.arguments[0];
           if (arg) checkArg(arg);
@@ -123,11 +99,10 @@ export default createRule<Options, MessageIds>({
 
         if (
           callee.type === AST_NODE_TYPES.MemberExpression &&
-          !callee.computed &&
           callee.object.type === AST_NODE_TYPES.Identifier &&
           callee.object.name === "assert" &&
-          callee.property.type === AST_NODE_TYPES.Identifier &&
-          ASSERT_MEMBER_MATCHERS.has(callee.property.name)
+          propertyName !== null &&
+          ASSERT_MEMBER_MATCHERS.has(propertyName)
         ) {
           const arg = node.arguments[1];
           if (arg) checkArg(arg);

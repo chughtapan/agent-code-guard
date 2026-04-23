@@ -45,7 +45,8 @@
     "url": "https://github.com/chughtapan/safer-by-default/issues"
   },
   "dependencies": {
-    "@typescript-eslint/utils": "^8.0.0"
+    "@typescript-eslint/utils": "^8.0.0",
+    "effect": "^3.21.1"
   },
   "peerDependencies": {
     "eslint": ">=9",
