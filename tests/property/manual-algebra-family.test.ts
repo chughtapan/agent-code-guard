@@ -122,4 +122,26 @@ describe("property: manual algebra family", () => {
       { numRuns: 30 },
     );
   });
+
+  it("Property 7: manual-result still fires on helper functions under rename and whitespace mutation", () => {
+    const seed = "function ok(value: number) { return { ok: true as const, value }; }";
+    fc.assert(
+      fc.property(paddingArb, renameArb, (pad, rename) => {
+        const code = mutate(seed, pad, "value", rename);
+        expect(lintOne(code, "agent-code-guard/manual-result")).toHaveLength(1);
+      }),
+      { numRuns: 30 },
+    );
+  });
+
+  it("Property 8: manual-option still fires on helper functions under rename and whitespace mutation", () => {
+    const seed = 'const some = (value: number) => ({ _tag: "Some" as const, value });';
+    fc.assert(
+      fc.property(paddingArb, renameArb, (pad, rename) => {
+        const code = mutate(seed, pad, "value", rename);
+        expect(lintOne(code, "agent-code-guard/manual-option")).toHaveLength(1);
+      }),
+      { numRuns: 30 },
+    );
+  });
 });

@@ -72,6 +72,23 @@ const OPTION_HELPERS = new Set([
 ]);
 
 const BRAND_MARKERS = new Set(["__brand", "_brand"]);
+const RESULT_FUNCTION_NAMES = new Set([
+  "ok",
+  "err",
+  "error",
+  "left",
+  "right",
+  "success",
+  "failure",
+  ...RESULT_HELPERS,
+]);
+const OPTION_FUNCTION_NAMES = new Set([
+  "some",
+  "none",
+  "present",
+  "absent",
+  ...OPTION_HELPERS,
+]);
 
 function createSurface(
   kind: SurfaceKind,
@@ -247,6 +264,54 @@ function addObjectMember(
   if (!member.method) addLiteral(surface, member.value);
 }
 
+function isNode(value: unknown): value is TSESTree.Node {
+  return typeof value === "object" && value !== null && "type" in value;
+}
+
+function walkNode(
+  node: TSESTree.Node | null,
+  visit: (node: TSESTree.Node) => void,
+): void {
+  if (node === null) return;
+  visit(node);
+  for (const [key, value] of Object.entries(node)) {
+    if (key === "parent") continue;
+    if (Array.isArray(value)) {
+      for (const child of value) {
+        if (isNode(child)) walkNode(child, visit);
+      }
+      continue;
+    }
+    if (isNode(value)) walkNode(value, visit);
+  }
+}
+
+function addFunctionBody(
+  surface: ReturnType<typeof createSurface>,
+  node:
+    | TSESTree.FunctionDeclaration
+    | TSESTree.FunctionExpression
+    | TSESTree.ArrowFunctionExpression,
+): void {
+  const body = node.body;
+  walkNode(body, (child) => {
+    switch (child.type) {
+      case AST_NODE_TYPES.Property:
+        addKey(surface, child.key, child.computed);
+        if (!child.method) addLiteral(surface, child.value);
+        return;
+      case AST_NODE_TYPES.MemberExpression:
+        addKey(surface, child.property, child.computed);
+        return;
+      case AST_NODE_TYPES.Literal:
+        addLiteral(surface, child);
+        return;
+      default:
+        return;
+    }
+  });
+}
+
 function getPatternName(pattern: TSESTree.VariableDeclarator["id"]): string | null {
   return pattern.type === AST_NODE_TYPES.Identifier ? pattern.name : null;
 }
@@ -274,7 +339,9 @@ function surfaceFromNode(node: TSESTree.Node): Surface | null {
       return finalizeSurface(surface);
     }
     case AST_NODE_TYPES.FunctionDeclaration: {
-      return finalizeSurface(createSurface("function", node, node.id?.name ?? null));
+      const surface = createSurface("function", node, node.id?.name ?? null);
+      addFunctionBody(surface, node);
+      return finalizeSurface(surface);
     }
     case AST_NODE_TYPES.VariableDeclarator: {
       const displayName = getPatternName(node.id);
@@ -291,8 +358,11 @@ function surfaceFromNode(node: TSESTree.Node): Surface | null {
           return finalizeSurface(surface);
         }
         case AST_NODE_TYPES.FunctionExpression:
-        case AST_NODE_TYPES.ArrowFunctionExpression:
-          return finalizeSurface(createSurface("function", node, displayName));
+        case AST_NODE_TYPES.ArrowFunctionExpression: {
+          const surface = createSurface("function", node, displayName);
+          addFunctionBody(surface, node.init);
+          return finalizeSurface(surface);
+        }
         default:
           return null;
       }
@@ -342,13 +412,93 @@ function hasOptionBranchPair(surface: Surface): boolean {
   return OPTION_LITERAL_PAIRS.some(([left, right]) => hasKeyPair(surface, left, right));
 }
 
+function getNormalizedDisplayName(surface: Surface): string | null {
+  return surface.displayName === null ? null : normalize(surface.displayName);
+}
+
+function hasBooleanLiteral(
+  surface: Surface,
+  candidate: "true" | "false",
+): boolean {
+  return surface.booleanLiterals.has(candidate);
+}
+
+function hasResultFunctionEvidence(surface: Surface): boolean {
+  if (surface.kind !== "function") return hasResultBranchPair(surface);
+  const name = getNormalizedDisplayName(surface);
+  if (name === null) return false;
+  switch (name) {
+    case "ok":
+      return hasNormalized(surface.keys, ["ok"]) &&
+        (hasNormalized(surface.keys, ["value"]) || hasBooleanLiteral(surface, "true"));
+    case "err":
+    case "error":
+      return hasNormalized(surface.keys, ["error", "err"]) ||
+        (hasNormalized(surface.keys, ["ok"]) && hasBooleanLiteral(surface, "false"));
+    case "left":
+    case "right":
+    case "success":
+    case "failure":
+      return hasNormalized(surface.keys, [name]) ||
+        hasNormalized(surface.stringLiterals, [name]);
+    case "isok":
+      return hasNormalized(surface.keys, ["ok"]);
+    case "iserr":
+      return hasNormalized(surface.keys, ["error", "err"]) ||
+        hasBooleanLiteral(surface, "false");
+    case "isleft":
+    case "isright":
+      return surface.hasTagKey ||
+        hasNormalized(surface.keys, [name.slice(2)]) ||
+        hasNormalized(surface.stringLiterals, [name.slice(2)]);
+    case "issuccess":
+      return hasNormalized(surface.keys, ["success"]) ||
+        hasNormalized(surface.stringLiterals, ["success"]);
+    case "isfailure":
+      return hasNormalized(surface.keys, ["failure"]) ||
+        hasNormalized(surface.stringLiterals, ["failure"]);
+    default:
+      return hasResultBranchPair(surface);
+  }
+}
+
+function hasOptionFunctionEvidence(surface: Surface): boolean {
+  if (surface.kind !== "function") return hasOptionBranchPair(surface);
+  const name = getNormalizedDisplayName(surface);
+  if (name === null) return false;
+  switch (name) {
+    case "some":
+    case "present":
+      return (surface.hasTagKey &&
+        hasNormalized(surface.stringLiterals, [name])) ||
+        hasNormalized(surface.keys, ["value"]);
+    case "none":
+    case "absent":
+      return (surface.hasTagKey &&
+        hasNormalized(surface.stringLiterals, [name])) ||
+        hasNormalized(surface.keys, [name]);
+    case "issome":
+    case "hasvalue":
+      return (surface.hasTagKey &&
+        hasNormalized(surface.stringLiterals, ["some", "present"])) ||
+        hasNormalized(surface.keys, ["value"]);
+    case "isnone":
+      return surface.hasTagKey &&
+        hasNormalized(surface.stringLiterals, ["none", "absent"]);
+    default:
+      return hasOptionBranchPair(surface);
+  }
+}
+
 function hasResultReusableSignal(surface: Surface): boolean {
   return looksResultLikeName(surface.displayName) ||
+    hasNormalized(surface.displayName === null ? new Set<string>() : new Set([surface.displayName]), RESULT_FUNCTION_NAMES) ||
     hasNormalized(surface.keys, RESULT_HELPERS);
 }
 
 function hasOptionReusableSignal(surface: Surface): boolean {
   return looksOptionLikeName(surface.displayName) ||
+    hasNormalized(surface.displayName === null ? new Set<string>() : new Set([surface.displayName]), OPTION_FUNCTION_NAMES) ||
     hasNormalized(surface.keys, OPTION_HELPERS);
 }
 
@@ -444,6 +594,7 @@ export function isTransportDataShape(node: TSESTree.Node): boolean {
   if (surface === null) return false;
   if (isTransportLikeName(surface.displayName)) return true;
   if (
+    surface.kind !== "function" &&
     !looksResultLikeName(surface.displayName) &&
     !looksOptionLikeName(surface.displayName) &&
     hasDiscriminantStyle(surface) &&
@@ -467,7 +618,7 @@ export function findManualResultMatch(
   const surface = surfaceFromNode(node);
   if (surface === null) return null;
   if (isTransportDataShape(node) || isTaggedErrorCollision(node)) return null;
-  if (!hasResultBranchPair(surface)) return null;
+  if (!hasResultFunctionEvidence(surface)) return null;
   if (!hasResultReusableSignal(surface)) return null;
   return match(surface, "result", "manualResult", [
     "result-like branch pair",
@@ -481,7 +632,7 @@ export function findManualOptionMatch(
   const surface = surfaceFromNode(node);
   if (surface === null) return null;
   if (isTransportDataShape(node) || isTaggedErrorCollision(node)) return null;
-  if (!hasOptionBranchPair(surface)) return null;
+  if (!hasOptionFunctionEvidence(surface)) return null;
   if (!hasOptionReusableSignal(surface)) return null;
   return match(surface, "option", "manualOption", [
     "option-like branch pair",

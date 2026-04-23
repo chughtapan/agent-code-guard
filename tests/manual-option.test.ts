@@ -29,6 +29,9 @@ ruleTester.run("manual-option", rule, {
       code: 'const found = Option.match({ onSome: (value) => value, onNone: () => "none" })(opt);',
     },
     {
+      code: 'function select<T>(value: T) { return { _tag: "Some" as const, value }; }',
+    },
+    {
       code: "// eslint-disable-next-line @rule-tester/manual-option -- suppression test\ntype Option<T> = { readonly _tag: 'Some'; readonly value: T } | { readonly _tag: 'None' };",
     },
   ],
@@ -60,6 +63,10 @@ ruleTester.run("manual-option", rule, {
         };
       `,
       errors: [{ messageId: "manualOption", data: { name: "helpers" } }],
+    },
+    {
+      code: 'const some = <T>(value: T) => ({ _tag: "Some" as const, value });',
+      errors: [{ messageId: "manualOption", data: { name: "some" } }],
     },
   ],
 });
