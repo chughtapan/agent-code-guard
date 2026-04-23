@@ -21,6 +21,7 @@ ruleTester.run("async-keyword", rule, {
   valid: [
     { code: "function foo() { return 1; }" },
     { code: "const bar = () => 1;" },
+    { code: "const baz = function () { return 1; };" },
     { code: "class C { m() { return 1; } }" },
     {
       code: "// eslint-disable-next-line @rule-tester/async-keyword -- suppression test (real prefix in production is `agent-code-guard/async-keyword`)\nasync function suppressed() {}",

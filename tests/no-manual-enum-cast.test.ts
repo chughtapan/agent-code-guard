@@ -19,6 +19,9 @@ ruleTester.run("no-manual-enum-cast", rule, {
     { code: "const s = x as string;" },
     { code: "type Status = 'active' | 'inactive'; const s: Status = 'active';" },
     { code: "const n = x as number | string;" },
+    { code: "const s = x as 'active';" },
+    { code: "const s = x as 'active' | number;" },
+    { code: "const s = x as 1 | 2;" },
     {
       code: "// eslint-disable-next-line @rule-tester/no-manual-enum-cast -- suppression test\nconst s = x as 'a' | 'b';",
     },

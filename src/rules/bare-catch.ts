@@ -22,7 +22,7 @@ export default createRule({
     return {
       CatchClause(node) {
         const param = node.param;
-        if (param === null || param === undefined) {
+        if (param === null) {
           const catchKeywordEnd = node.range[0] + "catch".length;
           context.report({
             node,

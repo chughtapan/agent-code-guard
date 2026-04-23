@@ -127,6 +127,11 @@ describe("property: rule correctness", () => {
   }> = [
     { ruleId: "agent-code-guard/async-keyword", seed: "async function foo() {}", coFire: [] },
     {
+      ruleId: "agent-code-guard/as-unknown-as",
+      seed: "const row = raw as unknown as UserRow;",
+      coFire: [],
+    },
+    {
       ruleId: "agent-code-guard/promise-type",
       seed: "function foo(): Promise<number> { return Promise.resolve(1); }",
       coFire: [],
@@ -139,6 +144,26 @@ describe("property: rule correctness", () => {
     {
       ruleId: "agent-code-guard/bare-catch",
       seed: "try { doThing(); } catch {}",
+      coFire: [],
+    },
+    {
+      ruleId: "agent-code-guard/effect-promise",
+      seed: "const run = () => Effect.promise(() => fetch('/x'));",
+      coFire: [],
+    },
+    {
+      ruleId: "agent-code-guard/effect-error-erasure",
+      seed: "const fail = () => Effect.fail(new Error('boom'));",
+      coFire: [],
+    },
+    {
+      ruleId: "agent-code-guard/either-discriminant",
+      seed: "if (Either.isLeft(result)) return result.left;",
+      coFire: [],
+    },
+    {
+      ruleId: "agent-code-guard/manual-tagged-error",
+      seed: "class RunError extends Error { readonly _tag = 'RunError' as const; }",
       coFire: [],
     },
     {
@@ -184,6 +209,11 @@ describe("property: rule correctness", () => {
       coFire: [],
       filename: "src/foo.test.ts",
     },
+    {
+      ruleId: "agent-code-guard/tag-discriminant",
+      seed: "if (err._tag === 'WebhookTimeoutError') return;",
+      coFire: [],
+    },
   ];
 
   const renameArb = fc
@@ -209,9 +239,14 @@ describe("property: rule correctness", () => {
 
   const IDENTS_BY_SEED: Record<string, string> = {
     "agent-code-guard/async-keyword": "foo",
+    "agent-code-guard/as-unknown-as": "raw",
     "agent-code-guard/promise-type": "foo",
     "agent-code-guard/then-chain": "", // no rename target — `.then` is the trigger
     "agent-code-guard/bare-catch": "doThing",
+    "agent-code-guard/effect-promise": "run",
+    "agent-code-guard/effect-error-erasure": "",
+    "agent-code-guard/either-discriminant": "result",
+    "agent-code-guard/manual-tagged-error": "RunError",
     "agent-code-guard/record-cast": "r",
     "agent-code-guard/no-raw-sql": "db",
     "agent-code-guard/no-manual-enum-cast": "s",
@@ -225,6 +260,7 @@ describe("property: rule correctness", () => {
     "agent-code-guard/no-coverage-threshold-gate": "",
     // Rename exercises the argument identifier; the string literal "processed" still fires
     "agent-code-guard/no-hardcoded-assertion-literals": "result",
+    "agent-code-guard/tag-discriminant": "",
   };
 
   for (const { ruleId, seed, coFire, filename } of SEEDS) {
@@ -280,6 +316,107 @@ describe("property: rule correctness", () => {
         }
       }),
       { numRuns: 100 },
+    );
+  });
+
+  it("Property 5: no-hardcoded-assertion-literals fires on hardcoded literals across supported assertion APIs", () => {
+    const RULE_ID = "agent-code-guard/no-hardcoded-assertion-literals";
+    const matcherArb = fc.constantFrom("toBe", "toEqual", "toStrictEqual", "toContain", "toMatch");
+    const memberAssertArb = fc.constantFrom("equal", "strictEqual", "deepEqual");
+    const stringLiteralArb = fc.stringMatching(/^[a-z]{4,12}$/).map((s) => JSON.stringify(s));
+    const negativeNumberArb = fc.integer({ min: 3, max: 200 }).map((n) => `-${n}`);
+
+    fc.assert(
+      fc.property(
+        identArb,
+        identArb,
+        matcherArb,
+        stringLiteralArb,
+        (actual, expected, matcher, literal) => {
+          const code = `expect(${actual}).${matcher}(${literal});`;
+          const messages = lintOne(code, RULE_ID, "src/foo.test.ts");
+          if (messages.length === 0) {
+            throw new Error(`Literal matcher was not flagged:\n${code}`);
+          }
+        },
+      ),
+      { numRuns: 40 },
+    );
+
+    fc.assert(
+      fc.property(
+        identArb,
+        identArb,
+        memberAssertArb,
+        stringLiteralArb,
+        (actual, expected, matcher, literal) => {
+          const code = `assert.${matcher}(${actual}, ${literal});`;
+          const messages = lintOne(code, RULE_ID, "src/foo.test.ts");
+          if (messages.length === 0) {
+            throw new Error(`assert.${matcher} literal was not flagged:\n${code}`);
+          }
+        },
+      ),
+      { numRuns: 30 },
+    );
+
+    fc.assert(
+      fc.property(identArb, negativeNumberArb, (actual, literal) => {
+        const code = `expect(${actual}).toBe(${literal});`;
+        const messages = lintOne(code, RULE_ID, "src/foo.test.ts");
+        if (messages.length === 0) {
+          throw new Error(`Negative magic number was not flagged:\n${code}`);
+        }
+      }),
+      { numRuns: 20 },
+    );
+  });
+
+  it("Property 6: no-hardcoded-secrets keeps name-gated detection across declaration shapes", () => {
+    const RULE_ID = "agent-code-guard/no-hardcoded-secrets";
+    const exactTwentyArb = fc.stringMatching(/^[A-Za-z0-9]{20}$/);
+    const placeholderArb = fc.constantFrom(
+      '"your-api-key-goes-here"',
+      '"your-token-goes-here-now"',
+    );
+    const spacedArb = fc.constantFrom(
+      '"not a secret because it has spaces"',
+      '"safe words with spaces stay safe"',
+    );
+
+    fc.assert(
+      fc.property(exactTwentyArb, (secretish) => {
+        const snippets = [
+          `const apiKey = "${secretish}";`,
+          `const config = { "apiKey": "${secretish}" };`,
+          `apiKey = "${secretish}";`,
+          `client.apiKey = "${secretish}";`,
+        ];
+        for (const code of snippets) {
+          const messages = lintOne(code, RULE_ID);
+          if (messages.length === 0) {
+            throw new Error(`Name-gated secret was not flagged:\n${code}`);
+          }
+        }
+      }),
+      { numRuns: 40 },
+    );
+
+    fc.assert(
+      fc.property(fc.oneof(placeholderArb, spacedArb), (literal) => {
+        const snippets = [
+          `const token = ${literal};`,
+          `const config = { "apiKey": ${literal} };`,
+          `client["apiKey"] = ${literal};`,
+        ];
+        for (const code of snippets) {
+          const messages = lintOne(code, RULE_ID);
+          if (messages.length !== 0) {
+            throw new Error(`Safe secret-shaped placeholder was flagged:\n${code}`);
+          }
+        }
+      }),
+      { numRuns: 20 },
     );
   });
 
