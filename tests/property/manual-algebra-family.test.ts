@@ -4,16 +4,18 @@ import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import plugin from "../../src/index.js";
 
+const parser: Linter.Parser = tsParser;
+const pluginEntry: NonNullable<Linter.Config["plugins"]>[string] = plugin;
+
 function configFor(ruleId: string): Linter.Config {
   return {
     files: ["**/*.ts"],
     languageOptions: {
-      parser: tsParser as unknown as Linter.Parser,
+      parser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
     plugins: {
-      "agent-code-guard":
-        plugin as unknown as NonNullable<Linter.Config["plugins"]>[string],
+      "agent-code-guard": pluginEntry,
     },
     rules: { [ruleId]: "error" },
   };

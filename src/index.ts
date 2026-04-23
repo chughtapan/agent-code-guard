@@ -75,7 +75,7 @@ const plugin: Plugin = {
   rules,
   configs: {
     recommended: {
-      plugins: { "agent-code-guard": undefined as unknown as Plugin },
+      plugins: { "agent-code-guard": null! },
       rules: {
         "agent-code-guard/async-keyword": "error",
         "agent-code-guard/as-unknown-as": "error",
@@ -101,7 +101,7 @@ const plugin: Plugin = {
       },
     },
     integrationTests: {
-      plugins: { "agent-code-guard": undefined as unknown as Plugin },
+      plugins: { "agent-code-guard": null! },
       rules: {
         "agent-code-guard/no-vitest-mocks": "error",
       },

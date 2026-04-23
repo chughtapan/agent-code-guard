@@ -45,7 +45,7 @@ function attachParents(node: unknown, parent: TSESTree.Node | undefined): void {
   if (parent) {
     (node as TSESTree.Node & { parent?: TSESTree.Node }).parent = parent;
   }
-  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(node)) {
     if (key === "parent") continue;
     if (Array.isArray(value)) {
       for (const child of value) {
@@ -117,7 +117,7 @@ function allNodes<T extends TSESTree.Node>(
 
 function visit(node: TSESTree.Node, fn: (node: TSESTree.Node) => void): void {
   fn(node);
-  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(node)) {
     if (key === "parent") continue;
     if (Array.isArray(value)) {
       for (const child of value) {

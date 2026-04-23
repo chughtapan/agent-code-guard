@@ -6,15 +6,17 @@ import { describe, expect, it } from "vitest";
 import plugin from "../../src/index.js";
 
 const RECOMMENDED_RULE_IDS = Object.keys(plugin.configs.recommended.rules);
+const parser: Linter.Parser = tsParser;
+const pluginEntry: NonNullable<Linter.Config["plugins"]>[string] = plugin;
 
 function baseConfig(rules: Linter.RulesRecord): Linter.Config {
   return {
     files: ["**/*.ts", "**/*.js"],
     languageOptions: {
-      parser: tsParser as unknown as Linter.Parser,
+      parser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: { "agent-code-guard": plugin as unknown as NonNullable<Linter.Config["plugins"]>[string] },
+    plugins: { "agent-code-guard": pluginEntry },
     rules,
   };
 }
@@ -41,8 +43,7 @@ function isSyntacticallyValid(code: string): boolean {
     false,
     ts.ScriptKind.TS,
   );
-  const diags = (sf as unknown as { parseDiagnostics?: readonly ts.Diagnostic[] })
-    .parseDiagnostics;
+  const diags = sf.parseDiagnostics;
   return !diags || diags.length === 0;
 }
 
