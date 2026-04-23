@@ -1,4 +1,4 @@
-# `safer-by-default/record-cast`
+# `agent-code-guard/record-cast`
 
 **What it flags:** `as Record<string, unknown>` casts.
 
@@ -48,7 +48,7 @@ Notes for agents:
 Interacting with an API whose shape is genuinely dynamic (e.g. writing a logger that accepts arbitrary context):
 
 ```ts
-// eslint-disable-next-line safer-by-default/record-cast -- logger context is intentionally open-shape
+// eslint-disable-next-line agent-code-guard/record-cast -- logger context is intentionally open-shape
 export function log(event: string, ctx: unknown) {
   transport.emit({ event, ctx: ctx as Record<string, unknown> });
 }

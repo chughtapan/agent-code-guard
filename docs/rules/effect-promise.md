@@ -1,4 +1,4 @@
-# `safer-by-default/effect-promise`
+# `agent-code-guard/effect-promise`
 
 **What it flags:** `Effect.promise(...)`.
 

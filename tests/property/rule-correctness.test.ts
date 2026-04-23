@@ -167,6 +167,21 @@ describe("property: rule correctness", () => {
       coFire: [],
     },
     {
+      ruleId: "agent-code-guard/manual-result",
+      seed: "const Result = { ok: (value: number) => ({ ok: true as const, value }), err: (error: Error) => ({ ok: false as const, error }), match: (input: unknown) => input };",
+      coFire: [],
+    },
+    {
+      ruleId: "agent-code-guard/manual-option",
+      seed: "const Option = { some: (value: number) => ({ _tag: 'Some' as const, value }), none: { _tag: 'None' as const }, flatMap: (apply: (value: number) => unknown) => apply(1) };",
+      coFire: [],
+    },
+    {
+      ruleId: "agent-code-guard/manual-brand",
+      seed: "const asUserId = (value: string): UserId => value as UserId;",
+      coFire: [],
+    },
+    {
       ruleId: "agent-code-guard/record-cast",
       seed: "const r = {} as Record<string, unknown>;",
       coFire: [],
@@ -247,6 +262,9 @@ describe("property: rule correctness", () => {
     "agent-code-guard/effect-error-erasure": "",
     "agent-code-guard/either-discriminant": "result",
     "agent-code-guard/manual-tagged-error": "RunError",
+    "agent-code-guard/manual-result": "input",
+    "agent-code-guard/manual-option": "apply",
+    "agent-code-guard/manual-brand": "value",
     "agent-code-guard/record-cast": "r",
     "agent-code-guard/no-raw-sql": "db",
     "agent-code-guard/no-manual-enum-cast": "s",

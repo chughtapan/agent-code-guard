@@ -1,4 +1,4 @@
-# `safer-by-default/bare-catch`
+# `agent-code-guard/bare-catch`
 
 **What it flags:** A `try`/`catch` block that either omits the caught error (`} catch {`) or binds it to an underscore-prefixed name (`catch (_)`, `catch (_err)`).
 
@@ -58,7 +58,7 @@ You genuinely need the "absorb and continue" behavior (e.g. a best-effort cleanu
 try {
   await cleanup();
 } catch (err) {
-  // eslint-disable-next-line safer-by-default/bare-catch -- best-effort cleanup; log but do not propagate
+  // eslint-disable-next-line agent-code-guard/bare-catch -- best-effort cleanup; log but do not propagate
   logger.warn({ err }, "cleanup failed (non-fatal)");
 }
 ```

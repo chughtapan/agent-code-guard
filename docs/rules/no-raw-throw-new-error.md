@@ -1,4 +1,4 @@
-# `safer-by-default/no-raw-throw-new-error`
+# `agent-code-guard/no-raw-throw-new-error`
 
 **What it flags:** `throw new Error(...)`, `throw new TypeError(...)`, `throw new RangeError(...)` in non-test TypeScript/JavaScript. Test files are exempt, as are functions/methods whose name starts with `absurd` (exhaustiveness helpers).
 
@@ -66,8 +66,8 @@ try { work(); } catch (err) { logger.error({ err }); throw err; }
 If you genuinely need a one-off raw throw (e.g. a boot-time invariant that must crash the process loudly), suppress per-line:
 
 ```ts
-// eslint-disable-next-line safer-by-default/no-raw-throw-new-error -- boot invariant
+// eslint-disable-next-line agent-code-guard/no-raw-throw-new-error -- boot invariant
 throw new Error("FATAL: config missing");
 ```
 
-Rationale: errors are part of a function's type. Tagged errors or discriminated-union results make failure modes exhaustive at the call site; a raw throw does not. See the companion plugin's [PRINCIPLES.md — "Errors are typed, not thrown"](https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md) for the full treatment.
+Rationale: errors are part of a function's type. Tagged errors or discriminated-union results make failure modes exhaustive at the call site; a raw throw does not. See the companion plugin's [PRINCIPLES.md — "Errors are typed, not thrown"](https://github.com/chughtapan/agent-code-guard/blob/main/PRINCIPLES.md) for the full treatment.

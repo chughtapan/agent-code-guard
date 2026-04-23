@@ -1,4 +1,4 @@
-# `safer-by-default/no-hardcoded-assertion-literals`
+# `agent-code-guard/no-hardcoded-assertion-literals`
 
 **What it flags:** In test files (`**/*.test.*`, `**/*.spec.*`, `**/tests/**`, `**/__tests__/**`): string or number literals passed directly to assertion matchers (`.toBe`, `.toEqual`, `.toStrictEqual`, `.toContain`, `.toMatch`, `assert.equal`, `assert.strictEqual`, `assert.deepEqual`, `assertEquals`, `assertEqual`).
 
@@ -32,7 +32,7 @@ expect(arr.length).toBe(0);   // boundary numbers are allowed
 
 ```js
 rules: {
-  "safer-by-default/no-hardcoded-assertion-literals": ["warn", { allowShorterThan: 6 }],
+  "agent-code-guard/no-hardcoded-assertion-literals": ["warn", { allowShorterThan: 6 }],
 }
 ```
 
@@ -50,8 +50,8 @@ export default [
     languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
     plugins: { "safer-by-default": guard },
     rules: {
-      "safer-by-default/no-test-skip-only": "error",
-      "safer-by-default/no-hardcoded-assertion-literals": "warn",
+      "agent-code-guard/no-test-skip-only": "error",
+      "agent-code-guard/no-hardcoded-assertion-literals": "warn",
     },
   },
 ];

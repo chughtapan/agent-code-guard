@@ -1,4 +1,4 @@
-# `safer-by-default/tag-discriminant`
+# `agent-code-guard/tag-discriminant`
 
 **What it flags:** manual `_tag` comparisons on tagged errors, such as `err._tag === "WebhookTimeoutError"`.
 

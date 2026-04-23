@@ -11,29 +11,32 @@ pnpm add -D eslint-plugin-agent-code-guard
 
 Your coding agent is miscalibrated. It was trained on human-written TypeScript — decades of it — written under one constraint that does not apply to it: typing was expensive for humans. That is why its training corpus is saturated with `throw new Error("bad")`, `as Record<string, unknown>`, `try { ... } catch {}`, `Promise<T>` return types, `process.env.FOO!`, raw SQL strings, and `vi.mock` inside integration tests. Those were the compromises humans made when keyboard time was scarce. An agent does not pay the scarcity; it inherits the patterns anyway.
 
-This plugin is the floor. Eighteen rules under the `recommended` preset (sixteen errors, two warns), plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
+This plugin is the floor. Twenty-one rules under the `recommended` preset (eighteen errors, three warns), plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
 
 | Rule | Catches |
 |---|---|
-| [`agent-code-guard/async-keyword`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/async-keyword.md) | `async` functions outside Effect/Kysely patterns |
-| [`agent-code-guard/as-unknown-as`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/as-unknown-as.md) | `as unknown as` cast chains that bypass type checking |
-| [`agent-code-guard/promise-type`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/promise-type.md) | `Promise<T>` return types that erase the error channel |
-| [`agent-code-guard/then-chain`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/then-chain.md) | `.then(...)` chains that hide error propagation |
-| [`agent-code-guard/bare-catch`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/bare-catch.md) | `try { ... } catch {}` that swallows the error silently |
-| [`agent-code-guard/effect-promise`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/effect-promise.md) | `Effect.promise(...)` calls that turn rejections into defects |
-| [`agent-code-guard/effect-error-erasure`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/effect-error-erasure.md) | `Effect.fail(new Error(...))` and similar generic error wrapping inside the Effect channel |
-| [`agent-code-guard/either-discriminant`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/either-discriminant.md) | `Either.isLeft(...)`, `Either.isRight(...)`, and `_tag === "Left" / "Right"` |
-| [`agent-code-guard/manual-tagged-error`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/manual-tagged-error.md) | Hand-rolled tagged error classes and error unions that should use `Data.TaggedError(...)` |
-| [`agent-code-guard/record-cast`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/record-cast.md) | `as Record<string, unknown>` and similar unsafe casts |
-| [`agent-code-guard/no-raw-sql`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-raw-sql.md) | Raw SQL strings that bypass the typed query builder |
-| [`agent-code-guard/no-manual-enum-cast`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-manual-enum-cast.md) | `as "a" \| "b"` string-union casts that should be generated unions |
-| [`agent-code-guard/no-hardcoded-secrets`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-hardcoded-secrets.md) | AWS/GCP/Azure keys, API tokens, passwords — see doc for patterns and entropy thresholds |
-| [`agent-code-guard/no-raw-throw-new-error`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-raw-throw-new-error.md) | `throw new Error(...)` outside tests — return a tagged error instead |
-| [`agent-code-guard/no-test-skip-only`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-test-skip-only.md) | `.skip` / `.only` / `xit` / `xdescribe` in committed test files |
-| [`agent-code-guard/no-coverage-threshold-gate`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-coverage-threshold-gate.md) | `coverageThreshold` gates in jest/vitest/vite configs (warn) |
-| [`agent-code-guard/no-hardcoded-assertion-literals`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-hardcoded-assertion-literals.md) | Hardcoded string/number literals in test assertions (warn) |
-| [`agent-code-guard/tag-discriminant`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/tag-discriminant.md) | Manual `_tag` checks on tagged errors instead of `Effect.catchTag(...)` |
-| [`agent-code-guard/no-vitest-mocks`](https://github.com/chughtapan/agent-code-guard/blob/main/eslint-plugin/docs/rules/no-vitest-mocks.md) | `vi.mock(...)` inside files that match the integration-tests glob |
+| [`agent-code-guard/async-keyword`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/async-keyword.md) | `async` functions outside Effect/Kysely patterns |
+| [`agent-code-guard/as-unknown-as`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/as-unknown-as.md) | `as unknown as` cast chains that bypass type checking |
+| [`agent-code-guard/promise-type`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/promise-type.md) | `Promise<T>` return types that erase the error channel |
+| [`agent-code-guard/then-chain`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/then-chain.md) | `.then(...)` chains that hide error propagation |
+| [`agent-code-guard/bare-catch`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/bare-catch.md) | `try { ... } catch {}` that swallows the error silently |
+| [`agent-code-guard/effect-promise`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/effect-promise.md) | `Effect.promise(...)` calls that turn rejections into defects |
+| [`agent-code-guard/effect-error-erasure`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/effect-error-erasure.md) | `Effect.fail(new Error(...))` and similar generic error wrapping inside the Effect channel |
+| [`agent-code-guard/either-discriminant`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/either-discriminant.md) | `Either.isLeft(...)`, `Either.isRight(...)`, and `_tag === "Left" / "Right"` |
+| [`agent-code-guard/manual-result`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/manual-result.md) | Reusable hand-rolled `Result` / `Either` algebras instead of `Either` / `Effect` |
+| [`agent-code-guard/manual-option`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/manual-option.md) | Reusable hand-rolled `Option` / `Maybe` algebras instead of `Option` |
+| [`agent-code-guard/manual-brand`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/manual-brand.md) | Hand-rolled nominal brands that should use `Brand.nominal(...)` or `Schema.brand(...)` (warn) |
+| [`agent-code-guard/manual-tagged-error`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/manual-tagged-error.md) | Hand-rolled tagged error classes and error unions that should use `Data.TaggedError(...)` |
+| [`agent-code-guard/record-cast`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/record-cast.md) | `as Record<string, unknown>` and similar unsafe casts |
+| [`agent-code-guard/no-raw-sql`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-raw-sql.md) | Raw SQL strings that bypass the typed query builder |
+| [`agent-code-guard/no-manual-enum-cast`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-manual-enum-cast.md) | `as "a" \| "b"` string-union casts that should be generated unions |
+| [`agent-code-guard/no-hardcoded-secrets`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-hardcoded-secrets.md) | AWS/GCP/Azure keys, API tokens, passwords — see doc for patterns and entropy thresholds |
+| [`agent-code-guard/no-raw-throw-new-error`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-raw-throw-new-error.md) | `throw new Error(...)` outside tests — return a tagged error instead |
+| [`agent-code-guard/no-test-skip-only`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-test-skip-only.md) | `.skip` / `.only` / `xit` / `xdescribe` in committed test files |
+| [`agent-code-guard/no-coverage-threshold-gate`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-coverage-threshold-gate.md) | `coverageThreshold` gates in jest/vitest/vite configs (warn) |
+| [`agent-code-guard/no-hardcoded-assertion-literals`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-hardcoded-assertion-literals.md) | Hardcoded string/number literals in test assertions (warn) |
+| [`agent-code-guard/tag-discriminant`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/tag-discriminant.md) | Manual `_tag` checks on tagged errors instead of `Effect.catchTag(...)` |
+| [`agent-code-guard/no-vitest-mocks`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-vitest-mocks.md) | `vi.mock(...)` inside files that match the integration-tests glob |
 
 Each rule ships a Before/After doc at the GitHub link above and locally at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`.
 
