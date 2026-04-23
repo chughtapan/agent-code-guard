@@ -2,6 +2,28 @@
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-04-22
+
+### Added
+
+- Six new rules focused on Effect/Either/tagged-error discipline:
+  - `as-unknown-as`
+  - `effect-promise`
+  - `effect-error-erasure`
+  - `either-discriminant`
+  - `manual-tagged-error`
+  - `tag-discriminant`
+
+### Changed
+
+- `manual-tagged-error` now catches returned manual tagged values and nested `_tag` payloads passed into error constructors and `Effect.fail(...)`.
+- Rule tests were widened to cover private members, computed keys, unsupported AST shapes, and more negative cases around assertions, secrets, and raw throws.
+
+### Testing
+
+- Mutation score hardened to 98.25%.
+- Vitest suite expanded to 384 tests.
+
 ## [0.0.2] - 2026-04-19
 
 ### BREAKING

@@ -1,7 +1,12 @@
 import { createRequire } from "node:module";
 import type { TSESLint } from "@typescript-eslint/utils";
 import asyncKeyword from "./rules/async-keyword.js";
+import asUnknownAs from "./rules/as-unknown-as.js";
 import bareCatch from "./rules/bare-catch.js";
+import effectErrorErasure from "./rules/effect-error-erasure.js";
+import effectPromise from "./rules/effect-promise.js";
+import eitherDiscriminant from "./rules/either-discriminant.js";
+import manualTaggedError from "./rules/manual-tagged-error.js";
 import noCoverageThresholdGate from "./rules/no-coverage-threshold-gate.js";
 import noHardcodedSecrets from "./rules/no-hardcoded-secrets.js";
 import noManualEnumCast from "./rules/no-manual-enum-cast.js";
@@ -12,13 +17,19 @@ import noHardcodedAssertionLiterals from "./rules/no-hardcoded-assertion-literal
 import noRawSql from "./rules/no-raw-sql.js";
 import promiseType from "./rules/promise-type.js";
 import recordCast from "./rules/record-cast.js";
+import tagDiscriminant from "./rules/tag-discriminant.js";
 import thenChain from "./rules/then-chain.js";
 
 const rules = {
   "async-keyword": asyncKeyword,
+  "as-unknown-as": asUnknownAs,
   "promise-type": promiseType,
   "then-chain": thenChain,
   "bare-catch": bareCatch,
+  "effect-promise": effectPromise,
+  "effect-error-erasure": effectErrorErasure,
+  "either-discriminant": eitherDiscriminant,
+  "manual-tagged-error": manualTaggedError,
   "record-cast": recordCast,
   "no-raw-sql": noRawSql,
   "no-manual-enum-cast": noManualEnumCast,
@@ -28,6 +39,7 @@ const rules = {
   "no-test-skip-only": noTestSkipOnly,
   "no-coverage-threshold-gate": noCoverageThresholdGate,
   "no-hardcoded-assertion-literals": noHardcodedAssertionLiterals,
+  "tag-discriminant": tagDiscriminant,
 } as const;
 
 const require = createRequire(import.meta.url);
@@ -60,9 +72,14 @@ const plugin: Plugin = {
       plugins: { "agent-code-guard": undefined as unknown as Plugin },
       rules: {
         "agent-code-guard/async-keyword": "error",
+        "agent-code-guard/as-unknown-as": "error",
         "agent-code-guard/promise-type": "error",
         "agent-code-guard/then-chain": "error",
         "agent-code-guard/bare-catch": "error",
+        "agent-code-guard/effect-promise": "error",
+        "agent-code-guard/effect-error-erasure": "error",
+        "agent-code-guard/either-discriminant": "error",
+        "agent-code-guard/manual-tagged-error": "error",
         "agent-code-guard/record-cast": "error",
         "agent-code-guard/no-raw-sql": "error",
         "agent-code-guard/no-manual-enum-cast": "error",
@@ -71,6 +88,7 @@ const plugin: Plugin = {
         "agent-code-guard/no-test-skip-only": "error",
         "agent-code-guard/no-coverage-threshold-gate": "warn",
         "agent-code-guard/no-hardcoded-assertion-literals": "warn",
+        "agent-code-guard/tag-discriminant": "error",
       },
     },
     integrationTests: {

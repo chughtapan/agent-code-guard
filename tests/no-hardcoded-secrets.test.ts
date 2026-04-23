@@ -19,6 +19,17 @@ ruleTester.run("no-hardcoded-secrets", rule, {
     { code: "const apiKey = 'test';" },
     { code: "const apiKey = process.env.API_KEY;" },
     { code: "const config = { apiKey: 'placeholder' };" },
+    { code: "const config = { 'apiKey': 'your-api-key-goes-here' };" },
+    { code: "const token = 'your-token-goes-here-now';" },
+    { code: "const token = 'not a secret because it has spaces';" },
+    { code: "apiKey = process.env.API_KEY;" },
+    { code: "client.apiKey = process.env.API_KEY;" },
+    { code: "client['apiKey'] = 'not a real secret value';" },
+    { code: "client['apiKey'] = 'abcdefghijklmnopqrst';" },
+    { code: "client.label = 'not a real secret value';" },
+    {
+      code: "class Client { #apiKey = ''; run() { this.#apiKey = 'abcdefghijklmnopqrst'; } }",
+    },
     // Short value under a non-secret name — no shape, no length trip.
     { code: "const x = 'short';" },
     // Name looks secret-adjacent but value has spaces so no shape matches.
@@ -42,11 +53,31 @@ ruleTester.run("no-hardcoded-secrets", rule, {
       errors: [{ messageId: "hardcodedSecret" }],
     },
     {
+      code: "const config = { 'apiKey': 'abcdefghijklmnopqrst' };",
+      errors: [{ messageId: "hardcodedSecret" }],
+    },
+    {
       code: "const token = 'ghp_abc123def456ghi789jkl012';",
       errors: [{ messageId: "hardcodedSecret" }],
     },
     {
+      code: "const token = 'abcdefghijklmnopqrst';",
+      errors: [{ messageId: "hardcodedSecret" }],
+    },
+    {
       code: "client.apiKey = 'sk_live_abcdef0123456789ghijkl';",
+      errors: [{ messageId: "hardcodedSecret" }],
+    },
+    {
+      code: "client.apiKey = 'abcdefghijklmnopqrst';",
+      errors: [{ messageId: "hardcodedSecret" }],
+    },
+    {
+      code: "apiKey = 'sk_live_abcdefghij1234567890';",
+      errors: [{ messageId: "hardcodedSecret" }],
+    },
+    {
+      code: "apiKey = 'abcdefghijklmnopqrst';",
       errors: [{ messageId: "hardcodedSecret" }],
     },
     {

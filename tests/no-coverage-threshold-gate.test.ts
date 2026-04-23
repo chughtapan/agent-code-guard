@@ -34,6 +34,14 @@ ruleTester.run("no-coverage-threshold-gate", rule, {
     },
     {
       filename: "/repo/vitest.config.ts",
+      code: "export default { test: { coverage: { ['thresholds']: { lines: 80 } } } };",
+    },
+    {
+      filename: "/repo/vitest.config.ts",
+      code: "export default { test: { metrics: { thresholds: { lines: 80 } } } };",
+    },
+    {
+      filename: "/repo/vitest.config.ts",
       code: "// eslint-disable-next-line @rule-tester/no-coverage-threshold-gate -- suppression test\nexport default { test: { coverage: { thresholds: { lines: 80 } } } };",
     },
   ],
@@ -61,6 +69,11 @@ ruleTester.run("no-coverage-threshold-gate", rule, {
     {
       filename: "/repo/vitest.config.mts",
       code: "export default { test: { coverage: { thresholds: { branches: 70, lines: 80 } } } };",
+      errors: [{ messageId: "coverageGate", data: { key: "thresholds" } }],
+    },
+    {
+      filename: "/repo/vitest.config.ts",
+      code: "export default { test: { coverage: { 'thresholds': { lines: 80 } } } };",
       errors: [{ messageId: "coverageGate", data: { key: "thresholds" } }],
     },
     {

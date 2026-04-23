@@ -1,5 +1,5 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { getStaticMemberExpression } from "../utils/ast-refinement.js";
 
 const MOCK_METHODS = new Set(["mock", "hoisted", "spyOn"]);
 
@@ -23,17 +23,11 @@ export default createRule({
   create(context) {
     return {
       CallExpression(node) {
-        const callee = node.callee;
-        if (callee.type !== AST_NODE_TYPES.MemberExpression) return;
+        const callee = getStaticMemberExpression(node.callee);
+        if (callee === null) return;
         if (
-          callee.object.type !== AST_NODE_TYPES.Identifier ||
+          callee.object.type !== "Identifier" ||
           callee.object.name !== "vi"
-        ) {
-          return;
-        }
-        if (
-          callee.property.type !== AST_NODE_TYPES.Identifier ||
-          callee.computed
         ) {
           return;
         }

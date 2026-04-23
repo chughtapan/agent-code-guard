@@ -21,11 +21,15 @@ ruleTester.run("no-hardcoded-assertion-literals", rule, {
     { filename: "/repo/src/auth.test.ts", code: "expect(count).toBe(1);" },
     { filename: "/repo/src/auth.test.ts", code: "expect(result).toBe(-1);" },
     { filename: "/repo/src/auth.test.ts", code: "expect(arr.length).toBe(2);" },
+    { filename: "/repo/src/auth.test.ts", code: "expect(result).toBe();" },
+    { filename: "/repo/src/auth.test.ts", code: "expect(result).toBe(+42);" },
     {
       filename: "/repo/src/auth.test.ts",
       code: "const EXPECTED = 'processed'; expect(x).toBe(EXPECTED);",
     },
     { filename: "/repo/src/auth.test.ts", code: "expect(x).toBe(Status.Active);" },
+    { filename: "/repo/src/auth.test.ts", code: "expect(result).toHaveProperty('processed');" },
+    { filename: "/repo/src/auth.test.ts", code: "expect(result)['toBe']('processed');" },
     // Non-test file — rule is silent outside test files
     { filename: "/repo/src/auth.ts", code: "expect(x).toBe('hardcoded-value');" },
     { filename: "/repo/src/auth.test.ts", code: "expect(x).toBe(`prefix-${id}`);" },
@@ -35,11 +39,24 @@ ruleTester.run("no-hardcoded-assertion-literals", rule, {
       options: [{ allowShorterThan: 10 }],
     },
     { filename: "/repo/tests/auth.ts", code: "assert.equal(result, EXPECTED_STATUS);" },
+    { filename: "/repo/tests/auth.ts", code: "helper.equal(result, 'processed');" },
+    { filename: "/repo/tests/auth.ts", code: "assert.ok(result, 'processed');" },
+    { filename: "/repo/src/auth.test.ts", code: "assert.equal(result);" },
+    {
+      filename: "/repo/src/auth.test.ts",
+      code: "class T { #toBe(value: string) {} run(result: string) { this.#toBe('processed'); } }",
+    },
+    {
+      filename: "/repo/src/auth.test.ts",
+      code: "class AssertBox { #equal(actual: string, expected: string) { return [actual, expected]; } run(assert: AssertBox, result: string) { return assert.#equal(result, 'processed'); } }",
+    },
     // .toHaveLength is not in the detected matcher set
     { filename: "/repo/src/auth.test.ts", code: "expect(arr).toHaveLength(10);" },
     // Regex arg to toMatch is not a string literal
     { filename: "/repo/src/auth.test.ts", code: "expect(msg).toMatch(/error/);" },
     { filename: "/repo/src/auth.test.ts", code: "assertEquals(result, EXPECTED);" },
+    { filename: "/repo/src/auth.test.ts", code: "checkEquals(result, 'processed');" },
+    { filename: "/repo/src/auth.test.ts", code: "assertEquals(result);" },
   ],
   invalid: [
     // vitest/.toBe with string literal (length ≥ 4)
@@ -76,6 +93,21 @@ ruleTester.run("no-hardcoded-assertion-literals", rule, {
     {
       filename: "/repo/src/auth.test.ts",
       code: "expect(count).toBe(42);",
+      errors: [{ messageId: "hardcodedLiteral" }],
+    },
+    {
+      filename: "/repo/src/auth.test.ts",
+      code: "expect(count).toBe(-42);",
+      errors: [{ messageId: "hardcodedLiteral" }],
+    },
+    {
+      filename: "/repo/src/auth.test.ts",
+      code: "expect(count).toBe(-2);",
+      errors: [{ messageId: "hardcodedLiteral" }],
+    },
+    {
+      filename: "/repo/src/auth.test.ts",
+      code: "expect(result).toBe('four');",
       errors: [{ messageId: "hardcodedLiteral" }],
     },
     // chai/assert.equal — 2nd arg is the expected string

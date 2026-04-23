@@ -33,7 +33,6 @@ const SECRET_SHAPES: ReadonlyArray<{ name: string; pattern: RegExp }> = [
 ];
 
 function isSuspiciousSecretValue(value: string): boolean {
-  if (value.length < 20) return false;
   if (PLACEHOLDER_VALUES.test(value)) return false;
   return /[a-zA-Z0-9_-]{20,}/.test(value);
 }

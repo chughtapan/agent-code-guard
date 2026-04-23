@@ -19,6 +19,12 @@ ruleTester.run("no-vitest-mocks", rule, {
     { code: "it('works', () => {});" },
     { code: "describe('x', () => {});" },
     { code: "mock('./x');" },
+    { code: "helpers.mock('./x');" },
+    { code: "vi['mock']('./x');" },
+    { code: "vi.fn();" },
+    {
+      code: "class Suite { #mock(path) { return path; } run(vi) { return vi.#mock('./x'); } }",
+    },
     {
       code: "// eslint-disable-next-line @rule-tester/no-vitest-mocks -- suppression test\nvi.mock('./x');",
     },

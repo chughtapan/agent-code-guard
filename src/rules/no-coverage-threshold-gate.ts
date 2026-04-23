@@ -1,6 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { getParent, getStaticStringKey } from "../utils/ast-refinement.js";
 
 // Matches `jest.config.ts`, `vitest.config.unit.ts`, `jest.config.integration.cjs`,
 // plus `package.json`. Users can lint package.json if they wire a JSON parser
@@ -15,18 +15,14 @@ function isConfigFile(filename: string): boolean {
 function keyName(
   key: TSESTree.Expression | TSESTree.PrivateIdentifier,
 ): string | null {
-  if (key.type === AST_NODE_TYPES.Identifier) return key.name;
-  if (key.type === AST_NODE_TYPES.Literal && typeof key.value === "string") {
-    return key.value;
-  }
-  return null;
+  return getStaticStringKey(key, false);
 }
 
 function parentCoverageKey(node: TSESTree.Property): boolean {
-  const obj = node.parent;
-  if (!obj || obj.type !== AST_NODE_TYPES.ObjectExpression) return false;
-  const prop = obj.parent;
-  if (!prop || prop.type !== AST_NODE_TYPES.Property || prop.computed) return false;
+  const obj = getParent(node);
+  if (obj === null || obj.type !== "ObjectExpression") return false;
+  const prop = getParent(obj);
+  if (prop === null || prop.type !== "Property" || prop.computed) return false;
   return keyName(prop.key) === "coverage";
 }
 
@@ -52,8 +48,7 @@ export default createRule({
     return {
       Property(node) {
         if (node.computed) return;
-        const name = keyName(node.key);
-        if (!name) return;
+        const name = getStaticStringKey(node.key, node.computed);
         if (name === "coverageThreshold") {
           context.report({ node, messageId: "coverageGate", data: { key: name } });
           return;
