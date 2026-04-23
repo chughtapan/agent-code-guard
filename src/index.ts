@@ -7,6 +7,9 @@ import effectErrorErasure from "./rules/effect-error-erasure.js";
 import effectPromise from "./rules/effect-promise.js";
 import eitherDiscriminant from "./rules/either-discriminant.js";
 import manualTaggedError from "./rules/manual-tagged-error.js";
+import manualBrand from "./rules/manual-brand.js";
+import manualOption from "./rules/manual-option.js";
+import manualResult from "./rules/manual-result.js";
 import noCoverageThresholdGate from "./rules/no-coverage-threshold-gate.js";
 import noHardcodedSecrets from "./rules/no-hardcoded-secrets.js";
 import noManualEnumCast from "./rules/no-manual-enum-cast.js";
@@ -29,6 +32,9 @@ const rules = {
   "effect-promise": effectPromise,
   "effect-error-erasure": effectErrorErasure,
   "either-discriminant": eitherDiscriminant,
+  "manual-result": manualResult,
+  "manual-option": manualOption,
+  "manual-brand": manualBrand,
   "manual-tagged-error": manualTaggedError,
   "record-cast": recordCast,
   "no-raw-sql": noRawSql,
@@ -79,6 +85,9 @@ const plugin: Plugin = {
         "agent-code-guard/effect-promise": "error",
         "agent-code-guard/effect-error-erasure": "error",
         "agent-code-guard/either-discriminant": "error",
+        "agent-code-guard/manual-result": "error",
+        "agent-code-guard/manual-option": "error",
+        "agent-code-guard/manual-brand": "warn",
         "agent-code-guard/manual-tagged-error": "error",
         "agent-code-guard/record-cast": "error",
         "agent-code-guard/no-raw-sql": "error",

@@ -1,4 +1,4 @@
-# `safer-by-default/async-keyword`
+# `agent-code-guard/async-keyword`
 
 **What it flags:** The `async` keyword on any function — declarations, expressions, arrows, class methods, and object method shorthand.
 
@@ -39,7 +39,7 @@ Notes for agents:
 Interop with a framework that requires an async handler (e.g. Next.js route handlers, some test utilities):
 
 ```ts
-// eslint-disable-next-line safer-by-default/async-keyword -- Next.js route handler signature requires async
+// eslint-disable-next-line agent-code-guard/async-keyword -- Next.js route handler signature requires async
 export async function GET(req: Request) {
   return Effect.runPromise(handleGet(req));
 }

@@ -1,4 +1,4 @@
-# `safer-by-default/no-test-skip-only`
+# `agent-code-guard/no-test-skip-only`
 
 **What it flags:** In test files (`**/*.test.*`, `**/*.spec.*`, `**/test/**`, `**/tests/**`, `**/__tests__/**`, `**/e2e/**`):
 
@@ -50,7 +50,7 @@ export default [
     files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts"],
     languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
     plugins: { "safer-by-default": guard },
-    rules: { "safer-by-default/no-test-skip-only": "error" },
+    rules: { "agent-code-guard/no-test-skip-only": "error" },
   },
 ];
 ```
@@ -65,7 +65,7 @@ If your repo's `files:`/`ignores:` globs exclude test files from every linted bl
 // eslint.config.js
 {
   rules: {
-    "safer-by-default/no-test-skip-only": ["error", { allow: ["skip"] }],
+    "agent-code-guard/no-test-skip-only": ["error", { allow: ["skip"] }],
   },
 }
 ```
@@ -75,8 +75,8 @@ If your repo's `files:`/`ignores:` globs exclude test files from every linted bl
 One-off local focus during debugging — suppress per-line and remove before commit:
 
 ```ts
-// eslint-disable-next-line safer-by-default/no-test-skip-only -- local debug; revert before commit
+// eslint-disable-next-line agent-code-guard/no-test-skip-only -- local debug; revert before commit
 it.only("the failing case", () => { /* ... */ });
 ```
 
-Rationale: a disabled test is a stop-rule-adjacent signal — the thing you almost-but-did-not-commit. Delete it, or commit it green, or suppress per-line with a concrete reason. See the companion plugin's [PRINCIPLES.md — "Stop rules are literal"](https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md).
+Rationale: a disabled test is a stop-rule-adjacent signal — the thing you almost-but-did-not-commit. Delete it, or commit it green, or suppress per-line with a concrete reason. See the companion plugin's [PRINCIPLES.md — "Stop rules are literal"](https://github.com/chughtapan/agent-code-guard/blob/main/PRINCIPLES.md).
