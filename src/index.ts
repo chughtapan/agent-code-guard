@@ -10,9 +10,11 @@ import manualTaggedError from "./rules/manual-tagged-error.js";
 import manualBrand from "./rules/manual-brand.js";
 import manualOption from "./rules/manual-option.js";
 import manualResult from "./rules/manual-result.js";
+import noUnboundedConcurrency from "./rules/no-unbounded-concurrency.js";
 import noCoverageThresholdGate from "./rules/no-coverage-threshold-gate.js";
 import noHardcodedSecrets from "./rules/no-hardcoded-secrets.js";
 import noManualEnumCast from "./rules/no-manual-enum-cast.js";
+import noProcessEnvAtRuntime from "./rules/no-process-env-at-runtime.js";
 import noRawThrowNewError from "./rules/no-raw-throw-new-error.js";
 import noTestSkipOnly from "./rules/no-test-skip-only.js";
 import noVitestMocks from "./rules/no-vitest-mocks.js";
@@ -36,6 +38,8 @@ const rules = {
   "manual-option": manualOption,
   "manual-brand": manualBrand,
   "manual-tagged-error": manualTaggedError,
+  "no-unbounded-concurrency": noUnboundedConcurrency,
+  "no-process-env-at-runtime": noProcessEnvAtRuntime,
   "record-cast": recordCast,
   "no-raw-sql": noRawSql,
   "no-manual-enum-cast": noManualEnumCast,
@@ -89,6 +93,8 @@ const plugin: Plugin = {
         "agent-code-guard/manual-option": "error",
         "agent-code-guard/manual-brand": "warn",
         "agent-code-guard/manual-tagged-error": "error",
+        "agent-code-guard/no-unbounded-concurrency": "error",
+        "agent-code-guard/no-process-env-at-runtime": "error",
         "agent-code-guard/record-cast": "error",
         "agent-code-guard/no-raw-sql": "error",
         "agent-code-guard/no-manual-enum-cast": "error",
