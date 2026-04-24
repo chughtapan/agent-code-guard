@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-04-24
+
+### Added
+
+- Two new runtime-safety rules:
+  - `no-unbounded-concurrency`
+  - `no-process-env-at-runtime`
+- Per-rule docs and dedicated unit tests for both rules.
+- Property coverage for bounded-concurrency false positives and shadowed `process` bindings.
+
+### Testing
+
+- Vitest suite expanded to 566 tests.
+- Mutation score verified at 92.33%.
+
 ## [0.0.4] - 2026-04-24
 
 ### Added
