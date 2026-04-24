@@ -1,4 +1,4 @@
-# `safer-by-default/manual-tagged-error`
+# `agent-code-guard/manual-tagged-error`
 
 **What it flags:** error-shaped classes, interfaces, and type aliases that manually declare `_tag`, plus returned or error-payload object literals that hand-build tagged error values.
 

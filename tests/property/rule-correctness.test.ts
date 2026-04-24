@@ -6,15 +6,17 @@ import { describe, expect, it } from "vitest";
 import plugin from "../../src/index.js";
 
 const RECOMMENDED_RULE_IDS = Object.keys(plugin.configs.recommended.rules);
+const parser: Linter.Parser = tsParser;
+const pluginEntry: NonNullable<Linter.Config["plugins"]>[string] = plugin;
 
 function baseConfig(rules: Linter.RulesRecord): Linter.Config {
   return {
     files: ["**/*.ts", "**/*.js"],
     languageOptions: {
-      parser: tsParser as unknown as Linter.Parser,
+      parser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: { "agent-code-guard": plugin as unknown as NonNullable<Linter.Config["plugins"]>[string] },
+    plugins: { "agent-code-guard": pluginEntry },
     rules,
   };
 }
@@ -41,8 +43,7 @@ function isSyntacticallyValid(code: string): boolean {
     false,
     ts.ScriptKind.TS,
   );
-  const diags = (sf as unknown as { parseDiagnostics?: readonly ts.Diagnostic[] })
-    .parseDiagnostics;
+  const diags = sf.parseDiagnostics;
   return !diags || diags.length === 0;
 }
 
@@ -167,6 +168,21 @@ describe("property: rule correctness", () => {
       coFire: [],
     },
     {
+      ruleId: "agent-code-guard/manual-result",
+      seed: "const Result = { ok: (value: number) => ({ ok: true as const, value }), err: (error: Error) => ({ ok: false as const, error }), match: (input: unknown) => input };",
+      coFire: [],
+    },
+    {
+      ruleId: "agent-code-guard/manual-option",
+      seed: "const Option = { some: (value: number) => ({ _tag: 'Some' as const, value }), none: { _tag: 'None' as const }, flatMap: (apply: (value: number) => unknown) => apply(1) };",
+      coFire: [],
+    },
+    {
+      ruleId: "agent-code-guard/manual-brand",
+      seed: "const asUserId = (value: string): UserId => value as UserId;",
+      coFire: [],
+    },
+    {
       ruleId: "agent-code-guard/record-cast",
       seed: "const r = {} as Record<string, unknown>;",
       coFire: [],
@@ -247,6 +263,9 @@ describe("property: rule correctness", () => {
     "agent-code-guard/effect-error-erasure": "",
     "agent-code-guard/either-discriminant": "result",
     "agent-code-guard/manual-tagged-error": "RunError",
+    "agent-code-guard/manual-result": "input",
+    "agent-code-guard/manual-option": "apply",
+    "agent-code-guard/manual-brand": "value",
     "agent-code-guard/record-cast": "r",
     "agent-code-guard/no-raw-sql": "db",
     "agent-code-guard/no-manual-enum-cast": "s",

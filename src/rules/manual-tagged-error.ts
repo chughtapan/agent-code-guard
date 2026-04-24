@@ -15,32 +15,39 @@ function looksErrorLike(name: string | null | undefined): boolean {
   return typeof name === "string" && ERROR_NAME_RE.test(name);
 }
 
+function getIdentifierOrMemberName(
+  node: TSESTree.Expression | null,
+): string | null {
+  if (node?.type === AST_NODE_TYPES.Identifier) return node.name;
+  return node?.type === AST_NODE_TYPES.MemberExpression
+    ? getStaticMemberPropertyName(node)
+    : null;
+}
+
+function isManualTagKey(
+  key: TSESTree.Expression | TSESTree.PrivateIdentifier,
+  computed: boolean,
+): boolean {
+  return getStaticStringKey(key, computed) === "_tag";
+}
+
 function classHasManualTagField(node: TSESTree.ClassDeclaration | TSESTree.ClassExpression): boolean {
-  return node.body.body.some((member) => {
-    if (member.type !== AST_NODE_TYPES.PropertyDefinition) return false;
-    return getStaticStringKey(member.key, member.computed) === "_tag";
-  });
+  return node.body.body.some(
+    (member) =>
+      member.type === AST_NODE_TYPES.PropertyDefinition &&
+      isManualTagKey(member.key, member.computed),
+  );
 }
 
 function superClassLooksErrorLike(
   node: TSESTree.ClassDeclaration | TSESTree.ClassExpression,
 ): boolean {
-  const superClass = node.superClass;
-  if (!superClass) return false;
-  if (superClass.type === AST_NODE_TYPES.Identifier) {
-    return superClass.name === "Error" || looksErrorLike(superClass.name);
-  }
-  if (superClass.type === AST_NODE_TYPES.MemberExpression) {
-    const name = getStaticMemberPropertyName(superClass);
-    if (name === null) return false;
-    return name === "Error" || looksErrorLike(name);
-  }
-  return false;
+  return looksErrorLike(getIdentifierOrMemberName(node.superClass));
 }
 
 function typeElementIsTag(member: TSESTree.TypeElement): boolean {
-  if (member.type !== AST_NODE_TYPES.TSPropertySignature) return false;
-  return getStaticStringKey(member.key, member.computed) === "_tag";
+  return member.type === AST_NODE_TYPES.TSPropertySignature &&
+    isManualTagKey(member.key, member.computed);
 }
 
 function typeContainsManualTag(node: TSESTree.TypeNode): boolean {
@@ -56,7 +63,7 @@ function typeContainsManualTag(node: TSESTree.TypeNode): boolean {
 }
 
 function objectPropertyIsTag(member: TSESTree.Property): boolean {
-  return getStaticStringKey(member.key, member.computed) === "_tag";
+  return isManualTagKey(member.key, member.computed);
 }
 
 function objectHasManualTag(node: TSESTree.ObjectExpression): boolean {
@@ -76,26 +83,33 @@ function getObjectTagName(node: TSESTree.ObjectExpression): string | null {
 }
 
 function newExpressionLooksErrorLike(node: TSESTree.NewExpression): boolean {
-  const callee = node.callee;
-  if (callee.type === AST_NODE_TYPES.Identifier) {
-    return callee.name === "Error" || looksErrorLike(callee.name);
-  }
-  if (callee.type === AST_NODE_TYPES.MemberExpression) {
-    const name = getStaticMemberPropertyName(callee);
-    return name === "Error" || looksErrorLike(name);
-  }
-  return false;
+  return looksErrorLike(getIdentifierOrMemberName(node.callee));
 }
 
 function isEffectFailCall(node: TSESTree.CallExpression): boolean {
   return isNamedMemberCall(node, "Effect", "fail");
 }
 
+function isTransparentReturnWrapper(node: TSESTree.Node): boolean {
+  switch (node.type) {
+    case AST_NODE_TYPES.ChainExpression:
+    case AST_NODE_TYPES.TSAsExpression:
+    case AST_NODE_TYPES.TSNonNullExpression:
+    case AST_NODE_TYPES.TSSatisfiesExpression:
+    case AST_NODE_TYPES.TSTypeAssertion:
+      return true;
+    default:
+      return false;
+  }
+}
+
 function objectIsReturnedValue(node: TSESTree.ObjectExpression): boolean {
   let child: TSESTree.Node = node;
   let current = getParent(node);
   while (current !== null) {
-    if (current.type === AST_NODE_TYPES.ReturnStatement) return true;
+    if (current.type === AST_NODE_TYPES.ReturnStatement) {
+      return current.argument === child;
+    }
     if (
       current.type === AST_NODE_TYPES.ArrowFunctionExpression &&
       current.expression &&
@@ -110,6 +124,7 @@ function objectIsReturnedValue(node: TSESTree.ObjectExpression): boolean {
     ) {
       return false;
     }
+    if (!isTransparentReturnWrapper(current)) return false;
     child = current;
     current = getParent(current);
   }

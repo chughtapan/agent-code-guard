@@ -7,6 +7,7 @@ import {
   getEnclosingFunctionName,
   getFirst,
   getNumericLiteralValue,
+  getParent,
   getStaticMemberPropertyName,
   getStaticStringKey,
   getStringLiteralValue,
@@ -45,7 +46,7 @@ function attachParents(node: unknown, parent: TSESTree.Node | undefined): void {
   if (parent) {
     (node as TSESTree.Node & { parent?: TSESTree.Node }).parent = parent;
   }
-  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(node)) {
     if (key === "parent") continue;
     if (Array.isArray(value)) {
       for (const child of value) {
@@ -117,7 +118,7 @@ function allNodes<T extends TSESTree.Node>(
 
 function visit(node: TSESTree.Node, fn: (node: TSESTree.Node) => void): void {
   fn(node);
-  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(node)) {
     if (key === "parent") continue;
     if (Array.isArray(value)) {
       for (const child of value) {
@@ -139,6 +140,10 @@ describe("property: ast refinement", () => {
     );
   });
 
+  it("Property 1a: getFirst collapses explicit undefined to null", () => {
+    expect(getFirst([undefined])).toBeNull();
+  });
+
   it("Property 2: getStaticStringKey accepts static object keys and rejects dynamic ones", () => {
     fc.assert(
       fc.property(identArb, safeStringArb, (ident, text) => {
@@ -155,6 +160,16 @@ describe("property: ast refinement", () => {
 
         const dynamicProp = firstObjectProperty(`const obj = { [${ident}]: 1 };`);
         expect(getStaticStringKey(dynamicProp.key, dynamicProp.computed)).toBeNull();
+
+        const interpolatedTemplateProp = firstObjectProperty(
+          "const obj = { [`" + text + "${" + ident + "}`]: 1 };",
+        );
+        expect(
+          getStaticStringKey(
+            interpolatedTemplateProp.key,
+            interpolatedTemplateProp.computed,
+          ),
+        ).toBeNull();
       }),
       { numRuns: 80 },
     );
@@ -255,5 +270,97 @@ describe("property: ast refinement", () => {
       }),
       { numRuns: 40 },
     );
+  });
+
+  it("Property 7: malformed empty template literals stay safely null", () => {
+    const emptyTemplate = {
+      type: AST_NODE_TYPES.TemplateLiteral,
+      expressions: [],
+      quasis: [],
+    } as TSESTree.TemplateLiteral;
+
+    expect(getStaticStringKey(emptyTemplate, true)).toBeNull();
+    expect(getStringLiteralValue(emptyTemplate)).toBeNull();
+  });
+
+  it("Property 8: parent helpers return null at the top level and for computed owners", () => {
+    const program = parseWithParents(`
+      const obj = {
+        [name]: () => { throw new Error("x"); },
+      };
+    `);
+    const declaration = program.body[0];
+    if (
+      declaration?.type !== AST_NODE_TYPES.VariableDeclaration ||
+      declaration.declarations[0]?.init?.type !== AST_NODE_TYPES.ObjectExpression
+    ) {
+      throw new Error("expected object literal");
+    }
+
+    const property = declaration.declarations[0].init.properties[0];
+    if (property?.type !== AST_NODE_TYPES.Property) {
+      throw new Error("expected property");
+    }
+
+    const throws = allNodes(
+      program,
+      (node): node is TSESTree.ThrowStatement => node.type === AST_NODE_TYPES.ThrowStatement,
+    );
+
+    expect(getParent(program)).toBeNull();
+    expect(getEnclosingFunctionName(throws[0]!)).toBeNull();
+  });
+
+  it("getEnclosingFunctionName returns null for unsupported function containers", () => {
+    const program = parseWithParents(`
+      const handlers = [() => { throw new Error("x"); }];
+      let assigned;
+      assigned = () => { throw new Error("y"); };
+      function outer() {
+        const nested = [() => { throw new Error("z"); }];
+        return nested;
+      }
+    `);
+
+    const throws = allNodes(
+      program,
+      (node): node is TSESTree.ThrowStatement =>
+        node.type === AST_NODE_TYPES.ThrowStatement,
+    );
+
+    expect(throws.map((node) => getEnclosingFunctionName(node))).toEqual([
+      null,
+      null,
+      null,
+    ]);
+  });
+
+  it("member helpers reject non-member nodes and computed optional access", () => {
+    expect(getStaticMemberPropertyName(firstExpression("run();"))).toBeNull();
+    expect(getTagAccess(firstExpression('value?.["_tag"];'))).toBeNull();
+  });
+
+  it("isFunctionReturnTypeReference ignores non-return Promise annotations", () => {
+    const program = parseWithParents(`
+      function run(input: Promise<number>): void { return; }
+      const value: Promise<number> = Promise.resolve(1);
+      type Box = { value: Promise<number> };
+      type Loader = () => Promise<number>;
+    `);
+
+    const refs = allNodes(
+      program,
+      (node): node is TSESTree.TSTypeReference =>
+        node.type === AST_NODE_TYPES.TSTypeReference &&
+        node.typeName.type === AST_NODE_TYPES.Identifier &&
+        node.typeName.name === "Promise",
+    );
+
+    expect(refs.map((node) => isFunctionReturnTypeReference(node))).toEqual([
+      false,
+      false,
+      false,
+      true,
+    ]);
   });
 });

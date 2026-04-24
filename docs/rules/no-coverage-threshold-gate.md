@@ -1,4 +1,4 @@
-# `safer-by-default/no-coverage-threshold-gate`
+# `agent-code-guard/no-coverage-threshold-gate`
 
 **What it flags:** In `jest.config.*`, `vitest.config.*`, and `vite.config.*`:
 
@@ -8,7 +8,7 @@
 
 **Why:** Coverage is a diagnostic, not a merge gate. A threshold turns a useful signal into Goodhart bait: developers add trivial tests that touch a line without asserting behavior, the number goes up, and the class of bug the threshold was meant to catch still ships. Read the number on the dashboard. Use it to find code that is not tested; do not use it to block merges.
 
-Background: research on coverage-as-gate vs coverage-as-signal in the companion plugin ([sbd#32](https://github.com/chughtapan/safer-by-default/issues/32)). Short version: thresholds measure the easy-to-game variable, not the one you want to move.
+Background: research on coverage-as-gate vs coverage-as-signal in the companion plugin ([sbd#32](https://github.com/chughtapan/agent-code-guard/issues/32)). Short version: thresholds measure the easy-to-game variable, not the one you want to move.
 
 ## Before (flagged) — `jest.config.js`
 
@@ -58,7 +58,7 @@ This rule runs on filenames matching:
 If your org genuinely requires a coverage floor (regulated industry, SOC 2 control), suppress per-config with a one-line note:
 
 ```ts
-// eslint-disable-next-line safer-by-default/no-coverage-threshold-gate -- SOC 2 control CC7.2 requires ≥80% line coverage
+// eslint-disable-next-line agent-code-guard/no-coverage-threshold-gate -- SOC 2 control CC7.2 requires ≥80% line coverage
 coverageThreshold: { global: { lines: 80 } },
 ```
 

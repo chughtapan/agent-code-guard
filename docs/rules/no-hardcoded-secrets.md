@@ -1,4 +1,4 @@
-# `safer-by-default/no-hardcoded-secrets`
+# `agent-code-guard/no-hardcoded-secrets`
 
 **What it flags:** String literals that look like hardcoded secrets, caught by either of two triggers:
 
@@ -72,7 +72,7 @@ Notes for agents:
 
 ```jsonc
 {
-  "safer-by-default/no-hardcoded-secrets": [
+  "agent-code-guard/no-hardcoded-secrets": [
     "error",
     { "detectEntropy": false }
   ]
@@ -86,7 +86,7 @@ Notes for agents:
 A public identifier that isn't actually a secret but happens to look like one (e.g. a published API's public key, a well-known test token):
 
 ```ts
-// eslint-disable-next-line safer-by-default/no-hardcoded-secrets -- Stripe test mode publishable key, safe to commit
+// eslint-disable-next-line agent-code-guard/no-hardcoded-secrets -- Stripe test mode publishable key, safe to commit
 const stripePublishableKey = "pk_test_TYooMQauvdEDq54NiTphI7jx";
 ```
 
