@@ -47,6 +47,18 @@ ruleTester.run("manual-tagged-error", rule, {
       code: 'class Session extends errors.Service { readonly _tag = "BadToken" as const; }',
     },
     {
+      code: 'class Session extends Warning { readonly _tag = "BadToken" as const; }',
+    },
+    {
+      code: 'class Session extends errors.Warning { readonly _tag = "BadToken" as const; }',
+    },
+    {
+      code: 'class RunError extends Error { readonly code = "RunError" as const; }',
+    },
+    {
+      code: 'class Session extends makeError() { readonly _tag = "BadToken" as const; }',
+    },
+    {
       code: 'const parse = () => { Effect["fail"]({ _tag: "ParseFailure", path, message }); };',
     },
     {
@@ -56,7 +68,22 @@ ruleTester.run("manual-tagged-error", rule, {
       code: 'function outer() { return function inner() { const tagged = { _tag: "ParseFailure", path, message }; return tagged; }; }',
     },
     {
+      code: 'function parse() { const tagged = { _tag: "ParseFailure", path, message }; consume(tagged); return 1; }',
+    },
+    {
       code: 'const wrap = () => new Error(() => { const tagged = { _tag: "ParseFailure", path, message }; return tagged; });',
+    },
+    {
+      code: 'const parse = () => new Box({ cause: { _tag: "ParseFailure", path, message } });',
+    },
+    {
+      code: 'const parse = () => new errors.Service({ cause: { _tag: "ParseFailure", path, message } });',
+    },
+    {
+      code: 'const parse = () => new (makeBox())({ cause: { _tag: "ParseFailure", path, message } });',
+    },
+    {
+      code: 'const parse = () => wrap({ _tag: "ParseFailure", path, message });',
     },
     {
       code: 'const make = () => ({ _tag: "Player", id });',
@@ -150,6 +177,12 @@ ruleTester.run("manual-tagged-error", rule, {
       ],
     },
     {
+      code: 'const parse = () => ({ _tag: "ParseFailure", path, message } as const);',
+      errors: [
+        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
+      ],
+    },
+    {
       code: 'function parse() { return { ["_tag"]: "ParseFailure", path, message }; }',
       errors: [
         { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
@@ -168,13 +201,37 @@ ruleTester.run("manual-tagged-error", rule, {
       ],
     },
     {
+      code: 'const parse = () => new RunError({ cause: { _tag: "ParseFailure", path, message } });',
+      errors: [
+        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
+      ],
+    },
+    {
       code: 'const err = new errors.PlannedHarnessIngressError({ cause: { _tag: "ParseFailure", path, message } });',
       errors: [
         { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
       ],
     },
     {
+      code: 'const parse = () => new errors.RunError({ cause: { _tag: "ParseFailure", path, message } });',
+      errors: [
+        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
+      ],
+    },
+    {
       code: 'const parse = () => Effect.fail({ _tag: "ParseFailure", path, message });',
+      errors: [
+        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
+      ],
+    },
+    {
+      code: 'const parse = () => Effect.fail({ _tag, path, message });',
+      errors: [
+        { messageId: "manualTaggedError", data: { name: "tagged value" } },
+      ],
+    },
+    {
+      code: 'const parse = () => Effect.fail(() => ({ _tag: "ParseFailure", path, message }));',
       errors: [
         { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
       ],
@@ -187,6 +244,18 @@ ruleTester.run("manual-tagged-error", rule, {
     },
     {
       code: 'function parse() { Effect.fail({ _tag: "ParseFailure", path, message }); }',
+      errors: [
+        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
+      ],
+    },
+    {
+      code: 'function parse() { return new PlannedHarnessIngressError({ cause: wrap({ _tag: "ParseFailure", path, message }) }); }',
+      errors: [
+        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
+      ],
+    },
+    {
+      code: 'const parse = () => Effect.fail(wrap({ _tag: "ParseFailure", path, message }));',
       errors: [
         { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
       ],

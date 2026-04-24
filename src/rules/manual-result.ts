@@ -1,6 +1,11 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { findManualResultMatch } from "../utils/manual-algebra-detection.js";
+
+const VARIABLE_SURFACE_SELECTOR =
+  "VariableDeclarator[init.type='ObjectExpression'], " +
+  "VariableDeclarator[init.type='FunctionExpression'], " +
+  "VariableDeclarator[init.type='ArrowFunctionExpression'], " +
+  "VariableDeclarator[init.type='ClassExpression']";
 
 export default createRule({
   name: "manual-result",
@@ -35,16 +40,7 @@ export default createRule({
       TSInterfaceDeclaration: maybeReport,
       ClassDeclaration: maybeReport,
       FunctionDeclaration: maybeReport,
-      VariableDeclarator(node) {
-        if (
-          node.init?.type === AST_NODE_TYPES.ObjectExpression ||
-          node.init?.type === AST_NODE_TYPES.FunctionExpression ||
-          node.init?.type === AST_NODE_TYPES.ArrowFunctionExpression ||
-          node.init?.type === AST_NODE_TYPES.ClassExpression
-        ) {
-          maybeReport(node);
-        }
-      },
+      [VARIABLE_SURFACE_SELECTOR]: maybeReport,
     };
   },
 });

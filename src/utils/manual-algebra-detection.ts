@@ -9,7 +9,6 @@ export interface ManualAlgebraMatch {
   readonly displayName: string;
   readonly messageId: "manualResult" | "manualOption" | "manualBrand";
   readonly node: TSESTree.Node;
-  readonly evidence: readonly string[];
 }
 
 type SurfaceKind = "type" | "interface" | "class" | "object" | "function";
@@ -72,6 +71,10 @@ const OPTION_HELPERS = new Set([
 ]);
 
 const BRAND_MARKERS = new Set(["__brand", "_brand"]);
+const SOME_OPTION_NAMES = new Set(["some", "present"]);
+const NONE_OPTION_NAMES = new Set(["none", "absent"]);
+const SOME_RESULT_NAMES = new Set(["left", "right", "success", "failure"]);
+const TRANSPORT_HELPERS = new Set([...RESULT_HELPERS, ...OPTION_HELPERS]);
 const RESULT_FUNCTION_NAMES = new Set([
   "ok",
   "err",
@@ -190,15 +193,12 @@ function addTypeLiterals(
   surface: ReturnType<typeof createSurface>,
   node: TSESTree.TypeNode,
 ): void {
-  switch (node.type) {
-    case AST_NODE_TYPES.TSLiteralType:
-      addLiteral(surface, node.literal);
-      return;
-    case AST_NODE_TYPES.TSUnionType:
-      for (const type of node.types) addTypeLiterals(surface, type);
-      return;
-    default:
-      return;
+  if (node.type === AST_NODE_TYPES.TSLiteralType) {
+    addLiteral(surface, node.literal);
+    return;
+  }
+  if (node.type === AST_NODE_TYPES.TSUnionType) {
+    for (const type of node.types) addTypeLiterals(surface, type);
   }
 }
 
@@ -206,18 +206,15 @@ function addTypeElement(
   surface: ReturnType<typeof createSurface>,
   member: TSESTree.TypeElement,
 ): void {
-  switch (member.type) {
-    case AST_NODE_TYPES.TSPropertySignature:
-      addKey(surface, member.key, member.computed);
-      if (member.typeAnnotation) {
-        addTypeLiterals(surface, member.typeAnnotation.typeAnnotation);
-      }
-      return;
-    case AST_NODE_TYPES.TSMethodSignature:
-      addKey(surface, member.key, member.computed);
-      return;
-    default:
-      return;
+  if (member.type === AST_NODE_TYPES.TSPropertySignature) {
+    addKey(surface, member.key, member.computed);
+    if (member.typeAnnotation) {
+      addTypeLiterals(surface, member.typeAnnotation.typeAnnotation);
+    }
+    return;
+  }
+  if (member.type === AST_NODE_TYPES.TSMethodSignature) {
+    addKey(surface, member.key, member.computed);
   }
 }
 
@@ -225,16 +222,15 @@ function addTypeNode(
   surface: ReturnType<typeof createSurface>,
   node: TSESTree.TypeNode,
 ): void {
-  switch (node.type) {
-    case AST_NODE_TYPES.TSTypeLiteral:
-      for (const member of node.members) addTypeElement(surface, member);
-      return;
-    case AST_NODE_TYPES.TSUnionType:
-    case AST_NODE_TYPES.TSIntersectionType:
-      for (const type of node.types) addTypeNode(surface, type);
-      return;
-    default:
-      return;
+  if (node.type === AST_NODE_TYPES.TSTypeLiteral) {
+    for (const member of node.members) addTypeElement(surface, member);
+    return;
+  }
+  if (
+    node.type === AST_NODE_TYPES.TSUnionType ||
+    node.type === AST_NODE_TYPES.TSIntersectionType
+  ) {
+    for (const type of node.types) addTypeNode(surface, type);
   }
 }
 
@@ -242,16 +238,13 @@ function addClassMember(
   surface: ReturnType<typeof createSurface>,
   member: TSESTree.ClassElement,
 ): void {
-  switch (member.type) {
-    case AST_NODE_TYPES.PropertyDefinition:
-      addKey(surface, member.key, member.computed);
-      addLiteral(surface, member.value);
-      return;
-    case AST_NODE_TYPES.MethodDefinition:
-      addKey(surface, member.key, member.computed);
-      return;
-    default:
-      return;
+  if (member.type === AST_NODE_TYPES.PropertyDefinition) {
+    addKey(surface, member.key, member.computed);
+    addLiteral(surface, member.value);
+    return;
+  }
+  if (member.type === AST_NODE_TYPES.MethodDefinition) {
+    addKey(surface, member.key, member.computed);
   }
 }
 
@@ -261,7 +254,7 @@ function addObjectMember(
 ): void {
   if (member.type !== AST_NODE_TYPES.Property) return;
   addKey(surface, member.key, member.computed);
-  if (!member.method) addLiteral(surface, member.value);
+  addLiteral(surface, member.value);
 }
 
 function isNode(value: unknown): value is TSESTree.Node {
@@ -278,11 +271,11 @@ function walkNode(
     if (key === "parent") continue;
     if (Array.isArray(value)) {
       for (const child of value) {
-        if (isNode(child)) walkNode(child, visit);
+        walkNode(isNode(child) ? child : null, visit);
       }
       continue;
     }
-    if (isNode(value)) walkNode(value, visit);
+    walkNode(isNode(value) ? value : null, visit);
   }
 }
 
@@ -295,19 +288,17 @@ function addFunctionBody(
 ): void {
   const body = node.body;
   walkNode(body, (child) => {
-    switch (child.type) {
-      case AST_NODE_TYPES.Property:
-        addKey(surface, child.key, child.computed);
-        if (!child.method) addLiteral(surface, child.value);
-        return;
-      case AST_NODE_TYPES.MemberExpression:
-        addKey(surface, child.property, child.computed);
-        return;
-      case AST_NODE_TYPES.Literal:
-        addLiteral(surface, child);
-        return;
-      default:
-        return;
+    if (child.type === AST_NODE_TYPES.Property) {
+      addKey(surface, child.key, child.computed);
+      addLiteral(surface, child.value);
+      return;
+    }
+    if (child.type === AST_NODE_TYPES.MemberExpression) {
+      addKey(surface, child.property, child.computed);
+      return;
+    }
+    if (child.type === AST_NODE_TYPES.Literal) {
+      addLiteral(surface, child);
     }
   });
 }
@@ -345,27 +336,28 @@ function surfaceFromNode(node: TSESTree.Node): Surface | null {
     }
     case AST_NODE_TYPES.VariableDeclarator: {
       const displayName = getPatternName(node.id);
-      if (displayName === null || node.init === null) return null;
-      switch (node.init.type) {
-        case AST_NODE_TYPES.ObjectExpression: {
-          const surface = createSurface("object", node, displayName);
-          for (const member of node.init.properties) addObjectMember(surface, member);
-          return finalizeSurface(surface);
-        }
-        case AST_NODE_TYPES.ClassExpression: {
-          const surface = createSurface("class", node, displayName);
-          for (const member of node.init.body.body) addClassMember(surface, member);
-          return finalizeSurface(surface);
-        }
-        case AST_NODE_TYPES.FunctionExpression:
-        case AST_NODE_TYPES.ArrowFunctionExpression: {
-          const surface = createSurface("function", node, displayName);
-          addFunctionBody(surface, node.init);
-          return finalizeSurface(surface);
-        }
-        default:
-          return null;
+      if (displayName === null) return null;
+      const init = node.init;
+      if (init === null) return null;
+      if (init.type === AST_NODE_TYPES.ObjectExpression) {
+        const surface = createSurface("object", node, displayName);
+        for (const member of init.properties) addObjectMember(surface, member);
+        return finalizeSurface(surface);
       }
+      if (init.type === AST_NODE_TYPES.ClassExpression) {
+        const surface = createSurface("class", node, displayName);
+        for (const member of init.body.body) addClassMember(surface, member);
+        return finalizeSurface(surface);
+      }
+      if (
+        init.type === AST_NODE_TYPES.FunctionExpression ||
+        init.type === AST_NODE_TYPES.ArrowFunctionExpression
+      ) {
+        const surface = createSurface("function", node, displayName);
+        addFunctionBody(surface, init);
+        return finalizeSurface(surface);
+      }
+      return null;
     }
     default:
       return null;
@@ -416,6 +408,14 @@ function getNormalizedDisplayName(surface: Surface): string | null {
   return surface.displayName === null ? null : normalize(surface.displayName);
 }
 
+function hasNormalizedDisplayName(
+  surface: Surface,
+  candidates: ReadonlySet<string>,
+): boolean {
+  const name = getNormalizedDisplayName(surface);
+  return name !== null && candidates.has(name);
+}
+
 function hasBooleanLiteral(
   surface: Surface,
   candidate: "true" | "false",
@@ -423,106 +423,86 @@ function hasBooleanLiteral(
   return surface.booleanLiterals.has(candidate);
 }
 
+function hasTaggedLiterals(surface: Surface, candidates: Iterable<string>): boolean {
+  return surface.hasTagKey && hasNormalized(surface.stringLiterals, candidates);
+}
+
+function hasKeys(surface: Surface, candidates: Iterable<string>): boolean {
+  return hasNormalized(surface.keys, candidates);
+}
+
 function hasResultFunctionEvidence(surface: Surface): boolean {
   if (surface.kind !== "function") return hasResultBranchPair(surface);
   const name = getNormalizedDisplayName(surface);
   if (name === null) return false;
-  switch (name) {
-    case "ok":
-      return hasNormalized(surface.keys, ["ok"]) &&
-        (hasNormalized(surface.keys, ["value"]) || hasBooleanLiteral(surface, "true"));
-    case "err":
-    case "error":
-      return hasNormalized(surface.keys, ["error", "err"]) ||
-        (hasNormalized(surface.keys, ["ok"]) && hasBooleanLiteral(surface, "false"));
-    case "left":
-    case "right":
-    case "success":
-    case "failure":
-      return hasNormalized(surface.keys, [name]) ||
-        hasNormalized(surface.stringLiterals, [name]);
-    case "isok":
-      return hasNormalized(surface.keys, ["ok"]);
-    case "iserr":
-      return hasNormalized(surface.keys, ["error", "err"]) ||
-        hasBooleanLiteral(surface, "false");
-    case "isleft":
-    case "isright":
-      return surface.hasTagKey ||
-        hasNormalized(surface.keys, [name.slice(2)]) ||
-        hasNormalized(surface.stringLiterals, [name.slice(2)]);
-    case "issuccess":
-      return hasNormalized(surface.keys, ["success"]) ||
-        hasNormalized(surface.stringLiterals, ["success"]);
-    case "isfailure":
-      return hasNormalized(surface.keys, ["failure"]) ||
-        hasNormalized(surface.stringLiterals, ["failure"]);
-    default:
-      return hasResultBranchPair(surface);
+  if (name === "ok") {
+    return hasKeys(surface, ["ok"]) &&
+      (hasKeys(surface, ["value"]) || hasBooleanLiteral(surface, "true"));
   }
+  if (name === "err" || name === "error") {
+    return hasKeys(surface, ["error", "err"]) ||
+      (hasKeys(surface, ["ok"]) && hasBooleanLiteral(surface, "false"));
+  }
+  if (SOME_RESULT_NAMES.has(name)) {
+    return hasKeys(surface, [name]) || hasNormalized(surface.stringLiterals, [name]);
+  }
+  if (name === "isok") return hasKeys(surface, ["ok"]);
+  if (name === "iserr") {
+    return hasKeys(surface, ["error", "err"]) || hasBooleanLiteral(surface, "false");
+  }
+  if (name === "isleft" || name === "isright") {
+    const branchName = name.slice(2);
+    return hasKeys(surface, [branchName]) ||
+      hasNormalized(surface.stringLiterals, [branchName]);
+  }
+  if (name === "issuccess" || name === "isfailure") {
+    const branchName = name.slice(2);
+    return hasKeys(surface, [branchName]) ||
+      hasNormalized(surface.stringLiterals, [branchName]);
+  }
+  return hasResultBranchPair(surface);
 }
 
 function hasOptionFunctionEvidence(surface: Surface): boolean {
   if (surface.kind !== "function") return hasOptionBranchPair(surface);
   const name = getNormalizedDisplayName(surface);
   if (name === null) return false;
-  switch (name) {
-    case "some":
-    case "present":
-      return (surface.hasTagKey &&
-        hasNormalized(surface.stringLiterals, [name])) ||
-        hasNormalized(surface.keys, ["value"]);
-    case "none":
-    case "absent":
-      return (surface.hasTagKey &&
-        hasNormalized(surface.stringLiterals, [name])) ||
-        hasNormalized(surface.keys, [name]);
-    case "issome":
-    case "hasvalue":
-      return (surface.hasTagKey &&
-        hasNormalized(surface.stringLiterals, ["some", "present"])) ||
-        hasNormalized(surface.keys, ["value"]);
-    case "isnone":
-      return surface.hasTagKey &&
-        hasNormalized(surface.stringLiterals, ["none", "absent"]);
-    default:
-      return hasOptionBranchPair(surface);
-  }
+  const someLike = hasTaggedLiterals(surface, SOME_OPTION_NAMES) || hasKeys(surface, ["value"]);
+  const noneLike = hasTaggedLiterals(surface, NONE_OPTION_NAMES) || hasKeys(surface, NONE_OPTION_NAMES);
+
+  if (SOME_OPTION_NAMES.has(name)) return someLike;
+  if (NONE_OPTION_NAMES.has(name)) return noneLike;
+  if (name === "issome" || name === "hasvalue") return someLike;
+  if (name === "isnone") return hasTaggedLiterals(surface, NONE_OPTION_NAMES);
+  return hasOptionBranchPair(surface);
 }
 
 function hasResultReusableSignal(surface: Surface): boolean {
   return looksResultLikeName(surface.displayName) ||
-    hasNormalized(surface.displayName === null ? new Set<string>() : new Set([surface.displayName]), RESULT_FUNCTION_NAMES) ||
+    hasNormalizedDisplayName(surface, RESULT_FUNCTION_NAMES) ||
     hasNormalized(surface.keys, RESULT_HELPERS);
 }
 
 function hasOptionReusableSignal(surface: Surface): boolean {
   return looksOptionLikeName(surface.displayName) ||
-    hasNormalized(surface.displayName === null ? new Set<string>() : new Set([surface.displayName]), OPTION_FUNCTION_NAMES) ||
+    hasNormalizedDisplayName(surface, OPTION_FUNCTION_NAMES) ||
     hasNormalized(surface.keys, OPTION_HELPERS);
 }
 
 function hasBrandMarker(surface: Surface): boolean {
-  if (hasNormalized(surface.keys, BRAND_MARKERS)) return true;
-  if (!hasNormalized(surface.keys, ["brand"])) return false;
-  if (surface.displayName === null) return false;
-  return hasNormalized(surface.stringLiterals, [surface.displayName]);
+  return hasKeys(surface, BRAND_MARKERS) ||
+    (surface.displayName !== null &&
+      hasKeys(surface, ["brand"]) &&
+      hasNormalized(surface.stringLiterals, [surface.displayName]));
 }
 
 function getBrandHelperCastName(node: TSESTree.Node): string | null {
   let expression: TSESTree.Expression | null = null;
   if (node.type === AST_NODE_TYPES.FunctionDeclaration) {
     if (!node.returnType || !node.body) return null;
-    const statement = node.body.body[0];
-    if (
-      node.body.body.length !== 1 ||
-      statement?.type !== AST_NODE_TYPES.ReturnStatement ||
-      !statement.argument
-    ) {
-      return null;
-    }
-    expression = statement.argument;
-  } else if (
+    expression = getSingleReturnedExpression(node.body.body);
+  }
+  if (
     node.type === AST_NODE_TYPES.VariableDeclarator &&
     node.init &&
     (node.init.type === AST_NODE_TYPES.FunctionExpression ||
@@ -531,24 +511,15 @@ function getBrandHelperCastName(node: TSESTree.Node): string | null {
     const fn = node.init;
     if (!fn.returnType) return null;
     if (fn.body.type === AST_NODE_TYPES.BlockStatement) {
-      const statement = fn.body.body[0];
-      if (
-        fn.body.body.length !== 1 ||
-        statement?.type !== AST_NODE_TYPES.ReturnStatement ||
-        !statement.argument
-      ) {
-        return null;
-      }
-      expression = statement.argument;
+      expression = getSingleReturnedExpression(fn.body.body);
     } else {
       expression = fn.body;
     }
-  } else {
-    return null;
   }
 
+  if (expression === null) return null;
   const unwrapped =
-    expression?.type === AST_NODE_TYPES.TSAsExpression ? expression : null;
+    expression.type === AST_NODE_TYPES.TSAsExpression ? expression : null;
   if (unwrapped === null) return null;
   const annotation = unwrapped.typeAnnotation;
   if (
@@ -560,56 +531,63 @@ function getBrandHelperCastName(node: TSESTree.Node): string | null {
   return annotation.typeName.name;
 }
 
+function getSingleReturnedExpression(
+  statements: readonly TSESTree.Statement[],
+): TSESTree.Expression | null {
+  if (statements.length !== 1) return null;
+  const statement = statements[0]!;
+  if (statement.type !== AST_NODE_TYPES.ReturnStatement) return null;
+  return statement.argument ?? null;
+}
+
 function matchesBrandHelperName(
   surface: Surface,
   targetType: string,
 ): boolean {
-  if (surface.displayName === null) return false;
-  return (
-    surface.displayName === targetType ||
-    surface.displayName === `as${targetType}` ||
-    surface.displayName === `make${targetType}` ||
-    surface.displayName === `to${targetType}` ||
-    BRAND_HELPER_RE.test(surface.displayName)
-  );
+  const name = surface.displayName;
+  return name !== null &&
+    (name === targetType || BRAND_HELPER_RE.test(name));
 }
 
 function match(
   surface: Surface,
   kind: ManualAlgebraKind,
   messageId: ManualAlgebraMatch["messageId"],
-  evidence: readonly string[],
 ): ManualAlgebraMatch {
   return {
     kind,
     messageId,
     node: surface.node,
     displayName: surface.displayName ?? "(anonymous)",
-    evidence,
   };
+}
+
+function isTransportDataSurface(surface: Surface): boolean {
+  const name = surface.displayName;
+  if (isTransportLikeName(name)) return true;
+  if (surface.kind === "function") return false;
+  if (looksResultLikeName(name) || looksOptionLikeName(name)) return false;
+  return hasDiscriminantStyle(surface) && !hasKeys(surface, TRANSPORT_HELPERS);
+}
+
+function isTaggedErrorSurface(surface: Surface): boolean {
+  return surface.hasTagKey &&
+    (looksErrorLike(surface.displayName) ||
+      [...surface.stringLiterals].some((value) => looksErrorLike(value)));
+}
+
+function isExcludedSurface(surface: Surface): boolean {
+  return isTransportDataSurface(surface) || isTaggedErrorSurface(surface);
 }
 
 export function isTransportDataShape(node: TSESTree.Node): boolean {
   const surface = surfaceFromNode(node);
-  if (surface === null) return false;
-  if (isTransportLikeName(surface.displayName)) return true;
-  if (
-    surface.kind !== "function" &&
-    !looksResultLikeName(surface.displayName) &&
-    !looksOptionLikeName(surface.displayName) &&
-    hasDiscriminantStyle(surface) &&
-    !hasNormalized(surface.keys, [...RESULT_HELPERS, ...OPTION_HELPERS])
-  ) {
-    return true;
-  }
-  return false;
+  return surface === null ? false : isTransportDataSurface(surface);
 }
 
 export function isTaggedErrorCollision(node: TSESTree.Node): boolean {
   const surface = surfaceFromNode(node);
-  if (surface === null || !surface.hasTagKey) return false;
-  if (looksErrorLike(surface.displayName)) return true;
-  return [...surface.stringLiterals].some((value) => looksErrorLike(value));
+  return surface === null ? false : isTaggedErrorSurface(surface);
 }
 
 export function findManualResultMatch(
@@ -617,13 +595,10 @@ export function findManualResultMatch(
 ): ManualAlgebraMatch | null {
   const surface = surfaceFromNode(node);
   if (surface === null) return null;
-  if (isTransportDataShape(node) || isTaggedErrorCollision(node)) return null;
+  if (isExcludedSurface(surface)) return null;
   if (!hasResultFunctionEvidence(surface)) return null;
   if (!hasResultReusableSignal(surface)) return null;
-  return match(surface, "result", "manualResult", [
-    "result-like branch pair",
-    "reusable success/failure surface",
-  ]);
+  return match(surface, "result", "manualResult");
 }
 
 export function findManualOptionMatch(
@@ -631,13 +606,10 @@ export function findManualOptionMatch(
 ): ManualAlgebraMatch | null {
   const surface = surfaceFromNode(node);
   if (surface === null) return null;
-  if (isTransportDataShape(node) || isTaggedErrorCollision(node)) return null;
+  if (isExcludedSurface(surface)) return null;
   if (!hasOptionFunctionEvidence(surface)) return null;
   if (!hasOptionReusableSignal(surface)) return null;
-  return match(surface, "option", "manualOption", [
-    "option-like branch pair",
-    "reusable maybe-value surface",
-  ]);
+  return match(surface, "option", "manualOption");
 }
 
 export function findManualBrandMatch(
@@ -645,19 +617,13 @@ export function findManualBrandMatch(
 ): ManualAlgebraMatch | null {
   const surface = surfaceFromNode(node);
   if (surface === null) return null;
-  if (isTransportDataShape(node) || isTaggedErrorCollision(node)) return null;
+  if (isExcludedSurface(surface)) return null;
   if (hasBrandMarker(surface)) {
-    return match(surface, "brand", "manualBrand", [
-      "brand marker field",
-      "reusable nominal type surface",
-    ]);
+    return match(surface, "brand", "manualBrand");
   }
 
   const targetType = getBrandHelperCastName(node);
   if (targetType === null) return null;
   if (!matchesBrandHelperName(surface, targetType)) return null;
-  return match(surface, "brand", "manualBrand", [
-    "brand helper cast",
-    "reusable nominal helper",
-  ]);
+  return match(surface, "brand", "manualBrand");
 }
