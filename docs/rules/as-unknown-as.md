@@ -1,4 +1,4 @@
-# `safer-by-default/as-unknown-as`
+# `agent-code-guard/as-unknown-as`
 
 **What it flags:** `as unknown as` cast chains.
 

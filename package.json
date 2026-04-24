@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-agent-code-guard",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "ESLint plugin that guards AI-agent-written TypeScript against common sloppy patterns: async/Promise/.then chains, bare catches, unsafe casts, raw SQL, manual enum casts, mocks in integration tests, and hardcoded secrets.",
   "type": "module",
   "main": "./dist/index.js",
@@ -38,11 +38,11 @@
   "author": "Tapan Chugh",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chughtapan/safer-by-default.git"
+    "url": "git+https://github.com/chughtapan/agent-code-guard.git"
   },
-  "homepage": "https://github.com/chughtapan/safer-by-default#readme",
+  "homepage": "https://github.com/chughtapan/agent-code-guard#readme",
   "bugs": {
-    "url": "https://github.com/chughtapan/safer-by-default/issues"
+    "url": "https://github.com/chughtapan/agent-code-guard/issues"
   },
   "dependencies": {
     "@typescript-eslint/utils": "^8.0.0",

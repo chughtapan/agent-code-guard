@@ -1,4 +1,4 @@
-# `safer-by-default/effect-error-erasure`
+# `agent-code-guard/effect-error-erasure`
 
 **What it flags:** `Effect.fail(new Error(...))` and `Effect.mapError(() => new Error(...))`.
 

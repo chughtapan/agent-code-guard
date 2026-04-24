@@ -1,4 +1,4 @@
-# `safer-by-default/either-discriminant`
+# `agent-code-guard/either-discriminant`
 
 **What it flags:** manual Either narrowing via `Either.isLeft(...)`, `Either.isRight(...)`, or `_tag === "Left" / "Right"`.
 
