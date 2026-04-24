@@ -141,11 +141,11 @@ Install both for the full calibration loop:
 
 ```
 # The floor (this repo) — lint checks:
-pnpm add -D eslint-plugin-agent-code-guard@^0.0.3
+pnpm add -D eslint-plugin-agent-code-guard@^0.0.4
 
 # The ceiling (Claude Code skills + binaries):
 mkdir -p ~/.claude/skills
-git clone --single-branch --depth 1 --branch v0.0.3 \
+git clone --single-branch --depth 1 --branch v0.0.4 \
   https://github.com/chughtapan/agent-code-guard.git \
   ~/.claude/skills/agent-code-guard
 cd ~/.claude/skills/agent-code-guard && pnpm install
@@ -175,7 +175,7 @@ Stryker (with the vitest runner and typescript checker) mutates every source fil
 
 Mutation testing is a **required CI gate**. Every PR runs `pnpm mutation`; dropping below the break threshold fails the check. If you weaken a test, Stryker catches it before the lint rule ships.
 
-Runs are incremental on PR and a full sweep runs nightly. Stryker persists state to `.stryker-tmp/incremental.json`, cached in CI across runs. Expected wall-clock: **under 2 minutes** for a typical PR (changed files only), **under 10 minutes** for a full sweep when the cache is cold.
+Runs are incremental on PR and a full sweep runs nightly. Stryker persists state to `.stryker-tmp/incremental.json`, cached in CI across runs. Expected wall-clock varies with changed files and cache warmth: a small incremental rerun is usually a few minutes, while a broad sweep is closer to **15-30 minutes** on a laptop.
 
 ## License
 

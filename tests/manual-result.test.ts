@@ -29,10 +29,19 @@ ruleTester.run("manual-result", rule, {
       code: "const status = { ok: () => true, error: () => false };",
     },
     {
+      code: "const Result = 1;",
+    },
+    {
       code: 'const result = Either.match({ onLeft: (left) => left, onRight: (right) => right })(either);',
     },
     {
       code: "function project<T>(value: T) { return { ok: true as const, value }; }",
+    },
+    {
+      code: "type ResultResponse<T, E> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E };",
+    },
+    {
+      code: "type ResultState<T, E> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E };",
     },
     {
       code: "// eslint-disable-next-line @rule-tester/manual-result -- suppression test\ntype Result<T, E> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E };",
@@ -73,6 +82,22 @@ ruleTester.run("manual-result", rule, {
     {
       code: "function ok<T>(value: T) { return { ok: true as const, value }; }",
       errors: [{ messageId: "manualResult", data: { name: "ok" } }],
+    },
+    {
+      code: "interface Result<T, E> { readonly ok: true; readonly value: T; match(input: T, error: E): unknown; }",
+      errors: [{ messageId: "manualResult", data: { name: "Result" } }],
+    },
+    {
+      code: "class Result { readonly ok = true as const; readonly value = 1; match() { return this.value; } }",
+      errors: [{ messageId: "manualResult", data: { name: "Result" } }],
+    },
+    {
+      code: "const Result = class { readonly ok = true as const; readonly value = 1; match() { return this.value; } };",
+      errors: [{ messageId: "manualResult", data: { name: "Result" } }],
+    },
+    {
+      code: 'type Outcome<T, E> = { readonly status: "OperationFailure"; readonly ok: true; readonly value: T } | { readonly status: "Ready"; readonly ok: false; readonly error: E };',
+      errors: [{ messageId: "manualResult", data: { name: "Outcome" } }],
     },
   ],
 });

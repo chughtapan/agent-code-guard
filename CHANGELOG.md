@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+## [0.0.4] - 2026-04-24
+
+### Added
+
+- Three manual-algebra rules:
+  - `manual-result`
+  - `manual-option`
+  - `manual-brand`
+- Direct detector coverage in `manual-algebra-detection.test.ts` plus new AST-refinement property tests for unsupported containers and non-return annotations.
+
+### Changed
+
+- `manual-tagged-error` now uses the shared AST refinement helpers more consistently and avoids redundant error-name branches.
+- `manual-algebra-detection` was simplified around shared key/literal collection and branch-pair detection, reducing rule-local dead branching.
+- Package metadata now points at the `chughtapan/agent-code-guard` repository instead of the old `safer-by-default` repo path.
+
+### Testing
+
+- Vitest suite expanded to 540 tests.
+- Mutation score hardened to 94.34%.
+
 ## [0.0.3] - 2026-04-22
 
 ### Added
