@@ -11,7 +11,7 @@ pnpm add -D eslint-plugin-agent-code-guard
 
 Your coding agent is miscalibrated. It was trained on human-written TypeScript — decades of it — written under one constraint that does not apply to it: typing was expensive for humans. That is why its training corpus is saturated with `throw new Error("bad")`, `as Record<string, unknown>`, `try { ... } catch {}`, `Promise<T>` return types, `process.env.FOO!`, raw SQL strings, and `vi.mock` inside integration tests. Those were the compromises humans made when keyboard time was scarce. An agent does not pay the scarcity; it inherits the patterns anyway.
 
-This plugin is the floor. Twenty-one rules under the `recommended` preset (eighteen errors, three warns), plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
+This plugin is the floor. Twenty-three rules under the `recommended` preset (twenty errors, three warns), plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
 
 | Rule | Catches |
 |---|---|
@@ -27,6 +27,8 @@ This plugin is the floor. Twenty-one rules under the `recommended` preset (eight
 | [`agent-code-guard/manual-option`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/manual-option.md) | Reusable hand-rolled `Option` / `Maybe` algebras instead of `Option` |
 | [`agent-code-guard/manual-brand`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/manual-brand.md) | Hand-rolled nominal brands that should use `Brand.nominal(...)` or `Schema.brand(...)` (warn) |
 | [`agent-code-guard/manual-tagged-error`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/manual-tagged-error.md) | Hand-rolled tagged error classes and error unions that should use `Data.TaggedError(...)` |
+| [`agent-code-guard/no-unbounded-concurrency`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-unbounded-concurrency.md) | `Effect.*(..., { concurrency: "unbounded" })` fan-out with no visible bound |
+| [`agent-code-guard/no-process-env-at-runtime`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-process-env-at-runtime.md) | Runtime `process.env` access instead of reading config once at the boundary |
 | [`agent-code-guard/record-cast`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/record-cast.md) | `as Record<string, unknown>` and similar unsafe casts |
 | [`agent-code-guard/no-raw-sql`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-raw-sql.md) | Raw SQL strings that bypass the typed query builder |
 | [`agent-code-guard/no-manual-enum-cast`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-manual-enum-cast.md) | `as "a" \| "b"` string-union casts that should be generated unions |
@@ -141,11 +143,11 @@ Install both for the full calibration loop:
 
 ```
 # The floor (this repo) — lint checks:
-pnpm add -D eslint-plugin-agent-code-guard@^0.0.4
+pnpm add -D eslint-plugin-agent-code-guard@^0.0.5
 
 # The ceiling (Claude Code skills + binaries):
 mkdir -p ~/.claude/skills
-git clone --single-branch --depth 1 --branch v0.0.4 \
+git clone --single-branch --depth 1 --branch v0.0.5 \
   https://github.com/chughtapan/agent-code-guard.git \
   ~/.claude/skills/agent-code-guard
 cd ~/.claude/skills/agent-code-guard && pnpm install

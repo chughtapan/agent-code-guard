@@ -168,6 +168,16 @@ describe("property: rule correctness", () => {
       coFire: [],
     },
     {
+      ruleId: "agent-code-guard/no-unbounded-concurrency",
+      seed: "yield* Effect.all(tasks, { concurrency: 'unbounded' });",
+      coFire: [],
+    },
+    {
+      ruleId: "agent-code-guard/no-process-env-at-runtime",
+      seed: "const port = process.env.PORT;",
+      coFire: [],
+    },
+    {
       ruleId: "agent-code-guard/manual-result",
       seed: "const Result = { ok: (value: number) => ({ ok: true as const, value }), err: (error: Error) => ({ ok: false as const, error }), match: (input: unknown) => input };",
       coFire: [],
@@ -263,6 +273,8 @@ describe("property: rule correctness", () => {
     "agent-code-guard/effect-error-erasure": "",
     "agent-code-guard/either-discriminant": "result",
     "agent-code-guard/manual-tagged-error": "RunError",
+    "agent-code-guard/no-unbounded-concurrency": "tasks",
+    "agent-code-guard/no-process-env-at-runtime": "port",
     "agent-code-guard/manual-result": "input",
     "agent-code-guard/manual-option": "apply",
     "agent-code-guard/manual-brand": "value",
@@ -391,7 +403,50 @@ describe("property: rule correctness", () => {
     );
   });
 
-  it("Property 6: no-hardcoded-secrets keeps name-gated detection across declaration shapes", () => {
+  it("Property 6: no-process-env-at-runtime ignores shadowed process bindings", () => {
+    const RULE_ID = "agent-code-guard/no-process-env-at-runtime";
+    fc.assert(
+      fc.property(identArb, safeStringArb, (key, value) => {
+        const code =
+          `const process = { env: { ${key}: ${value} } };\n` +
+          `const current = process.env.${key};`;
+        if (!isSyntacticallyValid(code)) return;
+        const messages = lintOne(code, RULE_ID);
+        if (messages.length !== 0) {
+          throw new Error(
+            `Shadowed process binding falsely flagged:\n--- source ---\n${code}\n` +
+              messages.map((m) => `  [${m.ruleId ?? "?"}] ${m.message}`).join("\n"),
+          );
+        }
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it("Property 7: no-unbounded-concurrency ignores bounded Effect fan-out", () => {
+    const RULE_ID = "agent-code-guard/no-unbounded-concurrency";
+    const methodArb = fc.constantFrom("all", "forEach", "validateAll");
+
+    fc.assert(
+      fc.property(methodArb, fc.integer({ min: 1, max: 64 }), (method, concurrency) => {
+        const code =
+          method === "forEach"
+            ? `yield* Effect.${method}(tasks, runTask, { concurrency: ${concurrency} });`
+            : `yield* Effect.${method}(tasks, { concurrency: ${concurrency} });`;
+        if (!isSyntacticallyValid(code)) return;
+        const messages = lintOne(code, RULE_ID);
+        if (messages.length !== 0) {
+          throw new Error(
+            `Bounded concurrency falsely flagged:\n--- source ---\n${code}\n` +
+              messages.map((m) => `  [${m.ruleId ?? "?"}] ${m.message}`).join("\n"),
+          );
+        }
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it("Property 8: no-hardcoded-secrets keeps name-gated detection across declaration shapes", () => {
     const RULE_ID = "agent-code-guard/no-hardcoded-secrets";
     const exactTwentyArb = fc.stringMatching(/^[A-Za-z0-9]{20}$/);
     const placeholderArb = fc.constantFrom(
