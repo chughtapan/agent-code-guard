@@ -13,6 +13,26 @@ Your coding agent is miscalibrated. It was trained on human-written TypeScript â
 
 This plugin is the floor. Twenty-three rules under the `recommended` preset (twenty errors, three warns), plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
 
+## Topology guard
+
+The project-level topology preset checks what each file consumes and exports, what each folder consumes and exports, and what the package exposes and pulls into its runtime graph. This is the operational form of Parnas information hiding, Liskov abstraction/substitutability, and Martin package coupling metrics.
+
+Enable it separately from `recommended` while the project graph checks mature:
+
+```js
+export default [
+  {
+    files: ["src/**/*.ts"],
+    plugins: { "agent-code-guard": guard },
+    rules: {
+      ...guard.configs.topology.rules,
+    },
+  },
+];
+```
+
+See [`docs/topology-boundary-ledger.md`](docs/topology-boundary-ledger.md) for the Boundary Ledger design. The shipped analyzer now emits package, file, folder, facade, mesh, and public type boundary diagnostics from the same project graph. Each topology policy has its own rule name and doc; [`agent-code-guard/topology-boundaries`](docs/rules/topology-boundaries.md) remains as a compatibility meta-rule that reports all topology diagnostics.
+
 | Rule | Catches |
 |---|---|
 | [`agent-code-guard/async-keyword`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/async-keyword.md) | `async` functions outside Effect/Kysely patterns |
