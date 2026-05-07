@@ -24,7 +24,7 @@ import promiseType from "./rules/promise-type.js";
 import recordCast from "./rules/record-cast.js";
 import tagDiscriminant from "./rules/tag-discriminant.js";
 import thenChain from "./rules/then-chain.js";
-import { createArchitectureDiagnosticRule } from "./rules/architecture-diagnostic-rule.js";
+import { createArchitectureDiagnosticRule } from "./rules/architecture/diagnostic-rule.js";
 
 const noInventoryBarrel = createArchitectureDiagnosticRule(
   "no-inventory-barrel",

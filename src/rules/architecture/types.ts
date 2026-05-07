@@ -9,6 +9,7 @@ export type {
   InfrastructureAllowance,
   SubpathAllowance,
   SharedFolderAllowance,
+  LayerDefinition,
   ArchitectureOptions,
   ArchitectureOptionsInput,
 } from "./option-schemas.js";

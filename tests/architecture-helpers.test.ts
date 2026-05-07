@@ -13,13 +13,13 @@ import {
   isIndexSourceFile,
   siblingModuleKeyFromSpecifier,
   sourceModuleKey,
-} from "../src/architecture/check-inventory-barrels.js";
+} from "../src/rules/architecture/check-inventory-barrels.js";
 import {
   checkPackageExports,
   packagePathSegments,
   packageReportPath,
   pathHasForbiddenSegment,
-} from "../src/architecture/check-package-exports.js";
+} from "../src/rules/architecture/check-package-exports.js";
 import {
   checkPublicVendorTypeLeaks,
   externalReExportDiagnostics,
@@ -27,12 +27,12 @@ import {
   packageAllowedInPublicTypes,
   packageNameFromFileName,
   packageNameFromSpecifier,
-} from "../src/architecture/check-public-type-leaks.js";
-import { cachedProjectArchitecture, clearArchitectureCache } from "../src/architecture/cache.js";
-import { uniqueDiagnostics } from "../src/architecture/diagnostics.js";
-import { resolveArchitectureOptions } from "../src/architecture/options.js";
-import { collectExportsValue, collectPackageExportEntries } from "../src/architecture/package-exports.js";
-import { readPackageJson } from "../src/architecture/package-json.js";
+} from "../src/rules/architecture/check-public-type-leaks.js";
+import { cachedProjectArchitecture, clearArchitectureCache } from "../src/rules/architecture/cache.js";
+import { uniqueDiagnostics } from "../src/rules/architecture/diagnostics.js";
+import { resolveArchitectureOptions } from "../src/rules/architecture/options.js";
+import { collectExportsValue, collectPackageExportEntries } from "../src/rules/architecture/package-exports.js";
+import { readPackageJson } from "../src/rules/architecture/package-json.js";
 import {
   candidateSourcePaths,
   createProgram,
@@ -40,17 +40,17 @@ import {
   projectSourceFiles,
   publicApiSourceFiles,
   sourcePathForPackageTarget,
-} from "../src/architecture/source-program.js";
+} from "../src/rules/architecture/source-program.js";
 import {
   folderEdgeDensity,
   stronglyConnectedFolderComponents,
-} from "../src/architecture/check-folder-graph.js";
+} from "../src/rules/architecture/check-folder-graph.js";
 import {
   folderKeyForFile,
   isTestLikePath,
   resolveLocalSpecifier,
   topFolder,
-} from "../src/architecture/project-graph.js";
+} from "../src/rules/architecture/project-graph.js";
 import {
   hasSourceExtension,
   OUTPUT_EXTENSIONS,
@@ -58,8 +58,8 @@ import {
   SOURCE_EXTENSIONS,
   stripKnownExtension,
   withTrailingSeparator,
-} from "../src/architecture/path-utils.js";
-import type { PackageJson, ArchitectureDiagnostic } from "../src/architecture/types.js";
+} from "../src/rules/architecture/path-utils.js";
+import type { PackageJson, ArchitectureDiagnostic } from "../src/rules/architecture/types.js";
 
 const segmentArb = fc.stringMatching(/^[a-z][a-z0-9-]{0,8}$/);
 const packageSegmentArb = fc.stringMatching(/^[a-z][a-z0-9-]{0,12}$/);
@@ -1940,7 +1940,7 @@ describe("architecture helper units", () => {
 });
 
 describe("file-header directive parser", () => {
-  const loadParser = async () => import("../src/architecture/directives.js");
+  const loadParser = async () => import("../src/rules/architecture/directives.js");
   const RULE_IDS = [
     "no-inventory-barrel",
     "no-internal-subpath-export",
@@ -2083,6 +2083,118 @@ describe("file-header directive parser", () => {
         },
       ),
       { numRuns: 40 },
+    );
+  });
+});
+
+describe("layer membership and cross-layer imports", () => {
+  const loadProjectGraph = async () => import("../src/rules/architecture/project-graph.js");
+
+  it("Property: longest matching prefix wins when a folder matches multiple layer entries", async () => {
+    const { layerIndexFor } = await loadProjectGraph();
+    fc.assert(
+      fc.property(
+        fc
+          .tuple(
+            fc.stringMatching(/^[a-z]{3,8}$/),
+            fc.stringMatching(/^[a-z]{3,8}$/),
+            fc.stringMatching(/^[a-z]{3,8}$/),
+          )
+          .filter(([a, b, c]) => a !== b && b !== c && a !== c),
+        ([root, mid, leaf]) => {
+          const folder = `${root}/${mid}/${leaf}`;
+          const layers = [
+            { name: "broad", folders: [root], reason: "test: broad" },
+            { name: "narrow", folders: [`${root}/${mid}`], reason: "test: narrow" },
+            { name: "other", folders: ["unrelated"], reason: "test: other" },
+          ];
+          expect(layerIndexFor(folder, layers)).toBe(1);
+        },
+      ),
+      { numRuns: 40 },
+    );
+  });
+
+  it("Property: when entries match with equal length, the lower layer index wins", async () => {
+    const { layerIndexFor } = await loadProjectGraph();
+    fc.assert(
+      fc.property(fc.stringMatching(/^[a-z]{3,8}$/), (folder) => {
+        const layers = [
+          { name: "first", folders: [folder], reason: "test: first" },
+          { name: "second", folders: [folder], reason: "test: second" },
+        ];
+        expect(layerIndexFor(folder, layers)).toBe(0);
+      }),
+      { numRuns: 40 },
+    );
+  });
+
+  it("Property: a folder with no matching layer entry returns null", async () => {
+    const { layerIndexFor } = await loadProjectGraph();
+    fc.assert(
+      fc.property(
+        fc.stringMatching(/^[a-z]{3,8}$/),
+        fc.stringMatching(/^[a-z]{3,8}$/),
+        (folder, otherFolder) => {
+          if (folder === otherFolder) return;
+          const layers = [
+            { name: "only", folders: [otherFolder], reason: "test: only" },
+          ];
+          expect(layerIndexFor(folder, layers)).toBeNull();
+        },
+      ),
+      { numRuns: 40 },
+    );
+  });
+
+  it("Property: with no layers configured, layerIndexFor returns null for every folder", async () => {
+    const { layerIndexFor } = await loadProjectGraph();
+    fc.assert(
+      fc.property(fc.stringMatching(/^[a-z][a-z0-9/-]{0,30}$/), (folder) => {
+        expect(layerIndexFor(folder, [])).toBeNull();
+      }),
+      { numRuns: 40 },
+    );
+  });
+});
+
+describe("empty-default behavior for list options", () => {
+  const REASON_BEARING_OPTIONS = [
+    "publicTypePackages",
+    "infrastructureTypePackages",
+    "allowedPublicSubpaths",
+    "allowedTestPublicSubpaths",
+    "sharedFolderNames",
+  ] as const;
+  const STRICTNESS_OPTIONS = ["forbiddenSubpathSegments", "implementationPathSegments"] as const;
+
+  it("Property: every reason-bearing list option resolves to an empty array when omitted", () => {
+    fc.assert(
+      fc.property(fc.constantFrom(...REASON_BEARING_OPTIONS), (optionName) => {
+        const resolved = resolveArchitectureOptions({});
+        expect(resolved[optionName]).toEqual([]);
+      }),
+      { numRuns: 40 },
+    );
+  });
+
+  it("Property: every strictness list resolves to an empty array when omitted", () => {
+    fc.assert(
+      fc.property(fc.constantFrom(...STRICTNESS_OPTIONS), (optionName) => {
+        const resolved = resolveArchitectureOptions({});
+        expect(resolved[optionName]).toEqual([]);
+      }),
+      { numRuns: 20 },
+    );
+  });
+
+  it("Property: layers resolves to an empty array when omitted", () => {
+    fc.assert(
+      fc.property(fc.constant(undefined), () => {
+        const resolved = resolveArchitectureOptions({});
+        expect(resolved.layers).toEqual([]);
+      }),
+      { numRuns: 5 },
     );
   });
 });

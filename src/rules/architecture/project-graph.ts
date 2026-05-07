@@ -7,7 +7,7 @@ import {
   stripKnownExtension,
   withTrailingSeparator,
 } from "./path-utils.js";
-import type { ResolvedArchitectureOptions, PackageJson } from "./types.js";
+import type { LayerDefinition, ResolvedArchitectureOptions, PackageJson } from "./types.js";
 
 export type ModuleEdgeKind = "import" | "reexport";
 
@@ -59,6 +59,10 @@ export interface ProjectArchitectureGraph {
   readonly externalEdges: readonly ExternalModuleEdge[];
   readonly folderEdges: readonly FolderEdge[];
   readonly folders: readonly string[];
+  // (folder → layer index) for every distinct folder in the project. null
+  // means the folder did not match any declared layer. Empty when the user
+  // didn't configure layers — the layer-aware rule treats that as dormant.
+  readonly folderLayerIndex: ReadonlyMap<string, number | null>;
 }
 
 export function buildProjectGraph(
@@ -85,6 +89,10 @@ export function buildProjectGraph(
   const publicModules = modules.filter((module) => module.isPublic);
   const folders = [...new Set(modules.map((module) => module.folder))].sort();
 
+  const folderLayerIndex = new Map<string, number | null>(
+    folders.map((folder) => [folder, layerIndexFor(folder, options.layers)] as const),
+  );
+
   return {
     projectRoot: options.projectRoot,
     reportFile,
@@ -95,7 +103,41 @@ export function buildProjectGraph(
     externalEdges,
     folderEdges: collectFolderEdges(localEdges, modulesByFileName),
     folders,
+    folderLayerIndex,
   };
+}
+
+// Returns the index of the layer the folder belongs to, or null if no layer
+// matches. Match rule: a folder belongs to a layer if any of the layer's
+// `folders` entries equals the folder OR is a path prefix of it (segment
+// boundary). Among matches, the longest entry wins (most-specific). Ties on
+// length resolve to the lower (earlier) layer index for predictability.
+export function layerIndexFor(
+  folder: string,
+  layers: ReadonlyArray<LayerDefinition>,
+): number | null {
+  if (layers.length === 0) return null;
+  const normalized = folder === "." ? "" : normalizePath(folder);
+
+  let bestLayer: number | null = null;
+  let bestEntryLength = -1;
+
+  layers.forEach((layer, layerIndex) => {
+    for (const entry of layer.folders) {
+      const normalizedEntry = entry === "." ? "" : normalizePath(entry);
+      const matches =
+        normalizedEntry === normalized ||
+        (normalizedEntry !== "" && normalized.startsWith(`${normalizedEntry}/`)) ||
+        (normalizedEntry === "" && normalized === "");
+      if (!matches) continue;
+      if (normalizedEntry.length > bestEntryLength) {
+        bestEntryLength = normalizedEntry.length;
+        bestLayer = layerIndex;
+      }
+    }
+  });
+
+  return bestLayer;
 }
 
 export function resolveLocalSpecifier(

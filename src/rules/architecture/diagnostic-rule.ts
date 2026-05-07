@@ -2,16 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import type { JSONSchema4 } from "@typescript-eslint/utils/json-schema";
 import { JSONSchema } from "effect";
-import { cachedProjectArchitecture } from "../architecture/cache.js";
-import { ArchitectureOptionsSchema, type ArchitectureOptionsInput } from "../architecture/option-schemas.js";
-import { ArchitectureOptionsError, resolveArchitectureOptions } from "../architecture/options.js";
+import { cachedProjectArchitecture } from "./cache.js";
+import { ArchitectureOptionsSchema, type ArchitectureOptionsInput } from "./option-schemas.js";
+import { ArchitectureOptionsError, resolveArchitectureOptions } from "./options.js";
 import {
   ARCHITECTURE_DIAGNOSTIC_RULE_IDS,
   ARCHITECTURE_DIRECTIVE_PARSE_ERROR_RULE_ID,
   type ArchitectureDiagnosticRuleId,
   type ArchitectureRuleId,
-} from "../architecture/rule-ids.js";
-import { createRule } from "../utils/create-rule.js";
+} from "./rule-ids.js";
+import { createRule } from "../../utils/create-rule.js";
 
 type Options = [ArchitectureOptionsInput?];
 type MessageIds = "architectureViolation";
