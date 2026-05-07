@@ -76,20 +76,25 @@ package.json:
   // tests/ not in `files`, so npm pack ignores it
 ```
 
-## Options
+## How to configure
+
+The plugin ships no default for `allowedTestPublicSubpaths`. Without
+configuration the rule flags every test-shaped subpath. Recommended
+starter values:
 
 ```js
 {
   "agent-code-guard/no-public-test-helper-leak": ["error", {
-    // Subpaths that intentionally expose test helpers. Each entry MUST
-    // include both `subpath` and `reason`; bare strings are rejected by
-    // the schema. The reason is the architectural acknowledgment.
     allowedTestPublicSubpaths: [
       { subpath: "./testing", reason: "consumer test helpers; documented as not-production-API in README §Testing" },
     ],
   }]
 }
 ```
+
+If you don't intentionally expose test helpers, leave this empty — the
+rule then flags any `./test-utils`, `./fixtures`, or similar subpaths
+that slip into your `package.json` exports.
 
 ## Suppressing exceptions
 

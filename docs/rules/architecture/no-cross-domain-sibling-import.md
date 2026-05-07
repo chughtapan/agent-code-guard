@@ -5,9 +5,15 @@ under `src/`. Examples: `src/billing/` importing from `src/mail/`,
 `src/network/` importing from `src/services/`, `src/task/` importing from
 `src/ws/`.
 
-Folders listed in `sharedFolderNames` (defaults: `shared`, `common`,
-`utils`, `types`, `testing`, etc.) are exempt — sibling-to-shared imports
-are fine.
+Folders listed in `sharedFolderNames` are exempt — sibling-to-shared
+imports are fine. The list is empty by default; declare your shared
+kernels with reasons in your config (see "How to configure" below).
+
+When you've also declared `layers` and both endpoints of an import are
+inside layered folders, this rule defers entirely to the layers system.
+Layers express direction across folders, so the sibling-domain check
+would be redundant — direction enforcement belongs to
+[`no-upward-layer-import`](./no-upward-layer-import.md).
 
 **Why:** Sibling domains shouldn't know each other's concrete files. If
 `billing/charge.ts` imports `mail/send-receipt.ts` directly, billing now
@@ -95,22 +101,30 @@ export function onChargeCompleted(e: ChargeCompletedEvent) {
 
 Billing emits events; mail subscribes. They never reference each other.
 
-## Options
+## How to configure
+
+The plugin ships no defaults for `sharedFolderNames`. Declare the folders
+that genuinely act as shared kernels in your repo, each with a written
+reason. Common values to consider:
 
 ```js
 {
   "agent-code-guard/no-cross-domain-sibling-import": ["warn", {
-    // Folders treated as shared kernels — sibling imports from these
-    // folders are NOT flagged. Each entry MUST include both `folder` and
-    // `reason`; bare strings are rejected by the schema. Defaults cover
-    // common shared-kernel names (shared, common, utils, helpers, etc.).
-    // Add or override entries for project-specific kernels.
     sharedFolderNames: [
-      { folder: "platform-kernel", reason: "internal kernel for cross-domain composition; explicitly shared" },
+      { folder: "shared", reason: "explicit shared kernel" },
+      { folder: "common", reason: "explicit shared kernel" },
+      { folder: "utils", reason: "utility helpers used by every feature" },
+      { folder: "types", reason: "shared type definitions" },
+      { folder: "ports", reason: "domain-owned ports implemented by adapters" },
+      { folder: "testing", reason: "consumer test helpers" },
     ],
   }]
 }
 ```
+
+Pick only the folders that actually exist in your repo with that role.
+Test directories like `__tests__/` and explicitly test-named files are
+already exempt regardless of this option.
 
 ## Suppressing per-file via a directive
 

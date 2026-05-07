@@ -69,14 +69,14 @@ export { createStorage } from "./storage";
 export type { Storage, StorageError } from "./storage";
 ```
 
-## Options
+## How to configure
+
+The plugin ships no default for `implementationPathSegments`. Without
+configuration the rule is dormant. Recommended starter values:
 
 ```js
 {
   "agent-code-guard/no-implementation-file-public-entry": ["error", {
-    // Path segments that mark a subpath as implementation-shaped. Defaults
-    // cover the common patterns (adapter, handler, service, repository,
-    // driver, etc.). Extend with project-specific implementation suffixes.
     implementationPathSegments: [
       "adapter", "adapters",
       "handler", "handlers",
@@ -89,6 +89,10 @@ export type { Storage, StorageError } from "./storage";
   }]
 }
 ```
+
+Pick the segments that actually appear in your codebase as
+implementation-pattern names — adding an entry makes the rule stricter,
+not more permissive, so there's no harm in extending the list.
 
 ## Suppressing exceptions
 
