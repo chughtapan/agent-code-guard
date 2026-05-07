@@ -1,6 +1,27 @@
 import guard from "eslint-plugin-agent-code-guard";
 import tsParser from "@typescript-eslint/parser";
 
+// Public contract declaration for this package. ESLint plugins legitimately
+// expose `@typescript-eslint/utils` (the rule contract) and `node` types
+// (createRequire, node:fs, node:path) in their public surface — list them
+// explicitly so no-public-vendor-type-leak can verify intent.
+const ARCHITECTURE_OPTIONS = {
+  publicTypePackages: ["@typescript-eslint/utils"],
+  packageRuntime: "node",
+};
+
+const ARCHITECTURE_RULE_IDS = Object.keys(guard.configs.architecture.rules);
+
+const recommendedRules = {
+  ...guard.configs.recommended.rules,
+  ...Object.fromEntries(
+    ARCHITECTURE_RULE_IDS.map((id) => [
+      id,
+      [guard.configs.recommended.rules[id] ?? "error", ARCHITECTURE_OPTIONS],
+    ]),
+  ),
+};
+
 export default [
   // Block 1: plugin source.
   {
@@ -13,9 +34,7 @@ export default [
     plugins: {
       "agent-code-guard": guard,
     },
-    rules: {
-      ...guard.configs.recommended.rules,
-    },
+    rules: recommendedRules,
   },
 
   // Block 2: unit tests.
@@ -29,7 +48,7 @@ export default [
       "agent-code-guard": guard,
     },
     rules: {
-      ...guard.configs.recommended.rules,
+      ...recommendedRules,
       "agent-code-guard/async-keyword": "off",
       "agent-code-guard/no-hardcoded-assertion-literals": "off",
     },

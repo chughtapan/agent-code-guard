@@ -1,8 +1,8 @@
-export type TopologySeverity = "error" | "warn";
+export type ArchitectureSeverity = "error" | "warn";
 
 export type PackageRuntime = "browser" | "node" | "universal";
 
-export interface TopologyOptions {
+export interface ArchitectureOptions {
   readonly projectRoot?: string;
   readonly tsconfigPath?: string;
   readonly minExportedSiblingModules?: number;
@@ -26,7 +26,7 @@ export interface TopologyOptions {
   readonly packageRuntime?: PackageRuntime;
 }
 
-export interface NormalizedTopologyOptions {
+export interface NormalizedArchitectureOptions {
   readonly projectRoot: string;
   readonly tsconfigPath: string | null;
   readonly minExportedSiblingModules: number;
@@ -50,7 +50,7 @@ export interface NormalizedTopologyOptions {
   readonly packageRuntime: PackageRuntime;
 }
 
-export interface TopologyDiagnostic {
+export interface ArchitectureDiagnostic {
   readonly ruleId:
     | "no-inventory-barrel"
     | "no-internal-subpath-export"
@@ -68,12 +68,12 @@ export interface TopologyDiagnostic {
     | "require-curated-public-facade"
     | "require-boundary-owned-types";
   readonly file: string;
-  readonly severity: TopologySeverity;
+  readonly severity: ArchitectureSeverity;
   readonly message: string;
 }
 
-export interface TopologyReport {
-  readonly diagnostics: readonly TopologyDiagnostic[];
+export interface ArchitectureReport {
+  readonly diagnostics: readonly ArchitectureDiagnostic[];
 }
 
 export interface PackageJson {
@@ -91,7 +91,7 @@ export interface PackageExportEntry {
   readonly targetPath: string;
 }
 
-export const DEFAULT_TOPOLOGY_OPTIONS = {
+export const DEFAULT_ARCHITECTURE_OPTIONS = {
   minExportedSiblingModules: 4,
   maxExportedSiblingRatio: 0.6,
   countTypeOnlyExports: true,
@@ -143,7 +143,7 @@ export const DEFAULT_TOPOLOGY_OPTIONS = {
     "helpers",
     "internal",
     "types",
-    "topology",
+    "architecture",
     "schema",
     "schemas",
     "testing",

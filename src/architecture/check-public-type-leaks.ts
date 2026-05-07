@@ -2,10 +2,10 @@ import ts from "typescript";
 import { uniqueDiagnostics } from "./diagnostics.js";
 import { publicApiSourceFiles } from "./source-program.js";
 import type {
-  NormalizedTopologyOptions,
+  NormalizedArchitectureOptions,
   PackageJson,
-  TopologyDiagnostic,
-  TopologySeverity,
+  ArchitectureDiagnostic,
+  ArchitectureSeverity,
 } from "./types.js";
 
 const MAX_TYPE_DEPTH = 8;
@@ -13,8 +13,8 @@ const MAX_TYPE_DEPTH = 8;
 export function checkPublicVendorTypeLeaks(
   program: ts.Program | null,
   packageJson: PackageJson | null,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   if (!program) return [];
 
   const checker = program.getTypeChecker();
@@ -30,8 +30,8 @@ export function checkPublicVendorTypeLeaks(
 
 export function externalReExportDiagnostics(
   sourceFile: ts.SourceFile,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   return sourceFile.statements.flatMap((statement) => {
     if (!ts.isExportDeclaration(statement)) return [];
     if (!statement.moduleSpecifier || !ts.isStringLiteral(statement.moduleSpecifier)) return [];
@@ -83,7 +83,6 @@ export function packageNameFromFileName(fileName: string): string | null {
 }
 
 export function normalizeTypePackageName(packageName: string): string {
-  if (packageName === "@types/node") return "node";
   if (!packageName.startsWith("@types/")) return packageName;
 
   const withoutPrefix = packageName.slice("@types/".length);
@@ -93,7 +92,7 @@ export function normalizeTypePackageName(packageName: string): string {
 
 export function packageAllowedInPublicTypes(
   packageName: string,
-  options: Pick<NormalizedTopologyOptions, "packageRuntime" | "publicTypePackages">,
+  options: Pick<NormalizedArchitectureOptions, "packageRuntime" | "publicTypePackages">,
 ): boolean {
   if (options.publicTypePackages.includes(packageName)) return true;
   if (packageName !== "node") return false;
@@ -104,8 +103,8 @@ function exportedSignatureDiagnostics(
   checker: ts.TypeChecker,
   sourceFile: ts.SourceFile,
   packageJson: PackageJson | null,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   const moduleSymbol = checker.getSymbolAtLocation(sourceFile);
   if (!moduleSymbol) return [];
 
@@ -139,7 +138,7 @@ function exportedSignatureDiagnostics(
 function publicTypeLeakSeverity(
   packageName: string,
   packageJson: PackageJson | null,
-): TopologySeverity {
+): ArchitectureSeverity {
   if (packageName === "node") return "warn";
   return packageJson?.peerDependencies.has(packageName) ? "warn" : "error";
 }
@@ -147,8 +146,8 @@ function publicTypeLeakSeverity(
 function infraTypeLeakDiagnostic(
   fileName: string,
   packageName: string,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   if (!options.infrastructureTypePackages.includes(packageName)) return [];
 
   return [
@@ -180,7 +179,7 @@ function externalPackagesFromType(
   checker: ts.TypeChecker,
   type: ts.Type,
   location: ts.Node,
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
 ): ReadonlySet<string> {
   const packages = new Set<string>();
   const seenTypes = new Set<ts.Type>();
@@ -228,7 +227,7 @@ function visitCompositeType(
   }
 
   for (const property of type.getProperties()) {
-    const declaration = property.valueDeclaration ?? property.declarations?.[0];
+    const declaration = property.declarations?.[0];
     if (declaration) visit(checker.getTypeOfSymbolAtLocation(property, declaration), depth + 1);
   }
 }
@@ -239,17 +238,14 @@ function visitTypeArguments(
   depth: number,
   visit: (type: ts.Type, depth: number) => void,
 ): void {
-  if (!isTypeReference(type)) return;
-  for (const argument of checker.getTypeArguments(type)) visit(argument, depth + 1);
+  for (const argument of checker.getTypeArguments(type as ts.TypeReference)) {
+    visit(argument, depth + 1);
+  }
 }
 
 function packageNameFromType(type: ts.Type): string | null {
-  for (const symbol of [type.aliasSymbol, type.symbol]) {
-    const packageName = packageNameFromSymbol(symbol);
-    if (packageName !== null) return packageName;
-  }
-
-  return null;
+  const aliasPackage = packageNameFromSymbol(type.aliasSymbol);
+  return aliasPackage ?? packageNameFromSymbol(type.symbol);
 }
 
 function packageNameFromSymbol(symbol: ts.Symbol | undefined): string | null {
@@ -264,12 +260,7 @@ function packageNameFromSymbol(symbol: ts.Symbol | undefined): string | null {
 
 function packageNameFromNodeModulesPath(afterNodeModules: string): string | null {
   const [firstSegment, secondSegment] = afterNodeModules.split("/");
-  if (!firstSegment) return null;
   return firstSegment.startsWith("@") && secondSegment
     ? `${firstSegment}/${secondSegment}`
     : firstSegment;
-}
-
-function isTypeReference(type: ts.Type): type is ts.TypeReference {
-  return (type.flags & ts.TypeFlags.Object) !== 0 && "target" in type;
 }
