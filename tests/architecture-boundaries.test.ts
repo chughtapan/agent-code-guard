@@ -6,9 +6,9 @@ import * as tsParser from "@typescript-eslint/parser";
 import * as fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import plugin from "../src/index.js";
-import { analyzeProjectArchitecture } from "../src/architecture/analyze-project.js";
-import { clearArchitectureCache } from "../src/architecture/cache.js";
-import type { ArchitectureDiagnostic, ArchitectureOptions } from "../src/architecture/types.js";
+import { analyzeProjectArchitecture } from "../src/rules/architecture/analyze-project.js";
+import { clearArchitectureCache } from "../src/rules/architecture/cache.js";
+import type { ArchitectureDiagnostic, ArchitectureOptions } from "../src/rules/architecture/types.js";
 
 const tempRoots: string[] = [];
 const segmentArb = fc.stringMatching(/^[a-z][a-z0-9]{0,7}$/);
@@ -206,7 +206,12 @@ describe("architecture analyzer", () => {
       }),
     });
 
-    expect(diagnosticMessages(root)).toEqual(
+    expect(
+      diagnosticMessages(root, {
+        forbiddenSubpathSegments: ["internal", "utils"],
+        allowedPublicSubpaths: [{ subpath: ".", reason: "test: primary entrypoint" }],
+      }),
+    ).toEqual(
       expect.arrayContaining([
         expect.stringContaining('export "./internal/*" exposes implementation path'),
         expect.stringContaining('export "./utils" exposes implementation path'),
@@ -226,7 +231,15 @@ describe("architecture analyzer", () => {
       "src/db/driver.ts": "export const driver = true;\n",
     });
 
-    expect(diagnosticMessages(root)).toEqual(
+    expect(
+      diagnosticMessages(root, {
+        implementationPathSegments: ["driver"],
+        allowedPublicSubpaths: [{ subpath: ".", reason: "test: primary entrypoint" }],
+        allowedTestPublicSubpaths: [
+          { subpath: "./testing", reason: "test: dedicated testing subpath" },
+        ],
+      }),
+    ).toEqual(
       expect.arrayContaining([
         expect.stringContaining('export "./test-utils" exposes test-only path'),
         expect.stringContaining('export "./driver" points at implementation-shaped path'),
@@ -245,7 +258,19 @@ describe("architecture analyzer", () => {
       "src/testing/index.ts": "export const testing = true;\n",
     });
 
-    expect(diagnosticMessages(root)).not.toContainEqual(
+    expect(
+      diagnosticMessages(root, {
+        forbiddenSubpathSegments: ["internal", "utils", "helpers", "private"],
+        allowedPublicSubpaths: [
+          { subpath: ".", reason: "test: primary entrypoint" },
+          { subpath: "./cli", reason: "test: CLI invocation contract" },
+          { subpath: "./testing", reason: "test: consumer test helpers" },
+        ],
+        allowedTestPublicSubpaths: [
+          { subpath: "./testing", reason: "test: consumer test helpers" },
+        ],
+      }),
+    ).not.toContainEqual(
       expect.stringContaining("package.json export"),
     );
   });
@@ -333,7 +358,13 @@ describe("architecture analyzer", () => {
       ].join("\n"),
     });
 
-    expect(diagnosticMessages(root)).toEqual(
+    expect(
+      diagnosticMessages(root, {
+        infrastructureTypePackages: [
+          { package: "kysely", reason: "test: query builder is implementation choice" },
+        ],
+      }),
+    ).toEqual(
       expect.arrayContaining([
         expect.stringContaining('export "PublicDb" references "kysely" types'),
         expect.stringContaining('references infrastructure package "kysely"'),
@@ -390,7 +421,7 @@ describe("architecture analyzer", () => {
     );
   });
 
-  it("flags folder cycles, root/internal cycles, sibling domain imports, and upward imports", () => {
+  it("flags folder cycles, root/internal cycles, and sibling domain imports", () => {
     const root = makeProject({
       "src/index.ts": [
         'import { internalValue } from "./internal/value";',
@@ -405,10 +436,6 @@ describe("architecture analyzer", () => {
         "export const charge = sendReceipt;",
       ].join("\n"),
       "src/mail/send-receipt.ts": "export const sendReceipt = true;\n",
-      "src/feature/use-root.ts": [
-        'import { rootValue } from "../index";',
-        "export const useRoot = rootValue;",
-      ].join("\n"),
     });
 
     expect(diagnosticMessages(root)).toEqual(
@@ -416,9 +443,45 @@ describe("architecture analyzer", () => {
         expect.stringContaining("Folder dependency cycle"),
         expect.stringContaining("Root files and internal files depend on each other"),
         expect.stringContaining("imports src/mail/send-receipt.ts across sibling domains"),
+      ]),
+    );
+  });
+
+  it("flags upward layer imports when layers are declared", () => {
+    const root = makeProject({
+      "src/index.ts": "export const rootValue = true;\n",
+      "src/feature/use-root.ts": [
+        'import { rootValue } from "../index";',
+        "export const useRoot = rootValue;",
+      ].join("\n"),
+    });
+
+    const messages = diagnosticMessages(root, {
+      layers: [
+        { name: "entrypoint", folders: ["."], reason: "test: composition root" },
+        { name: "feature", folders: ["feature"], reason: "test: feature layer" },
+      ],
+    });
+    expect(messages).toEqual(
+      expect.arrayContaining([
         expect.stringContaining("imports upward into src/index.ts"),
       ]),
     );
+    expect(messages.some((m) => m.includes("layer 'feature'"))).toBe(true);
+    expect(messages.some((m) => m.includes("layer 'entrypoint'"))).toBe(true);
+  });
+
+  it("no-upward-layer-import is dormant when no layers are declared", () => {
+    const root = makeProject({
+      "src/index.ts": "export const rootValue = true;\n",
+      "src/feature/use-root.ts": [
+        'import { rootValue } from "../index";',
+        "export const useRoot = rootValue;",
+      ].join("\n"),
+    });
+
+    const messages = diagnosticMessages(root);
+    expect(messages.some((m) => m.includes("imports upward"))).toBe(false);
   });
 
   it("Property: folder cycles and package mesh follow generated folder dependency shape", () => {
@@ -539,5 +602,69 @@ describe("architecture analyzer", () => {
 
     expect(messages).toHaveLength(1);
     expect(messages[0]?.message).toContain("This exports inventory");
+  });
+
+  it("Property: in a layered config, upward edges always flag and downward edges never flag", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 2 }),
+        fc.integer({ min: 0, max: 2 }),
+        (fromIndex, toIndex) => {
+          const folders = ["app", "domain", "kernel"] as const;
+          const fromFolder = folders[fromIndex] ?? "app";
+          const toFolder = folders[toIndex] ?? "kernel";
+          if (fromFolder === toFolder) return;
+          const root = makeProject({
+            [`src/${fromFolder}/index.ts`]: [
+              `import { value } from "../${toFolder}/index";`,
+              "export const reExport = value;",
+            ].join("\n"),
+            [`src/${toFolder}/index.ts`]: "export const value = true;\n",
+          });
+          const layers = folders.map((folder, layerIndex) => ({
+            name: folder,
+            folders: [folder],
+            reason: `test: layer ${layerIndex}`,
+          }));
+          const messages = diagnosticsFor(root, { layers }).filter(
+            (d) => d.ruleId === "no-upward-layer-import",
+          );
+          if (fromIndex > toIndex) {
+            // upward (lower index = topmost): fromLayer > toLayer must flag
+            expect(messages.length).toBeGreaterThan(0);
+            expect(messages[0]?.message).toContain(`layer '${fromFolder}'`);
+            expect(messages[0]?.message).toContain(`layer '${toFolder}'`);
+          } else {
+            // downward or same → never flag
+            expect(messages).toEqual([]);
+          }
+        },
+      ),
+      { numRuns: 18 },
+    );
+  });
+
+  it("Property: skipping layers downward is allowed", () => {
+    fc.assert(
+      fc.property(fc.constant(null), () => {
+        const root = makeProject({
+          "src/app/index.ts": [
+            'import { value } from "../kernel/index";',
+            "export const reExport = value;",
+          ].join("\n"),
+          "src/kernel/index.ts": "export const value = true;\n",
+        });
+        const layers = [
+          { name: "app", folders: ["app"], reason: "test: layer 0" },
+          { name: "domain", folders: ["domain"], reason: "test: layer 1 (skipped)" },
+          { name: "kernel", folders: ["kernel"], reason: "test: layer 2" },
+        ];
+        const messages = diagnosticsFor(root, { layers }).filter(
+          (d) => d.ruleId === "no-upward-layer-import",
+        );
+        expect(messages).toEqual([]);
+      }),
+      { numRuns: 5 },
+    );
   });
 });

@@ -1,8 +1,6 @@
-import path from "node:path";
 import type {
   FolderEdge,
   ProjectArchitectureGraph,
-  SourceModule,
 } from "./project-graph.js";
 import type { ResolvedArchitectureOptions, ArchitectureDiagnostic } from "./types.js";
 
@@ -16,7 +14,7 @@ export function checkFolderGraph(
     ...rootInternalCycleDiagnostics(graph, components),
     ...packageMeshDiagnostics(graph, components, options),
     ...crossDomainSiblingImportDiagnostics(graph, options),
-    ...upwardLayerImportDiagnostics(graph),
+    ...crossLayerImportDiagnostics(graph, options),
   ];
 }
 
@@ -175,6 +173,9 @@ function crossDomainSiblingImportDiagnostics(
     if (sharedFolder(options, fromModule.topFolder) || sharedFolder(options, toModule.topFolder)) {
       return [];
     }
+    const fromLayer = graph.folderLayerIndex.get(fromModule.folder) ?? null;
+    const toLayer = graph.folderLayerIndex.get(toModule.folder) ?? null;
+    if (fromLayer !== null && toLayer !== null) return [];
 
     return [
       {
@@ -190,16 +191,26 @@ function crossDomainSiblingImportDiagnostics(
   });
 }
 
-function upwardLayerImportDiagnostics(
+function crossLayerImportDiagnostics(
   graph: ProjectArchitectureGraph,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
+  if (options.layers.length === 0) return [];
+
   return graph.localEdges.flatMap((edge) => {
     if (edge.kind !== "import") return [];
 
     const fromModule = graph.modulesByFileName.get(edge.from);
     const toModule = graph.modulesByFileName.get(edge.to);
     if (!fromModule || !toModule || fromModule.isTestLike) return [];
-    if (!importsUpward(fromModule, toModule)) return [];
+
+    const fromLayer = graph.folderLayerIndex.get(fromModule.folder) ?? null;
+    const toLayer = graph.folderLayerIndex.get(toModule.folder) ?? null;
+    if (fromLayer === null || toLayer === null) return [];
+    if (fromLayer <= toLayer) return [];
+
+    const fromLayerName = options.layers[fromLayer]?.name ?? `layer ${fromLayer}`;
+    const toLayerName = options.layers[toLayer]?.name ?? `layer ${toLayer}`;
 
     return [
       {
@@ -207,22 +218,13 @@ function upwardLayerImportDiagnostics(
         file: fromModule.fileName,
         severity: "warn",
         message:
-          `${fromModule.relativePath} imports upward into ${toModule.relativePath}. ` +
-          "Lower-level files should not depend on parent/root facades; move the shared " +
-          "contract down or inject it from the entrypoint.",
+          `${fromModule.relativePath} (layer '${fromLayerName}') imports upward into ` +
+          `${toModule.relativePath} (layer '${toLayerName}'). ` +
+          "Lower-numbered layers must not depend on higher-numbered ones; move the shared " +
+          "contract into a deeper layer or invert the dependency.",
       },
     ];
   });
-}
-
-function importsUpward(fromModule: SourceModule, toModule: SourceModule): boolean {
-  if (fromModule.folder === toModule.folder) return false;
-  if (!toModule.isIndex && toModule.folder !== ".") return false;
-  if (toModule.folder === ".") return fromModule.folder !== ".";
-
-  const fromFolder = path.posix.normalize(fromModule.folder);
-  const toFolder = path.posix.normalize(toModule.folder);
-  return fromFolder.startsWith(`${toFolder}/`);
 }
 
 function sharedFolder(

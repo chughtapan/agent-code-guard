@@ -1,10 +1,6 @@
 import guard from "eslint-plugin-agent-code-guard";
 import tsParser from "@typescript-eslint/parser";
 
-// Public contract declaration for this package. ESLint plugins legitimately
-// expose `@typescript-eslint/utils` (the rule contract) and `node` types
-// (createRequire, node:fs, node:path) in their public surface — list them
-// explicitly so no-public-vendor-type-leak can verify intent.
 const ARCHITECTURE_OPTIONS = {
   publicTypePackages: [
     {
@@ -13,6 +9,12 @@ const ARCHITECTURE_OPTIONS = {
     },
   ],
   packageRuntime: "node",
+  sharedFolderNames: [
+    {
+      folder: "utils",
+      reason: "shared helpers (create-rule, AST refinement) used by every individual rule",
+    },
+  ],
 };
 
 const ARCHITECTURE_RULE_IDS = Object.keys(guard.configs.architecture.rules);

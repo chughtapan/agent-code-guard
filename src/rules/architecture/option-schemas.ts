@@ -57,38 +57,22 @@ const PositiveInt = Schema.Number.pipe(Schema.int(), Schema.greaterThanOrEqualTo
 // Defaults — these populate when the option is omitted entirely. Note that
 // allowance arrays default to []; consumers MUST add explicit entries with
 // reasons. There is no default allowlist.
-const DEFAULT_FORBIDDEN_SUBPATHS = [
-  "src", "internal", "private", "impl", "implementation",
-  "utils", "helpers", "lib", "shared", "common", "adapters",
-  "__generated__", "__fixtures__", "__tests__",
-] as const;
-
-const DEFAULT_IMPLEMENTATION_SEGMENTS = [
-  "impl", "implementation", "adapter", "adapters",
-  "handler", "handlers", "service", "services",
-  "repository", "repositories", "driver", "drivers",
-  "concrete",
-] as const;
-
-const DEFAULT_INFRASTRUCTURE_PACKAGES: ReadonlyArray<InfrastructureAllowance> = [
-  { package: "kysely", reason: "default: SQL query builder is implementation choice" },
-  { package: "pg", reason: "default: Postgres driver is implementation choice" },
-  { package: "pino", reason: "default: structured logger is implementation choice" },
-  { package: "winston", reason: "default: structured logger is implementation choice" },
-  { package: "bunyan", reason: "default: structured logger is implementation choice" },
-  { package: "drizzle-orm", reason: "default: ORM is implementation choice" },
-  { package: "typeorm", reason: "default: ORM is implementation choice" },
-  { package: "sequelize", reason: "default: ORM is implementation choice" },
-  { package: "prisma", reason: "default: ORM is implementation choice" },
-  { package: "@prisma/client", reason: "default: ORM client is implementation choice" },
-  { package: "express", reason: "default: HTTP framework is implementation choice" },
-  { package: "fastify", reason: "default: HTTP framework is implementation choice" },
-  { package: "@modelcontextprotocol/sdk", reason: "default: MCP transport is implementation choice" },
-];
-
 // Strictness lists (forbiddenSubpathSegments, implementationPathSegments)
 // stay as bare strings because adding entries makes the rule STRICTER, not
 // more permissive. There is no architectural exception to acknowledge.
+
+export const LayerDefinition = Schema.Struct({
+  name: NonEmptyString.annotations({
+    description: "Layer name (entrypoint, app, domain, adapters, shared, etc.).",
+  }),
+  folders: Schema.Array(NonEmptyString).annotations({
+    description: "Folder paths relative to the project root that belong to this layer. Longest-prefix match wins; ties resolve to the lower (earlier) layer index.",
+  }),
+  reason: NonEmptyString.annotations({
+    description: "Why these folders form a layer. Documents the architectural intent.",
+  }),
+});
+export type LayerDefinition = typeof LayerDefinition.Type;
 
 export const ArchitectureOptionsSchema = Schema.Struct({
   projectRoot: Schema.optional(NonEmptyString),
@@ -105,30 +89,18 @@ export const ArchitectureOptionsSchema = Schema.Struct({
     Schema.optionalWith({ default: () => true }),
   ),
 
-  // Allowance arrays: empty by default, every entry requires a reason.
   allowedPublicSubpaths: Schema.Array(SubpathAllowance).pipe(
-    Schema.optionalWith({
-      default: () => [
-        { subpath: ".", reason: "default: primary entrypoint" },
-        { subpath: "./cli", reason: "default: CLI invocation contract" },
-        { subpath: "./testing", reason: "default: consumer test helpers" },
-      ],
-    }),
+    Schema.optionalWith({ default: (): ReadonlyArray<SubpathAllowance> => [] }),
   ),
   allowedTestPublicSubpaths: Schema.Array(SubpathAllowance).pipe(
-    Schema.optionalWith({
-      default: () => [
-        { subpath: "./testing", reason: "default: consumer test helpers" },
-      ],
-    }),
+    Schema.optionalWith({ default: (): ReadonlyArray<SubpathAllowance> => [] }),
   ),
 
-  // Strictness lists — bare strings are fine; adding entries makes rules stricter.
   forbiddenSubpathSegments: Schema.Array(NonEmptyString).pipe(
-    Schema.optionalWith({ default: () => [...DEFAULT_FORBIDDEN_SUBPATHS] }),
+    Schema.optionalWith({ default: (): ReadonlyArray<string> => [] }),
   ),
   implementationPathSegments: Schema.Array(NonEmptyString).pipe(
-    Schema.optionalWith({ default: () => [...DEFAULT_IMPLEMENTATION_SEGMENTS] }),
+    Schema.optionalWith({ default: (): ReadonlyArray<string> => [] }),
   ),
 
   // Public surface caps.
@@ -159,38 +131,20 @@ export const ArchitectureOptionsSchema = Schema.Struct({
     Schema.optionalWith({ default: () => 0 }),
   ),
 
-  // Shared folder allowance — every entry requires a reason.
   sharedFolderNames: Schema.Array(SharedFolderAllowance).pipe(
-    Schema.optionalWith({
-      default: () => [
-        { folder: "shared", reason: "default: explicit shared kernel" },
-        { folder: "common", reason: "default: explicit shared kernel" },
-        { folder: "utils", reason: "default: explicit utility kernel" },
-        { folder: "helpers", reason: "default: explicit utility kernel" },
-        { folder: "internal", reason: "default: package-internal kernel" },
-        { folder: "types", reason: "default: shared type definitions" },
-        { folder: "schema", reason: "default: shared schema definitions" },
-        { folder: "schemas", reason: "default: shared schema definitions" },
-        { folder: "testing", reason: "default: testing helpers" },
-        { folder: "test", reason: "default: testing helpers" },
-        { folder: "tests", reason: "default: testing helpers" },
-        { folder: "test-utils", reason: "default: testing helpers" },
-        { folder: "__tests__", reason: "default: testing helpers" },
-        { folder: "architecture", reason: "default: architecture analysis kernel (this package)" },
-      ],
-    }),
+    Schema.optionalWith({ default: (): ReadonlyArray<SharedFolderAllowance> => [] }),
   ),
 
-  // Vendor-type allowance — every entry requires a reason.
   publicTypePackages: Schema.Array(PublicTypeAllowance).pipe(
     Schema.optionalWith({ default: (): ReadonlyArray<PublicTypeAllowance> => [] }),
   ),
 
-  // Infrastructure package list — every entry requires a reason.
   infrastructureTypePackages: Schema.Array(InfrastructureAllowance).pipe(
-    Schema.optionalWith({
-      default: (): ReadonlyArray<InfrastructureAllowance> => [...DEFAULT_INFRASTRUCTURE_PACKAGES],
-    }),
+    Schema.optionalWith({ default: (): ReadonlyArray<InfrastructureAllowance> => [] }),
+  ),
+
+  layers: Schema.Array(LayerDefinition).pipe(
+    Schema.optionalWith({ default: (): ReadonlyArray<LayerDefinition> => [] }),
   ),
 
   packageRuntime: PackageRuntime.pipe(
