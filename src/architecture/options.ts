@@ -2,14 +2,17 @@ import path from "node:path";
 import { Data, Either, Schema } from "effect";
 import { ArrayFormatter } from "effect/ParseResult";
 import { ArchitectureOptionsSchema, type ArchitectureOptionsInput } from "./option-schemas.js";
-import type { ResolvedArchitectureOptions } from "./types.js";
+import type { ArchitectureOptions, ResolvedArchitectureOptions } from "./types.js";
 
 const decodeOptions = Schema.decodeUnknownEither(ArchitectureOptionsSchema);
 
-// Memoize on the raw input reference. ESLint calls create() for every rule
-// per file; the same rawOptions object flows through identical decode work
-// thousands of times in a single lint pass.
-const memo = new WeakMap<object, ResolvedArchitectureOptions>();
+// Memoize the schema decode on the raw input reference. ESLint hands the
+// same rawOptions object to create() for every (rule × file) in a lint
+// pass; without this WeakMap, that's thousands of identical decode
+// invocations. We memoize the decoded shape (not the resolved shape) so
+// that callers passing a different projectRoot override still pay the
+// cheap path.resolve cost but skip the expensive decode.
+const decodedCache = new WeakMap<object, ArchitectureOptions>();
 
 export interface ArchitectureOptionsIssue {
   readonly path: ReadonlyArray<PropertyKey>;
@@ -21,11 +24,9 @@ export class ArchitectureOptionsError extends Data.TaggedError("ArchitectureOpti
   readonly issues: ReadonlyArray<ArchitectureOptionsIssue>;
 }> {}
 
-export function resolveArchitectureOptions(
-  raw: unknown = {},
-): ResolvedArchitectureOptions {
-  if (typeof raw === "object" && raw !== null) {
-    const cached = memo.get(raw);
+function decodeOrThrow(raw: unknown): ArchitectureOptions {
+  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+    const cached = decodedCache.get(raw);
     if (cached) return cached;
   }
 
@@ -48,20 +49,28 @@ export function resolveArchitectureOptions(
       });
     },
     onRight: (parsed) => {
-      const projectRoot = path.resolve(parsed.projectRoot ?? process.cwd());
-      const resolved: ResolvedArchitectureOptions = {
-        ...parsed,
-        projectRoot,
-        tsconfigPath: parsed.tsconfigPath
-          ? path.resolve(projectRoot, parsed.tsconfigPath)
-          : null,
-      };
-      if (typeof raw === "object" && raw !== null) {
-        memo.set(raw, resolved);
+      if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+        decodedCache.set(raw, parsed);
       }
-      return resolved;
+      return parsed;
     },
   });
+}
+
+export function resolveArchitectureOptions(
+  raw: unknown = {},
+  overrideProjectRoot?: string,
+): ResolvedArchitectureOptions {
+  const parsed = decodeOrThrow(raw);
+  const projectRoot = path.resolve(overrideProjectRoot ?? parsed.projectRoot ?? process.cwd());
+
+  return {
+    ...parsed,
+    projectRoot,
+    tsconfigPath: parsed.tsconfigPath
+      ? path.resolve(projectRoot, parsed.tsconfigPath)
+      : null,
+  };
 }
 
 export type ArchitectureRuleOptionInput = ArchitectureOptionsInput;
