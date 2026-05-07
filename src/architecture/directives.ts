@@ -42,48 +42,59 @@ const missingReasonError = (
   message: `Directive '${DIRECTIVE_MARKER}: ${ruleId}' is missing a 'reason:' follow-up line.`,
 });
 
-// Read directives from a TypeScript source file's leading comment block.
-// Uses ts.getLeadingCommentRanges so we don't have to hand-roll comment
-// recognition or split the file text.
+interface CommentLine {
+  readonly line: number;
+  readonly content: string;
+}
+
 export function parseDirectivesFromSourceFile(
   sourceFile: ts.SourceFile,
 ): DirectiveParseResult {
   const text = sourceFile.text;
-  const ranges = ts.getLeadingCommentRanges(text, 0) ?? [];
   const lineOf = (pos: number) =>
-    ts.getLineAndCharacterOfPosition(sourceFile, pos).line + 1;
+    sourceFile.getLineAndCharacterOfPosition(pos).line + 1;
 
-  const commentLines: Array<{ line: number; content: string }> = [];
-  for (const range of ranges) {
-    const raw = text.slice(range.pos, range.end);
-    if (range.kind === ts.SyntaxKind.SingleLineCommentTrivia) {
-      const startLine = lineOf(range.pos);
-      commentLines.push({ line: startLine, content: stripLineComment(raw) });
+  const commentLines: CommentLine[] = [];
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, /*skipTrivia*/ false);
+  scanner.setText(text);
+
+  while (true) {
+    const kind = scanner.scan();
+    if (kind === ts.SyntaxKind.EndOfFileToken) break;
+    if (kind === ts.SyntaxKind.SingleLineCommentTrivia) {
+      const start = scanner.getTokenStart();
+      const end = scanner.getTokenEnd();
+      commentLines.push({
+        line: lineOf(start),
+        content: text.slice(start, end).replace(/^\/\/+\s*/, "").trim(),
+      });
       continue;
     }
-    // Block comment: split inner lines, strip leading * adornments.
-    const inner = raw.replace(/^\/\*+/, "").replace(/\*+\/$/, "");
-    const lines = inner.split(/\r?\n/);
-    let cursor = lineOf(range.pos);
-    for (const line of lines) {
-      commentLines.push({
-        line: cursor,
-        content: line.replace(/^\s*\*\s?/, "").trim(),
-      });
-      cursor += 1;
+    if (kind === ts.SyntaxKind.MultiLineCommentTrivia) {
+      const start = scanner.getTokenStart();
+      const end = scanner.getTokenEnd();
+      const inner = text
+        .slice(start, end)
+        .replace(/^\/\*+/, "")
+        .replace(/\*+\/$/, "");
+      const innerStart = start + (text.slice(start).match(/^\/\*+/)?.[0].length ?? 0);
+      let cursor = 0;
+      for (const segment of inner.split(/\r?\n/)) {
+        commentLines.push({
+          line: lineOf(innerStart + cursor),
+          content: segment.replace(/^\s*\*\s?/, "").trim(),
+        });
+        cursor += segment.length + 1;
+      }
     }
   }
 
   return parseCommentLines(sourceFile.fileName, commentLines);
 }
 
-function stripLineComment(raw: string): string {
-  return raw.replace(/^\/\/+\s*/, "").trim();
-}
-
 function parseCommentLines(
   filePath: string,
-  commentLines: ReadonlyArray<{ line: number; content: string }>,
+  commentLines: ReadonlyArray<CommentLine>,
 ): DirectiveParseResult {
   const directives: ArchitectureDirective[] = [];
   const errors: DirectiveParseError[] = [];
@@ -91,10 +102,12 @@ function parseCommentLines(
   let pendingRuleId: ArchitectureDiagnosticRuleId | null = null;
   let pendingRuleLine = 0;
 
+  const strictMatcher = new RegExp(
+    `^${escapeForRegExp(DIRECTIVE_MARKER)}\\s*:\\s*([\\w-]+)\\s*$`,
+  );
+
   for (const { line, content } of commentLines) {
-    const ruleMatch = content.match(
-      new RegExp(`${escapeForRegExp(DIRECTIVE_MARKER)}\\s*:\\s*([\\w-]+)\\s*$`),
-    );
+    const ruleMatch = content.match(strictMatcher);
     if (ruleMatch) {
       if (pendingRuleId !== null) {
         errors.push(missingReasonError(filePath, pendingRuleLine, pendingRuleId));
@@ -115,6 +128,24 @@ function parseCommentLines(
       continue;
     }
 
+    // If the line starts with the marker but didn't match the strict pattern,
+    // the user attempted a directive and got the syntax wrong — surface it
+    // instead of silently failing to suppress. Lines that merely mention the
+    // marker mid-sentence (documentation, error messages) are not flagged.
+    if (content.startsWith(DIRECTIVE_MARKER)) {
+      if (pendingRuleId !== null) {
+        errors.push(missingReasonError(filePath, pendingRuleLine, pendingRuleId));
+        pendingRuleId = null;
+      }
+      errors.push({
+        file: filePath,
+        line,
+        ruleId: null,
+        message: `Malformed '${DIRECTIVE_MARKER}' directive. Expected '${DIRECTIVE_MARKER}: <rule-id>' on its own line.`,
+      });
+      continue;
+    }
+
     if (pendingRuleId !== null) {
       const reasonMatch = content.match(/^reason\s*:\s*(.+?)\s*$/i);
       if (reasonMatch) {
@@ -130,7 +161,15 @@ function parseCommentLines(
           directives.push({ ruleId: pendingRuleId, reason });
         }
         pendingRuleId = null;
+        continue;
       }
+
+      // Reason must follow the rule line immediately. Anything else (a blank
+      // comment, an unrelated annotation, license boilerplate) terminates the
+      // pending directive with a missing-reason error so users can't have a
+      // late `reason:` 50 lines down silently capture a directive header.
+      errors.push(missingReasonError(filePath, pendingRuleLine, pendingRuleId));
+      pendingRuleId = null;
     }
   }
 

@@ -53,7 +53,7 @@ export function createArchitectureDiagnosticRule(
 
       let options;
       try {
-        options = resolveArchitectureOptions({ ...rawOptions, projectRoot });
+        options = resolveArchitectureOptions(rawOptions, projectRoot);
       } catch (error) {
         if (error instanceof ArchitectureOptionsError) {
           // Surface schema-decode failures as a single Program-level
