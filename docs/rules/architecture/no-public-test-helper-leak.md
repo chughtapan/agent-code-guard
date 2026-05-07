@@ -1,11 +1,19 @@
 # `agent-code-guard/no-public-test-helper-leak`
 
-**What it flags:** Test helpers, fixtures, test-support modules, or test-like
-folders exposed as public package API.
+**What it flags:** `package.json` exports that target test infrastructure —
+fixtures, factories, mock builders, test utilities, or files inside
+`__tests__/`, `__fixtures__/`, `test/`, `tests/`. The rule also catches
+exports of barrels that re-export from those folders.
 
-**Why:** Test helpers often deep-import internals and expose unstable setup
-machinery. If they are public, consumers may build production code against test
-infrastructure by accident.
+**Why:** Test helpers exist to make YOUR tests fast. They typically
+deep-import internals, embed test-only assumptions, and have weaker
+versioning discipline than production code. When they're public, consumers
+will (eventually) build production code against them by accident — then
+upgrade their version of your package and watch their app break in
+unexpected ways.
+
+There's also a security angle: test fixtures sometimes embed sample data
+that's fine for tests but inappropriate to ship as a stable contract.
 
 ## Before (flagged)
 
@@ -21,9 +29,18 @@ infrastructure by accident.
 ```ts
 // src/test-utils/index.ts
 export * from "./server";
+export * from "./fixtures";
+export * from "./mock-db";
 ```
 
-## After (preferred)
+Anyone running `import { mockDb } from "your-package/test-utils"` is now
+depending on internals that exist for your tests, not for them.
+
+## After (preferred) — explicit testing subpath
+
+If consumers genuinely need test helpers (e.g., your library is meant to be
+mocked in their tests), give them ONE explicit testing subpath, document it
+as not-production-API, and curate it deliberately:
 
 ```json
 {
@@ -34,14 +51,70 @@ export * from "./server";
 }
 ```
 
-Use one explicit testing subpath and document that it is not production API.
+```ts
+// src/testing/index.ts — small, curated, stable across versions
+export { createMockClient } from "./mock-client";
+export type { MockClientOptions } from "./mock-client";
+```
+
+Document in `README.md` that `./testing` is for consumer test code, not
+production. Treat it with the same versioning discipline as the main public
+API.
+
+## After (preferred) — keep helpers internal
+
+Most test helpers don't need to be public at all. If they only support YOUR
+tests, leave them inside `tests/` (not `src/`) and don't put them in
+`exports`:
+
+```
+package.json:
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": ["dist", "docs", "README.md", "LICENSE"]
+  // tests/ not in `files`, so npm pack ignores it
+```
 
 ## Options
 
 ```js
 {
-  "agent-code-guard/no-public-test-helper-leak": ["warn", {
-    allowedTestPublicSubpaths: ["./testing"]
+  "agent-code-guard/no-public-test-helper-leak": ["error", {
+    // Subpaths that intentionally expose test helpers. Each entry MUST
+    // include both `subpath` and `reason`; bare strings are rejected by
+    // the schema. The reason is the architectural acknowledgment.
+    allowedTestPublicSubpaths: [
+      { subpath: "./testing", reason: "consumer test helpers; documented as not-production-API in README §Testing" },
+    ],
   }]
 }
 ```
+
+## Suppressing exceptions
+
+`package.json` doesn't take comments, and this rule fires on the manifest,
+so file-header directives don't apply. Use `allowedTestPublicSubpaths` —
+each exception requires a written reason:
+
+```js
+{
+  allowedTestPublicSubpaths: [
+    { subpath: "./testing", reason: "consumer test helpers" },
+  ],
+}
+```
+
+If you find yourself adding more than one or two entries, that's a signal
+to either reorganize (move helpers out of test-shaped folders) or
+acknowledge that "test helpers" have become a real product surface that
+needs the same care as the main API.
+
+## Rationale
+
+Test helpers are convenience for the package author, not a contract for the
+consumer. Mixing the two creates the most painful kind of breaking change —
+consumers rolled forward, your "internal" helper changed shape, their tests
+break, and the blame ladder is unclear. See
+[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
+for the full public-package-surface treatment.

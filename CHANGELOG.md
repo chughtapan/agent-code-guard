@@ -18,9 +18,62 @@
 - Per-rule docs under [`docs/rules/architecture/`](docs/rules/architecture/) and a Boundary
   Ledger design doc at [`docs/architecture-boundary-ledger.md`](docs/architecture-boundary-ledger.md).
 - Tag-driven npm publish workflow (`.github/workflows/publish.yml`).
+- **File-header directive suppression** — `// @agent-code-guard/architecture-exception: <rule-id>`
+  followed by a `// reason: <text>` line at the top of a source file suppresses
+  that rule for the file. ESLint's per-line `eslint-disable-next-line` does
+  not work for architecture rules (their diagnostics report at the Program
+  node), so the directive is the right tool. The reason field is required;
+  malformed directives surface as `architecture-directive-parse-error`
+  diagnostics instead of silently failing to suppress.
+- New always-on rule **`architecture-directive-parse-error`** — surfaces
+  malformed directive comments. Added to the `recommended` and `architecture`
+  presets at error level so directive bugs cannot fail silently.
 
 ### Changed
 
+- **BREAKING — option arrays now require structured `{value, reason}` entries.**
+  The architecture rule options that used to accept bare-string arrays
+  (`publicTypePackages`, `infrastructureTypePackages`, `allowedPublicSubpaths`,
+  `allowedTestPublicSubpaths`, `sharedFolderNames`) now require objects with
+  a written reason. The schema validates at lint time and rejects bare
+  strings; the act of writing the reason IS the architectural
+  acknowledgment. Strictness lists (`forbiddenSubpathSegments`,
+  `implementationPathSegments`) stay as bare strings because adding entries
+  makes the rule stricter, not more permissive.
+
+  Migration:
+
+  ```js
+  // Before
+  publicTypePackages: ["@typescript-eslint/utils"]
+  // After
+  publicTypePackages: [
+    { package: "@typescript-eslint/utils", reason: "this package is an ESLint plugin" }
+  ]
+
+  // Before
+  allowedPublicSubpaths: [".", "./cli", "./testing"]
+  // After
+  allowedPublicSubpaths: [
+    { subpath: ".", reason: "primary entrypoint" },
+    { subpath: "./cli", reason: "CLI invocation contract" },
+    { subpath: "./testing", reason: "consumer test helpers" },
+  ]
+
+  // Before
+  sharedFolderNames: ["shared", "common"]
+  // After
+  sharedFolderNames: [
+    { folder: "shared", reason: "explicit shared kernel" },
+    { folder: "common", reason: "explicit shared kernel" },
+  ]
+  ```
+- **Option validation now uses Effect Schema.** `ArchitectureOptions` is
+  defined as an Effect schema in `src/architecture/option-schemas.ts`;
+  ESLint receives JSONSchema generated from it via `JSONSchema.make()`,
+  and runtime decoding goes through `Schema.decodeUnknownEither`. Schema
+  errors come back path-keyed via Effect's `ArrayFormatter` so the user
+  sees exactly which option key was wrong.
 - **The `recommended` preset now includes the architecture rules at curated severity:**
   7 errors (clear bugs — cycles, exposed internals, uncurated public boundaries,
   vendor-type leaks) and 8 warns (heuristic / layered-architecture / domain-dependent
