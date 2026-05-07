@@ -1,15 +1,15 @@
 import path from "node:path";
 import type {
   FolderEdge,
-  ProjectTopologyGraph,
+  ProjectArchitectureGraph,
   SourceModule,
 } from "./project-graph.js";
-import type { NormalizedTopologyOptions, TopologyDiagnostic } from "./types.js";
+import type { NormalizedArchitectureOptions, ArchitectureDiagnostic } from "./types.js";
 
 export function checkFolderGraph(
-  graph: ProjectTopologyGraph,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  graph: ProjectArchitectureGraph,
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   const components = stronglyConnectedFolderComponents(graph.folderEdges);
   return [
     ...folderCycleDiagnostics(graph, components),
@@ -99,9 +99,9 @@ export function folderEdgeDensity(
 }
 
 function folderCycleDiagnostics(
-  graph: ProjectTopologyGraph,
+  graph: ProjectArchitectureGraph,
   components: readonly (readonly string[])[],
-): readonly TopologyDiagnostic[] {
+): readonly ArchitectureDiagnostic[] {
   return components.map((component) => ({
     ruleId: "no-folder-cycle",
     file: graph.reportFile,
@@ -114,9 +114,9 @@ function folderCycleDiagnostics(
 }
 
 function rootInternalCycleDiagnostics(
-  graph: ProjectTopologyGraph,
+  graph: ProjectArchitectureGraph,
   components: readonly (readonly string[])[],
-): readonly TopologyDiagnostic[] {
+): readonly ArchitectureDiagnostic[] {
   const hasCycle = components.some(
     (component) => component.includes(".") && component.includes("internal"),
   );
@@ -135,10 +135,10 @@ function rootInternalCycleDiagnostics(
 }
 
 function packageMeshDiagnostics(
-  graph: ProjectTopologyGraph,
+  graph: ProjectArchitectureGraph,
   components: readonly (readonly string[])[],
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   if (graph.folders.length < options.minPackageMeshFolders) return [];
 
   const density = folderEdgeDensity(graph.folders, graph.folderEdges);
@@ -160,9 +160,9 @@ function packageMeshDiagnostics(
 }
 
 function crossDomainSiblingImportDiagnostics(
-  graph: ProjectTopologyGraph,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  graph: ProjectArchitectureGraph,
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   return graph.localEdges.flatMap((edge) => {
     if (edge.kind !== "import") return [];
 
@@ -191,8 +191,8 @@ function crossDomainSiblingImportDiagnostics(
 }
 
 function upwardLayerImportDiagnostics(
-  graph: ProjectTopologyGraph,
-): readonly TopologyDiagnostic[] {
+  graph: ProjectArchitectureGraph,
+): readonly ArchitectureDiagnostic[] {
   return graph.localEdges.flatMap((edge) => {
     if (edge.kind !== "import") return [];
 
@@ -226,7 +226,7 @@ function importsUpward(fromModule: SourceModule, toModule: SourceModule): boolea
 }
 
 function sharedFolder(
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
   folderName: string,
 ): boolean {
   return options.sharedFolderNames.includes(folderName);

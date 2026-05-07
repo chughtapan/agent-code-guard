@@ -1,12 +1,12 @@
-# Topology Boundary Ledger
+# Architecture Boundary Ledger
 
-Status: design doctrine for the `agent-code-guard` topology analyzer. The shipped pass is `agent-code-guard/topology-boundaries`; new checks should deepen the same project graph instead of adding prompt-time coupling.
+Status: design doctrine for the `agent-code-guard` architecture analyzer. The shipped pass is `agent-code-guard/architecture-boundaries`; new checks should deepen the same project graph instead of adding prompt-time coupling.
 
 ## Why this exists
 
 The current rules catch local agent failure modes: raw throws, erased error channels, unsafe casts, runtime env reads, and related patterns. Those are necessary but not enough. Agents also create architectural debt by adding exports, imports, package dependencies, folder APIs, and public surfaces without naming the design decision each boundary is meant to hide.
 
-The topology analyzer turns three design principles into enforceable checks:
+The architecture analyzer turns three design principles into enforceable checks:
 
 - **Parnas information hiding.** A boundary exists to hide a volatile design decision. If a file, folder, or package export hides no decision, it is likely accidental structure.
 - **Liskov abstraction and substitutability.** Consumers should depend on stable contracts that can be substituted behind, not on concrete implementation files unless the file is explicitly a strategy.
@@ -80,7 +80,7 @@ Package-level questions:
 
 Use these roles by default. Projects may rename them, but the analyzer needs equivalent semantics.
 
-| Role | Allowed topology | Red flags |
+| Role | Allowed architecture | Red flags |
 |---|---|---|
 | `entrypoint` | High fanout assembly; exports public package surface. | Domain logic, hidden runtime dependency blast radius, undocumented public symbols. |
 | `registry` | Maps stable names to strategies. | Behavioral logic, re-exporting unrelated modules, untyped registry entries. |
@@ -136,7 +136,7 @@ type BoundaryLedger = {
 
 `hiddenDecision` is mandatory. A boundary that hides no decision is a smell. `substitutabilityContract` is mandatory for facades, adapters, registries, strategies, shared kernels, and package-public surfaces.
 
-## Shipped topology diagnostics
+## Shipped architecture diagnostics
 
 The current analyzer emits these diagnostics from one shared package graph:
 
@@ -198,7 +198,7 @@ Public package types may not expose external package types unless that dependenc
 
 ## Expected findings on this package
 
-For `eslint-plugin-agent-code-guard` version `0.0.5`, the topology analyzer should produce a small, high-signal report:
+For `eslint-plugin-agent-code-guard` version `0.0.5`, the architecture analyzer should produce a small, high-signal report:
 
 - Pass: `src/rules/*.ts` are mostly valid strategy modules: default rule export, consumed by root and tests, no rule-to-rule imports.
 - Finding: `src/rules/no-test-skip-only.ts` exports `Modifier` and `Options` with no direct production consumers. Make them local unless a consumer is named.
@@ -210,14 +210,14 @@ For `eslint-plugin-agent-code-guard` version `0.0.5`, the topology analyzer shou
 
 ## Floor and ceiling separation
 
-The topology analyzer is the floor. It does not read an architect artifact, infer an architect proposal, or verify implementation against a design doc. It reads code and local project metadata:
+The architecture analyzer is the floor. It does not read an architect artifact, infer an architect proposal, or verify implementation against a design doc. It reads code and local project metadata:
 
 - TypeScript import/export syntax;
 - `package.json` `exports`, `main`, `types`, and dependency fields;
 - workspace package relationships;
 - `tsconfig` path aliases;
 - ESLint file globs;
-- optional `agent-code-guard` topology config;
+- optional `agent-code-guard` architecture config;
 - optional baselines for pre-existing debt.
 
 The `safer-by-default` architect skill is the ceiling. It can teach agents to design with a Boundary Ledger, but that ledger is guidance for humans and downstream implementation skills. It is not an input contract for Guard.

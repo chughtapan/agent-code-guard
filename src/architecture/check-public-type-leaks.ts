@@ -2,10 +2,10 @@ import ts from "typescript";
 import { uniqueDiagnostics } from "./diagnostics.js";
 import { publicApiSourceFiles } from "./source-program.js";
 import type {
-  NormalizedTopologyOptions,
+  NormalizedArchitectureOptions,
   PackageJson,
-  TopologyDiagnostic,
-  TopologySeverity,
+  ArchitectureDiagnostic,
+  ArchitectureSeverity,
 } from "./types.js";
 
 const MAX_TYPE_DEPTH = 8;
@@ -13,8 +13,8 @@ const MAX_TYPE_DEPTH = 8;
 export function checkPublicVendorTypeLeaks(
   program: ts.Program | null,
   packageJson: PackageJson | null,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   if (!program) return [];
 
   const checker = program.getTypeChecker();
@@ -30,8 +30,8 @@ export function checkPublicVendorTypeLeaks(
 
 export function externalReExportDiagnostics(
   sourceFile: ts.SourceFile,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   return sourceFile.statements.flatMap((statement) => {
     if (!ts.isExportDeclaration(statement)) return [];
     if (!statement.moduleSpecifier || !ts.isStringLiteral(statement.moduleSpecifier)) return [];
@@ -92,7 +92,7 @@ export function normalizeTypePackageName(packageName: string): string {
 
 export function packageAllowedInPublicTypes(
   packageName: string,
-  options: Pick<NormalizedTopologyOptions, "packageRuntime" | "publicTypePackages">,
+  options: Pick<NormalizedArchitectureOptions, "packageRuntime" | "publicTypePackages">,
 ): boolean {
   if (options.publicTypePackages.includes(packageName)) return true;
   if (packageName !== "node") return false;
@@ -103,8 +103,8 @@ function exportedSignatureDiagnostics(
   checker: ts.TypeChecker,
   sourceFile: ts.SourceFile,
   packageJson: PackageJson | null,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   const moduleSymbol = checker.getSymbolAtLocation(sourceFile);
   if (!moduleSymbol) return [];
 
@@ -138,7 +138,7 @@ function exportedSignatureDiagnostics(
 function publicTypeLeakSeverity(
   packageName: string,
   packageJson: PackageJson | null,
-): TopologySeverity {
+): ArchitectureSeverity {
   if (packageName === "node") return "warn";
   return packageJson?.peerDependencies.has(packageName) ? "warn" : "error";
 }
@@ -146,8 +146,8 @@ function publicTypeLeakSeverity(
 function infraTypeLeakDiagnostic(
   fileName: string,
   packageName: string,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   if (!options.infrastructureTypePackages.includes(packageName)) return [];
 
   return [
@@ -179,7 +179,7 @@ function externalPackagesFromType(
   checker: ts.TypeChecker,
   type: ts.Type,
   location: ts.Node,
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
 ): ReadonlySet<string> {
   const packages = new Set<string>();
   const seenTypes = new Set<ts.Type>();

@@ -2,12 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
 import { SOURCE_EXTENSIONS, stripKnownExtension } from "./path-utils.js";
-import type { NormalizedTopologyOptions, TopologyDiagnostic } from "./types.js";
+import type { NormalizedArchitectureOptions, ArchitectureDiagnostic } from "./types.js";
 
 export function checkInventoryBarrels(
   sourceFiles: readonly ts.SourceFile[],
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   return sourceFiles.flatMap((sourceFile) =>
     inventoryBarrelDiagnostic(sourceFile, options),
   );
@@ -15,8 +15,8 @@ export function checkInventoryBarrels(
 
 export function inventoryBarrelDiagnostic(
   sourceFile: ts.SourceFile,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   if (!isIndexSourceFile(sourceFile.fileName)) return [];
 
   const eligibleSiblingModules = eligibleSiblingModuleKeys(path.dirname(sourceFile.fileName));
@@ -96,7 +96,7 @@ export function isExcludedSourceFile(fileName: string): boolean {
 
 export function exportedSiblingModuleKeys(
   sourceFile: ts.SourceFile,
-  options: Pick<NormalizedTopologyOptions, "countTypeOnlyExports">,
+  options: Pick<NormalizedArchitectureOptions, "countTypeOnlyExports">,
 ): ReadonlySet<string> {
   const keys = new Set<string>();
 

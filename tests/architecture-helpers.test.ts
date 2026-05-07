@@ -13,13 +13,13 @@ import {
   isIndexSourceFile,
   siblingModuleKeyFromSpecifier,
   sourceModuleKey,
-} from "../src/topology/check-inventory-barrels.js";
+} from "../src/architecture/check-inventory-barrels.js";
 import {
   checkPackageExports,
   packagePathSegments,
   packageReportPath,
   pathHasForbiddenSegment,
-} from "../src/topology/check-package-exports.js";
+} from "../src/architecture/check-package-exports.js";
 import {
   checkPublicVendorTypeLeaks,
   externalReExportDiagnostics,
@@ -27,12 +27,12 @@ import {
   packageAllowedInPublicTypes,
   packageNameFromFileName,
   packageNameFromSpecifier,
-} from "../src/topology/check-public-type-leaks.js";
-import { cachedProjectTopology, clearTopologyCache } from "../src/topology/cache.js";
-import { uniqueDiagnostics } from "../src/topology/diagnostics.js";
-import { normalizeTopologyOptions } from "../src/topology/options.js";
-import { collectExportsValue, collectPackageExportEntries } from "../src/topology/package-exports.js";
-import { readPackageJson } from "../src/topology/package-json.js";
+} from "../src/architecture/check-public-type-leaks.js";
+import { cachedProjectArchitecture, clearArchitectureCache } from "../src/architecture/cache.js";
+import { uniqueDiagnostics } from "../src/architecture/diagnostics.js";
+import { normalizeArchitectureOptions } from "../src/architecture/options.js";
+import { collectExportsValue, collectPackageExportEntries } from "../src/architecture/package-exports.js";
+import { readPackageJson } from "../src/architecture/package-json.js";
 import {
   candidateSourcePaths,
   createProgram,
@@ -40,17 +40,17 @@ import {
   projectSourceFiles,
   publicApiSourceFiles,
   sourcePathForPackageTarget,
-} from "../src/topology/source-program.js";
+} from "../src/architecture/source-program.js";
 import {
   folderEdgeDensity,
   stronglyConnectedFolderComponents,
-} from "../src/topology/check-folder-graph.js";
+} from "../src/architecture/check-folder-graph.js";
 import {
   folderKeyForFile,
   isTestLikePath,
   resolveLocalSpecifier,
   topFolder,
-} from "../src/topology/project-graph.js";
+} from "../src/architecture/project-graph.js";
 import {
   hasSourceExtension,
   OUTPUT_EXTENSIONS,
@@ -58,8 +58,8 @@ import {
   SOURCE_EXTENSIONS,
   stripKnownExtension,
   withTrailingSeparator,
-} from "../src/topology/path-utils.js";
-import type { PackageJson, TopologyDiagnostic } from "../src/topology/types.js";
+} from "../src/architecture/path-utils.js";
+import type { PackageJson, ArchitectureDiagnostic } from "../src/architecture/types.js";
 
 const segmentArb = fc.stringMatching(/^[a-z][a-z0-9-]{0,8}$/);
 const packageSegmentArb = fc.stringMatching(/^[a-z][a-z0-9-]{0,12}$/);
@@ -129,19 +129,19 @@ function packageJsonForExports(exportsValue: unknown): PackageJson {
 
 function packageExportDiagnostics(
   exportsValue: unknown,
-  options: Parameters<typeof normalizeTopologyOptions>[0] = {},
-): readonly TopologyDiagnostic[] {
+  options: Parameters<typeof normalizeArchitectureOptions>[0] = {},
+): readonly ArchitectureDiagnostic[] {
   return checkPackageExports(
     packageJsonForExports(exportsValue),
-    normalizeTopologyOptions({ projectRoot: "/repo", ...options }),
+    normalizeArchitectureOptions({ projectRoot: "/repo", ...options }),
     "/repo/package.json",
   );
 }
 
 function diagnosticsForRule(
-  diagnostics: readonly TopologyDiagnostic[],
-  ruleId: TopologyDiagnostic["ruleId"],
-): readonly TopologyDiagnostic[] {
+  diagnostics: readonly ArchitectureDiagnostic[],
+  ruleId: ArchitectureDiagnostic["ruleId"],
+): readonly ArchitectureDiagnostic[] {
   return diagnostics.filter((diagnostic) => diagnostic.ruleId === ruleId);
 }
 
@@ -223,9 +223,9 @@ function writeNodePackage(root: string, packageName: string, declarations: strin
 
 function publicTypeDiagnostics(
   root: string,
-  options: Parameters<typeof normalizeTopologyOptions>[0] = {},
-): readonly TopologyDiagnostic[] {
-  const normalizedOptions = normalizeTopologyOptions({ projectRoot: root, ...options });
+  options: Parameters<typeof normalizeArchitectureOptions>[0] = {},
+): readonly ArchitectureDiagnostic[] {
+  const normalizedOptions = normalizeArchitectureOptions({ projectRoot: root, ...options });
   const program = createProgram(normalizedOptions);
   return checkPublicVendorTypeLeaks(program, readPackageJson(root), normalizedOptions);
 }
@@ -237,7 +237,7 @@ function nestedReadonlyObjectType(leafType: string, depth: number): string {
   );
 }
 
-describe("topology helper units", () => {
+describe("architecture helper units", () => {
   it("normalizes package exports including conditions, subpaths, arrays, and main/types fallback", () => {
     expect(
       collectExportsValue(
@@ -861,7 +861,7 @@ describe("topology helper units", () => {
 
             const diagnostics = inventoryBarrelDiagnostic(
               sourceFile,
-              normalizeTopologyOptions({
+              normalizeArchitectureOptions({
                 projectRoot: root,
                 minExportedSiblingModules,
                 maxExportedSiblingRatio,
@@ -919,7 +919,7 @@ describe("topology helper units", () => {
             expect(
               inventoryBarrelDiagnostic(
                 nonIndexSourceFile,
-                normalizeTopologyOptions({
+                normalizeArchitectureOptions({
                   projectRoot: root,
                   minExportedSiblingModules: 1,
                   maxExportedSiblingRatio: 0,
@@ -943,7 +943,7 @@ describe("topology helper units", () => {
             expect(
               inventoryBarrelDiagnostic(
                 emptyIndexSourceFile,
-                normalizeTopologyOptions({
+                normalizeArchitectureOptions({
                   projectRoot: root,
                   minExportedSiblingModules: 0,
                   maxExportedSiblingRatio: 0,
@@ -977,7 +977,7 @@ describe("topology helper units", () => {
             expect(
               inventoryBarrelDiagnostic(
                 sourceFile,
-                normalizeTopologyOptions({
+                normalizeArchitectureOptions({
                   projectRoot: root,
                   minExportedSiblingModules: exportedCount,
                   maxExportedSiblingRatio: exportedCount / eligibleCount,
@@ -1033,7 +1033,7 @@ describe("topology helper units", () => {
             expect(
               inventoryBarrelDiagnostic(
                 sourceFile,
-                normalizeTopologyOptions({
+                normalizeArchitectureOptions({
                   projectRoot: root,
                   minExportedSiblingModules: eligibleCount + 1,
                   maxExportedSiblingRatio: 0,
@@ -1125,10 +1125,10 @@ describe("topology helper units", () => {
   it("creates TypeScript programs only when configuration can be read and parsed", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-source-program-"));
     try {
-      expect(createProgram(normalizeTopologyOptions({ projectRoot: root }))).toBeNull();
+      expect(createProgram(normalizeArchitectureOptions({ projectRoot: root }))).toBeNull();
       expect(
         createProgram(
-          normalizeTopologyOptions({
+          normalizeArchitectureOptions({
             projectRoot: root,
             tsconfigPath: "missing-tsconfig.json",
           }),
@@ -1136,13 +1136,13 @@ describe("topology helper units", () => {
       ).toBeNull();
 
       fs.writeFileSync(path.join(root, "tsconfig.json"), "{ invalid json");
-      expect(createProgram(normalizeTopologyOptions({ projectRoot: root }))).toBeNull();
+      expect(createProgram(normalizeArchitectureOptions({ projectRoot: root }))).toBeNull();
 
       fs.writeFileSync(
         path.join(root, "tsconfig.json"),
         JSON.stringify({ compilerOptions: { module: "DefinitelyNotAModuleKind" } }),
       );
-      expect(createProgram(normalizeTopologyOptions({ projectRoot: root }))).toBeNull();
+      expect(createProgram(normalizeArchitectureOptions({ projectRoot: root }))).toBeNull();
 
       fs.mkdirSync(path.join(root, "src"), { recursive: true });
       fs.writeFileSync(path.join(root, "src", "index.ts"), "export const ok = true;\n");
@@ -1159,10 +1159,10 @@ describe("topology helper units", () => {
         }),
       );
 
-      expect(createProgram(normalizeTopologyOptions({ projectRoot: root }))).not.toBeNull();
+      expect(createProgram(normalizeArchitectureOptions({ projectRoot: root }))).not.toBeNull();
       expect(
         createProgram(
-          normalizeTopologyOptions({
+          normalizeArchitectureOptions({
             projectRoot: path.dirname(root),
             tsconfigPath: path.join(path.basename(root), "tsconfig.json"),
           }),
@@ -1268,7 +1268,7 @@ describe("topology helper units", () => {
         ),
     );
     const program = programFromSourceFiles(sourceFiles);
-    const options = normalizeTopologyOptions({ projectRoot: root });
+    const options = normalizeArchitectureOptions({ projectRoot: root });
     const packageJson = packageJsonForExports({
       ".": "./dist/index.js",
       "./cli": "./dist/cli.js",
@@ -1330,7 +1330,7 @@ describe("topology helper units", () => {
             publicApiSourceFiles(
               program,
               null,
-              normalizeTopologyOptions({ projectRoot: root }),
+              normalizeArchitectureOptions({ projectRoot: root }),
             ).map((sourceFile) =>
               path.relative(root, sourceFile.fileName).replaceAll("\\", "/"),
             ),
@@ -1468,7 +1468,7 @@ describe("topology helper units", () => {
         );
         const diagnostics = externalReExportDiagnostics(
           sourceFile,
-          normalizeTopologyOptions({
+          normalizeArchitectureOptions({
             projectRoot: "/repo",
             infrastructureTypePackages: [],
             publicTypePackages: allowed ? [packageName] : [],
@@ -1504,7 +1504,7 @@ describe("topology helper units", () => {
     expect(
       externalReExportDiagnostics(
         localSourceFile,
-        normalizeTopologyOptions({ projectRoot: "/repo" }),
+        normalizeArchitectureOptions({ projectRoot: "/repo" }),
       ),
     ).toEqual([]);
   });
@@ -1520,7 +1520,7 @@ describe("topology helper units", () => {
     expect(
       externalReExportDiagnostics(
         infraSourceFile,
-        normalizeTopologyOptions({
+        normalizeArchitectureOptions({
           projectRoot: "/repo",
           infrastructureTypePackages: ["kysely"],
         }),
@@ -1541,7 +1541,7 @@ describe("topology helper units", () => {
     ]);
     expect(externalReExportDiagnostics(
       infraSourceFile,
-      normalizeTopologyOptions({
+      normalizeArchitectureOptions({
         projectRoot: "/repo",
         infrastructureTypePackages: ["kysely"],
       }),
@@ -1550,7 +1550,7 @@ describe("topology helper units", () => {
     );
     expect(externalReExportDiagnostics(
       infraSourceFile,
-      normalizeTopologyOptions({
+      normalizeArchitectureOptions({
         projectRoot: "/repo",
         infrastructureTypePackages: ["kysely"],
       }),
@@ -1566,7 +1566,7 @@ describe("topology helper units", () => {
     expect(
       externalReExportDiagnostics(
         nodeSourceFile,
-        normalizeTopologyOptions({ projectRoot: "/repo", packageRuntime: "universal" }),
+        normalizeArchitectureOptions({ projectRoot: "/repo", packageRuntime: "universal" }),
       ),
     ).toEqual([
       expect.objectContaining({
@@ -1577,7 +1577,7 @@ describe("topology helper units", () => {
     expect(
       externalReExportDiagnostics(
         nodeSourceFile,
-        normalizeTopologyOptions({ projectRoot: "/repo", packageRuntime: "node" }),
+        normalizeArchitectureOptions({ projectRoot: "/repo", packageRuntime: "node" }),
       ),
     ).toEqual([]);
   });
@@ -1765,7 +1765,7 @@ describe("topology helper units", () => {
   });
 
   it("deduplicates diagnostics by rule, file, and message", () => {
-    const diagnostic: TopologyDiagnostic = {
+    const diagnostic: ArchitectureDiagnostic = {
       ruleId: "no-inventory-barrel",
       file: "/repo/src/index.ts",
       severity: "warn",
@@ -1780,7 +1780,7 @@ describe("topology helper units", () => {
       fc.property(
         fc.uniqueArray(segmentArb, { minLength: 1, maxLength: 6 }),
         (messages) => {
-          const diagnostics: TopologyDiagnostic[] = messages.flatMap((message) => [
+          const diagnostics: ArchitectureDiagnostic[] = messages.flatMap((message) => [
             {
               ruleId: "no-inventory-barrel",
               file: "/repo/src/index.ts",
@@ -1802,9 +1802,9 @@ describe("topology helper units", () => {
     );
   });
 
-  it("normalizes options and clears the topology cache without retaining stale reports", () => {
+  it("normalizes options and clears the architecture cache without retaining stale reports", () => {
     const root = path.resolve("/repo");
-    expect(normalizeTopologyOptions({ projectRoot: root, tsconfigPath: "tsconfig.eslint.json" }))
+    expect(normalizeArchitectureOptions({ projectRoot: root, tsconfigPath: "tsconfig.eslint.json" }))
       .toMatchObject({
         projectRoot: root,
         tsconfigPath: path.resolve(root, "tsconfig.eslint.json"),
@@ -1812,7 +1812,7 @@ describe("topology helper units", () => {
         maxExportedSiblingRatio: 0.6,
       });
 
-    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), "acg-topology-cache-"));
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), "acg-architecture-cache-"));
     try {
       fs.writeFileSync(
         path.join(projectRoot, "package.json"),
@@ -1861,18 +1861,18 @@ describe("topology helper units", () => {
         minExportedSiblingModules: 1,
         maxExportedSiblingRatio: 0,
       };
-      const staleReport = cachedProjectTopology(options);
+      const staleReport = cachedProjectArchitecture(options);
       expect(diagnosticsForRule(staleReport.diagnostics, "no-inventory-barrel")).toHaveLength(1);
 
       fs.writeFileSync(path.join(projectRoot, "src", "index.ts"), "export const ok = true;\n");
-      expect(cachedProjectTopology(options)).toBe(staleReport);
+      expect(cachedProjectArchitecture(options)).toBe(staleReport);
 
-      clearTopologyCache();
+      clearArchitectureCache();
       expect(
-        diagnosticsForRule(cachedProjectTopology(options).diagnostics, "no-inventory-barrel"),
+        diagnosticsForRule(cachedProjectArchitecture(options).diagnostics, "no-inventory-barrel"),
       ).toEqual([]);
     } finally {
-      clearTopologyCache();
+      clearArchitectureCache();
       fs.rmSync(projectRoot, { recursive: true, force: true });
     }
   });

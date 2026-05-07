@@ -2,17 +2,17 @@ import path from "node:path";
 import { collectPackageExportEntries } from "./package-exports.js";
 import { stripKnownExtension } from "./path-utils.js";
 import type {
-  NormalizedTopologyOptions,
+  NormalizedArchitectureOptions,
   PackageExportEntry,
   PackageJson,
-  TopologyDiagnostic,
+  ArchitectureDiagnostic,
 } from "./types.js";
 
 export function checkPackageExports(
   packageJson: PackageJson | null,
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
   reportFile: string,
-): readonly TopologyDiagnostic[] {
+): readonly ArchitectureDiagnostic[] {
   if (!packageJson) return [];
 
   const entries = collectPackageExportEntries(packageJson);
@@ -45,9 +45,9 @@ export function packagePathSegments(pathLike: string): readonly string[] {
 
 function internalSubpathDiagnostics(
   entries: readonly PackageExportEntry[],
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
   reportFile: string,
-): readonly TopologyDiagnostic[] {
+): readonly ArchitectureDiagnostic[] {
   return entries.flatMap((entry) => {
     if (options.allowedPublicSubpaths.includes(entry.publicPath)) return [];
 
@@ -72,9 +72,9 @@ function internalSubpathDiagnostics(
 
 function subpathBudgetDiagnostics(
   entries: readonly PackageExportEntry[],
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
   reportFile: string,
-): readonly TopologyDiagnostic[] {
+): readonly ArchitectureDiagnostic[] {
   const uniqueSubpaths = new Set(
     entries.map((entry) => entry.publicPath).filter((key) => key !== "."),
   );
@@ -95,9 +95,9 @@ function subpathBudgetDiagnostics(
 
 function wildcardExportDiagnostics(
   entries: readonly PackageExportEntry[],
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
   reportFile: string,
-): readonly TopologyDiagnostic[] {
+): readonly ArchitectureDiagnostic[] {
   const wildcardEntries = entries.filter((entry) => entry.publicPath.includes("*"));
   if (wildcardEntries.length <= options.maxWildcardExports) return [];
 
@@ -113,9 +113,9 @@ function wildcardExportDiagnostics(
 
 function testHelperExportDiagnostics(
   entries: readonly PackageExportEntry[],
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
   reportFile: string,
-): readonly TopologyDiagnostic[] {
+): readonly ArchitectureDiagnostic[] {
   return entries.flatMap((entry) => {
     if (options.allowedTestPublicSubpaths.includes(entry.publicPath)) return [];
 
@@ -140,9 +140,9 @@ function testHelperExportDiagnostics(
 
 function implementationFilePublicEntryDiagnostics(
   entries: readonly PackageExportEntry[],
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
   reportFile: string,
-): readonly TopologyDiagnostic[] {
+): readonly ArchitectureDiagnostic[] {
   return entries.flatMap((entry) => {
     if (options.allowedPublicSubpaths.includes(entry.publicPath)) return [];
 

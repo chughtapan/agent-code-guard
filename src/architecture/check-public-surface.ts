@@ -6,17 +6,17 @@ import {
   hasExportModifier,
   isStarExportDeclaration,
   isTestLikePath,
-  type ProjectTopologyGraph,
+  type ProjectArchitectureGraph,
   type SourceModule,
 } from "./project-graph.js";
 import { packageAllowedInPublicTypes, packageNameFromSpecifier } from "./check-public-type-leaks.js";
-import type { NormalizedTopologyOptions, TopologyDiagnostic } from "./types.js";
+import type { NormalizedArchitectureOptions, ArchitectureDiagnostic } from "./types.js";
 
 export function checkPublicSurface(
-  graph: ProjectTopologyGraph,
+  graph: ProjectArchitectureGraph,
   sourceFiles: readonly ts.SourceFile[],
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   const sourceFileByName = new Map(
     sourceFiles.map((sourceFile) => [path.resolve(sourceFile.fileName), sourceFile] as const),
   );
@@ -31,8 +31,8 @@ export function checkPublicSurface(
 }
 
 function exportStarBoundaryDiagnostics(
-  graph: ProjectTopologyGraph,
-): readonly TopologyDiagnostic[] {
+  graph: ProjectArchitectureGraph,
+): readonly ArchitectureDiagnostic[] {
   return graph.modules.flatMap((module) => {
     if (module.starExportCount === 0) return [];
     if (!module.isPublic && !module.isIndex) return [];
@@ -52,11 +52,11 @@ function exportStarBoundaryDiagnostics(
 }
 
 function largePublicSurfaceDiagnostics(
-  graph: ProjectTopologyGraph,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  graph: ProjectArchitectureGraph,
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   return graph.publicModules.flatMap((module) => {
-    const diagnostics: TopologyDiagnostic[] = [];
+    const diagnostics: ArchitectureDiagnostic[] = [];
 
     if (module.exportedSymbolCount > options.maxPublicExports) {
       diagnostics.push({
@@ -87,9 +87,9 @@ function largePublicSurfaceDiagnostics(
 }
 
 function curatedPublicFacadeDiagnostics(
-  graph: ProjectTopologyGraph,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  graph: ProjectArchitectureGraph,
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   return graph.publicModules.flatMap((module) => {
     if (!module.isIndex) return [];
     if (
@@ -115,8 +115,8 @@ function curatedPublicFacadeDiagnostics(
 }
 
 function publicTestHelperLeakDiagnostics(
-  graph: ProjectTopologyGraph,
-): readonly TopologyDiagnostic[] {
+  graph: ProjectArchitectureGraph,
+): readonly ArchitectureDiagnostic[] {
   return graph.publicModules.flatMap((module) => {
     const leakedEdges = module.localEdges.filter((edge) => {
       const target = graph.modulesByFileName.get(edge.to);
@@ -138,10 +138,10 @@ function publicTestHelperLeakDiagnostics(
 }
 
 function boundaryOwnedTypeDiagnostics(
-  graph: ProjectTopologyGraph,
+  graph: ProjectArchitectureGraph,
   sourceFileByName: ReadonlyMap<string, ts.SourceFile>,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   return graph.publicModules.flatMap((module) => {
     const sourceFile = sourceFileByName.get(module.fileName);
     if (!sourceFile) return [];
@@ -161,8 +161,8 @@ function boundaryOwnedTypeDiagnostics(
 function externalReexportBoundaryOwnedDiagnostics(
   sourceFile: ts.SourceFile,
   module: SourceModule,
-  options: NormalizedTopologyOptions,
-): readonly TopologyDiagnostic[] {
+  options: NormalizedArchitectureOptions,
+): readonly ArchitectureDiagnostic[] {
   return sourceFile.statements.flatMap((statement) => {
     if (!ts.isExportDeclaration(statement)) return [];
     if (!statement.moduleSpecifier || !ts.isStringLiteral(statement.moduleSpecifier)) return [];
@@ -187,7 +187,7 @@ function exportedDeclarationTypeDiagnostics(
   sourceFile: ts.SourceFile,
   module: SourceModule,
   importedTypes: ReadonlyMap<string, string>,
-): readonly TopologyDiagnostic[] {
+): readonly ArchitectureDiagnostic[] {
   return sourceFile.statements.flatMap((statement) => {
     if (!hasExportModifier(statement)) return [];
 
@@ -208,7 +208,7 @@ function exportedDeclarationTypeDiagnostics(
 
 function externalImportedIdentifiers(
   sourceFile: ts.SourceFile,
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
 ): ReadonlyMap<string, string> {
   const identifiers = new Map<string, string>();
 
