@@ -42,14 +42,14 @@ export default [
     files: ["src/**/*.ts"],
     ignores: ["**/*.test.ts", "**/*.spec.ts"],
     languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
-    plugins: { "safer-by-default": guard },
+    plugins: { "agent-code-guard": guard },
     rules: guard.configs.recommended.rules,
   },
   // Test hygiene — covers test files
   {
     files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts"],
     languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
-    plugins: { "safer-by-default": guard },
+    plugins: { "agent-code-guard": guard },
     rules: { "agent-code-guard/no-test-skip-only": "error" },
   },
 ];

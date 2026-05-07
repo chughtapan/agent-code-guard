@@ -3,7 +3,7 @@ import path from "node:path";
 import type { JSONSchema4 } from "@typescript-eslint/utils/json-schema";
 import { cachedProjectArchitecture } from "../architecture/cache.js";
 import {
-  DEFAULT_TOPOLOGY_OPTIONS,
+  DEFAULT_ARCHITECTURE_OPTIONS,
   type ArchitectureDiagnostic,
   type ArchitectureOptions,
 } from "../architecture/types.js";
@@ -62,7 +62,7 @@ export function createArchitectureDiagnosticRule(
       fixable: undefined,
       hasSuggestions: false,
     },
-    defaultOptions: [DEFAULT_TOPOLOGY_OPTIONS],
+    defaultOptions: [DEFAULT_ARCHITECTURE_OPTIONS],
     create(context, [rawOptions]) {
       const cwd = context.cwd ?? process.cwd();
       const filename = path.isAbsolute(context.filename)
@@ -71,7 +71,7 @@ export function createArchitectureDiagnosticRule(
       const projectRoot =
         rawOptions?.projectRoot ?? findNearestPackageRoot(filename) ?? cwd;
       const options = {
-        ...DEFAULT_TOPOLOGY_OPTIONS,
+        ...DEFAULT_ARCHITECTURE_OPTIONS,
         ...rawOptions,
         projectRoot,
       };

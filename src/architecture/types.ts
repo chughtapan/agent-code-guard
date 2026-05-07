@@ -91,7 +91,7 @@ export interface PackageExportEntry {
   readonly targetPath: string;
 }
 
-export const DEFAULT_TOPOLOGY_OPTIONS = {
+export const DEFAULT_ARCHITECTURE_OPTIONS = {
   minExportedSiblingModules: 4,
   maxExportedSiblingRatio: 0.6,
   countTypeOnlyExports: true,

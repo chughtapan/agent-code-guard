@@ -48,7 +48,7 @@ export default [
   {
     files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts"],
     languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
-    plugins: { "safer-by-default": guard },
+    plugins: { "agent-code-guard": guard },
     rules: {
       "agent-code-guard/no-test-skip-only": "error",
       "agent-code-guard/no-hardcoded-assertion-literals": "warn",

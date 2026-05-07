@@ -177,7 +177,7 @@ Every disable in source should carry a written reason via `@eslint-community/esl
 ## Name notes
 
 - **npm package**: `eslint-plugin-agent-code-guard`.
-- **Rule namespace**: `agent-code-guard/<rule>`. The namespace matches the companion Claude Code plugin (the ceiling), not the npm package (the floor). Users who install both see a consistent mental model: `agent-code-guard` is the philosophy family; `agent-code-guard` is the npm distribution of the lint half.
+- **Rule namespace**: `agent-code-guard/<rule>` — same identifier as both the npm package and the companion Claude Code plugin. One name across the floor (lint) and the ceiling (write-time guidance) keeps the mental model consistent for anyone using both halves.
 
 ## Companion
 
