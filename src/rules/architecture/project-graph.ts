@@ -127,8 +127,7 @@ export function layerIndexFor(
       const normalizedEntry = entry === "." ? "" : normalizePath(entry);
       const matches =
         normalizedEntry === normalized ||
-        (normalizedEntry !== "" && normalized.startsWith(`${normalizedEntry}/`)) ||
-        (normalizedEntry === "" && normalized === "");
+        (normalizedEntry !== "" && normalized.startsWith(`${normalizedEntry}/`));
       if (!matches) continue;
       if (normalizedEntry.length > bestEntryLength) {
         bestEntryLength = normalizedEntry.length;
@@ -166,14 +165,14 @@ export function folderKeyForFile(fileName: string, projectRoot: string): string 
 }
 
 export function topFolder(folder: string): string {
-  return folder === "." ? "." : folder.split("/")[0] ?? ".";
+  return folder.split("/")[0] ?? ".";
 }
 
 export function isTestLikePath(fileName: string): boolean {
   const normalized = normalizePath(fileName);
   return (
     /\.(test|spec)\.[cm]?[tj]sx?$/.test(normalized) ||
-    /(^|\/)(__tests__|tests?|testing|test-utils|fixtures?|__fixtures__)(\/|$)/.test(
+    /(^|\/)(__tests__|tests?|testing|test-utils|test-support|fixtures?|__fixtures__)(\/|$)/.test(
       normalized,
     )
   );
@@ -182,8 +181,7 @@ export function isTestLikePath(fileName: string): boolean {
 export function isStarExportDeclaration(statement: ts.Statement): boolean {
   return (
     ts.isExportDeclaration(statement) &&
-    statement.exportClause === undefined &&
-    statement.moduleSpecifier !== undefined
+    statement.exportClause === undefined
   );
 }
 
@@ -195,9 +193,11 @@ export function exportedDeclarationName(statement: ts.Statement): string | null 
   if (ts.isEnumDeclaration(statement)) return statement.name.text;
   if (!ts.isVariableStatement(statement)) return null;
 
-  const declaration = statement.declarationList.declarations[0];
-  const name = declaration?.name;
-  return name && ts.isIdentifier(name) ? name.text : null;
+  for (const declaration of statement.declarationList.declarations) {
+    const name = declaration.name;
+    return ts.isIdentifier(name) ? name.text : null;
+  }
+  return null;
 }
 
 export function hasExportModifier(statement: ts.Statement): boolean {
@@ -356,8 +356,7 @@ function publicApiFileNames(
 
   if (publicFiles.size === 0) {
     for (const candidate of ["src/index.ts", "src/index.tsx", "index.ts", "index.tsx"]) {
-      const resolved = path.resolve(options.projectRoot, candidate);
-      if (sourceFilesByPath.has(resolved)) publicFiles.add(resolved);
+      publicFiles.add(path.resolve(options.projectRoot, candidate));
     }
   }
 

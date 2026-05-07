@@ -46,8 +46,13 @@ import {
   stronglyConnectedFolderComponents,
 } from "../src/rules/architecture/check-folder-graph.js";
 import {
+  buildProjectGraph,
+  exportedDeclarationName,
   folderKeyForFile,
+  hasExportModifier,
   isTestLikePath,
+  isStarExportDeclaration,
+  layerIndexFor,
   resolveLocalSpecifier,
   topFolder,
 } from "../src/rules/architecture/project-graph.js";
@@ -149,6 +154,25 @@ function programFromSourceFiles(sourceFiles: readonly ts.SourceFile[]): ts.Progr
   return {
     getSourceFiles: () => [...sourceFiles],
   } as ts.Program;
+}
+
+function sourceFileAt(root: string, relativePath: string, text: string): ts.SourceFile {
+  return ts.createSourceFile(
+    path.resolve(root, relativePath),
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+}
+
+function sourceFilesByRelativePath(
+  root: string,
+  files: Record<string, string>,
+): readonly ts.SourceFile[] {
+  return Object.entries(files).map(([relativePath, text]) =>
+    sourceFileAt(root, relativePath, text),
+  );
 }
 
 function writePublicTypeProject(
@@ -1361,12 +1385,58 @@ describe("architecture helper units", () => {
       .toBe(path.resolve(root, "src/b/index.ts"));
   });
 
+  it("Property: local specifier resolution follows every source/output extension pair", () => {
+    fc.assert(
+      fc.property(segmentArb, sourceExtensionArb, fc.constantFrom(...OUTPUT_EXTENSIONS), (
+        moduleName,
+        sourceExtension,
+        outputExtension,
+      ) => {
+        const root = path.resolve("/repo");
+        const target = path.resolve(root, "src", `${moduleName}${sourceExtension}`);
+        const sourceFiles = new Map([
+          [
+            target,
+            ts.createSourceFile(target, "export const ok = true;", ts.ScriptTarget.Latest),
+          ],
+        ]);
+
+        expect(
+          resolveLocalSpecifier(
+            path.resolve(root, "src/index.ts"),
+            `./${moduleName}`,
+            sourceFiles,
+          ),
+        ).toBe(target);
+        expect(
+          resolveLocalSpecifier(
+            path.resolve(root, "src/index.ts"),
+            `./${moduleName}${outputExtension}`,
+            sourceFiles,
+          ),
+        ).toBe(target);
+        expect(
+          resolveLocalSpecifier(
+            path.resolve(root, "src/index.ts"),
+            moduleName,
+            sourceFiles,
+          ),
+        ).toBeNull();
+      }),
+      { numRuns: 80 },
+    );
+  });
+
   it("computes folder keys, top folders, test-like paths, and folder graph density", () => {
     const root = path.resolve("/repo");
     expect(folderKeyForFile(path.resolve(root, "src/index.ts"), root)).toBe(".");
     expect(folderKeyForFile(path.resolve(root, "src/domain/model.ts"), root)).toBe(
       "domain",
     );
+    expect(folderKeyForFile(path.resolve(root, "scripts/release.ts"), root)).toBe(
+      "scripts",
+    );
+    expect(topFolder(".")).toBe(".");
     expect(topFolder("domain/payments")).toBe("domain");
     expect(isTestLikePath(path.resolve(root, "src/test-utils/index.ts"))).toBe(true);
 
@@ -1376,6 +1446,8 @@ describe("architecture helper units", () => {
     ];
     expect(stronglyConnectedFolderComponents(edges)).toEqual([["a", "b"]]);
     expect(folderEdgeDensity(["a", "b"], edges)).toBe(1);
+    expect(folderEdgeDensity([], edges)).toBe(0);
+    expect(folderEdgeDensity(["a"], edges)).toBe(0);
   });
 
   it("Property: acyclic folder chains do not produce strongly connected components", () => {
@@ -1395,6 +1467,331 @@ describe("architecture helper units", () => {
       ),
       { numRuns: 80 },
     );
+  });
+
+  it("Property: folder rings form one sorted strongly connected component", () => {
+    fc.assert(
+      fc.property(
+        fc.uniqueArray(segmentArb, { minLength: 2, maxLength: 7 }),
+        (segments) => {
+          const edges = segments.map((segment, index) => ({
+            from: segment,
+            to: segments[(index + 1) % segments.length] ?? segment,
+            kind: "import" as const,
+            files: [`/repo/src/${segment}/index.ts`],
+          }));
+
+          expect(stronglyConnectedFolderComponents(edges)).toEqual([
+            [...segments].sort(),
+          ]);
+        },
+      ),
+      { numRuns: 80 },
+    );
+  });
+
+  it("Property: folder edge density counts unique folder directions only", () => {
+    fc.assert(
+      fc.property(
+        fc.uniqueArray(segmentArb, { minLength: 2, maxLength: 7 }),
+        (folders) => {
+          const baseEdges = folders.slice(0, -1).map((folder, index) => ({
+            from: folder,
+            to: folders[index + 1] ?? folder,
+            kind: "import" as const,
+            files: [`/repo/src/${folder}/index.ts`],
+          }));
+          const duplicateEdges = baseEdges.flatMap((edge) => [
+            edge,
+            { ...edge, files: ["/repo/src/duplicate.ts"] },
+            { ...edge, kind: "reexport" as const, files: ["/repo/src/reexport.ts"] },
+          ]);
+          const expectedDensity = baseEdges.length / (folders.length * (folders.length - 1));
+
+          expect(folderEdgeDensity(folders, duplicateEdges)).toBeCloseTo(expectedDensity);
+        },
+      ),
+      { numRuns: 80 },
+    );
+  });
+
+  it("Property: canonical test-only paths are detected by segment or file suffix", () => {
+    fc.assert(
+      fc.property(
+        segmentArb,
+        testOnlySegmentArb,
+        fc.constantFrom(".test.ts", ".spec.tsx", ".test.mts", ".spec.cts"),
+        (moduleName, testOnlySegment, testSuffix) => {
+          const root = path.resolve("/repo");
+
+          expect(
+            isTestLikePath(path.resolve(root, "src", testOnlySegment, `${moduleName}.ts`)),
+          ).toBe(true);
+          expect(isTestLikePath(path.resolve(root, "src", testOnlySegment)))
+            .toBe(true);
+          expect(isTestLikePath(path.resolve(root, "src", "fixture", `${moduleName}.ts`)))
+            .toBe(true);
+          expect(
+            isTestLikePath(path.resolve(root, "src", `${testOnlySegment}-prod`, `${moduleName}.ts`)),
+          ).toBe(false);
+          expect(isTestLikePath(path.resolve(root, "src", `${moduleName}${testSuffix}`)))
+            .toBe(true);
+          expect(isTestLikePath(path.resolve(root, "src", `${moduleName}.prod.ts`)))
+            .toBe(false);
+        },
+      ),
+      { numRuns: 80 },
+    );
+  });
+
+  it("classifies exported declarations and export-star declarations from syntax shape", () => {
+    const sourceFile = ts.createSourceFile(
+      "index.ts",
+      [
+        "export function makeThing() {}",
+        "export class Thing {}",
+        "export interface Shape { readonly id: string; }",
+        "export type Alias = string;",
+        "export enum Mode { One }",
+        "export const first = 1, second = 2;",
+        "const local = 1;",
+        'export * from "./star";',
+        'export { value } from "./value";',
+        'export * as named from "./named";',
+        "export default class {}",
+        "export default first;",
+      ].join("\n"),
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS,
+    );
+
+    expect(sourceFile.statements.map(exportedDeclarationName)).toEqual([
+      "makeThing",
+      "Thing",
+      "Shape",
+      "Alias",
+      "Mode",
+      "first",
+      "local",
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
+    expect(sourceFile.statements.map(hasExportModifier)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+    ]);
+    expect(sourceFile.statements.map(isStarExportDeclaration)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it("builds project graph metadata for public files, typed edges, and folder edges", () => {
+    const root = path.resolve("/repo");
+    const sourceFiles = sourceFilesByRelativePath(root, {
+      "src/index.ts": [
+        'import type { ExternalType } from "vendor-lib";',
+        'import { runtime } from "runtime-lib";',
+        'import { type NamedType } from "types-lib";',
+        'import type { Readable } from "node:stream";',
+        'import type { Scoped } from "@scope/pkg/subpath";',
+        'export type { LocalType } from "./types";',
+        'export { value } from "./feature/value";',
+        'export * from "./star";',
+        'export * as named from "./named";',
+        "export const own = runtime, second = 2;",
+        "export interface PublicShape { readonly field: ExternalType | NamedType | Readable | Scoped; }",
+        "export default own;",
+      ].join("\n"),
+      "src/types.ts": "export interface LocalType { readonly id: string; }\n",
+      "src/feature/value.ts": "export const value = true;\n",
+      "src/star.ts": "export const star = true;\n",
+      "src/named.ts": "export const named = true;\n",
+      "src/internal/worker.ts": 'import { value } from "../feature/value";\n',
+      "src/direct.ts": "export const direct = true;\n",
+    });
+    const graph = buildProjectGraph(
+      sourceFiles,
+      packageJsonForExports({ ".": "./dist/index.js", "./direct": "./src/direct.ts" }),
+      resolveArchitectureOptions({
+        projectRoot: root,
+        layers: [
+          { name: "root", folders: ["."], reason: "test: public root" },
+          { name: "feature", folders: ["feature"], reason: "test: feature layer" },
+          { name: "internal", folders: ["internal"], reason: "test: internal layer" },
+        ],
+      }),
+      path.resolve(root, "package.json"),
+    );
+
+    expect(graph.publicModules.map((module) => module.relativePath)).toEqual([
+      "src/index.ts",
+      "src/direct.ts",
+    ]);
+    expect(graph.folders).toEqual([".", "feature", "internal"]);
+    expect([...graph.folderLayerIndex.entries()]).toEqual([
+      [".", 0],
+      ["feature", 1],
+      ["internal", 2],
+    ]);
+
+    const publicModule = graph.publicModules[0];
+    expect(publicModule?.exportedSymbolCount).toBe(8);
+    expect(publicModule?.localReexportCount).toBe(4);
+    expect(publicModule?.starExportCount).toBe(1);
+
+    expect(graph.localEdges.map((edge) => ({
+      from: path.relative(root, edge.from).replaceAll("\\", "/"),
+      to: path.relative(root, edge.to).replaceAll("\\", "/"),
+      kind: edge.kind,
+      typeOnly: edge.typeOnly,
+      specifier: edge.specifier,
+    }))).toEqual([
+      {
+        from: "src/index.ts",
+        to: "src/types.ts",
+        kind: "reexport",
+        typeOnly: true,
+        specifier: "./types",
+      },
+      {
+        from: "src/index.ts",
+        to: "src/feature/value.ts",
+        kind: "reexport",
+        typeOnly: false,
+        specifier: "./feature/value",
+      },
+      {
+        from: "src/index.ts",
+        to: "src/star.ts",
+        kind: "reexport",
+        typeOnly: false,
+        specifier: "./star",
+      },
+      {
+        from: "src/index.ts",
+        to: "src/named.ts",
+        kind: "reexport",
+        typeOnly: false,
+        specifier: "./named",
+      },
+      {
+        from: "src/internal/worker.ts",
+        to: "src/feature/value.ts",
+        kind: "import",
+        typeOnly: false,
+        specifier: "../feature/value",
+      },
+    ]);
+    expect(graph.externalEdges.map((edge) => ({
+      packageName: edge.packageName,
+      kind: edge.kind,
+      typeOnly: edge.typeOnly,
+      specifier: edge.specifier,
+    }))).toEqual([
+      { packageName: "vendor-lib", kind: "import", typeOnly: true, specifier: "vendor-lib" },
+      { packageName: "runtime-lib", kind: "import", typeOnly: false, specifier: "runtime-lib" },
+      { packageName: "types-lib", kind: "import", typeOnly: true, specifier: "types-lib" },
+      { packageName: "node", kind: "import", typeOnly: true, specifier: "node:stream" },
+      { packageName: "@scope/pkg", kind: "import", typeOnly: true, specifier: "@scope/pkg/subpath" },
+    ]);
+    expect(graph.folderEdges).toEqual([
+      {
+        from: ".",
+        to: "feature",
+        kind: "reexport",
+        files: [path.resolve(root, "src/index.ts")],
+      },
+      {
+        from: "internal",
+        to: "feature",
+        kind: "import",
+        files: [path.resolve(root, "src/internal/worker.ts")],
+      },
+    ]);
+  });
+
+  it("Property: graph public API fallback follows every conventional index candidate", () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom("src/index.ts", "src/index.tsx", "index.ts", "index.tsx"),
+        (relativePath) => {
+          const root = path.resolve("/repo");
+          const sourceFiles = sourceFilesByRelativePath(root, {
+            [relativePath]: "export const ok = true;\n",
+            "src/private.ts": "export const privateValue = true;\n",
+          });
+          const graph = buildProjectGraph(
+            sourceFiles,
+            null,
+            resolveArchitectureOptions({ projectRoot: root }),
+            path.resolve(root, "package.json"),
+          );
+
+          expect(graph.publicModules.map((module) => module.relativePath)).toEqual([
+            relativePath,
+          ]);
+        },
+      ),
+      { numRuns: 20 },
+    );
+  });
+
+  it("does not treat dist-remap candidates as public unless they exist", () => {
+    const root = path.resolve("/repo");
+    const sourceFiles = sourceFilesByRelativePath(root, {
+      "src/index.ts": "export const root = true;\n",
+      "src/direct.ts": "export const direct = true;\n",
+      "src/src/direct.ts": "export const nestedDirect = true;\n",
+    });
+    const graph = buildProjectGraph(
+      sourceFiles,
+      packageJsonForExports({ "./direct": "./src/direct.ts" }),
+      resolveArchitectureOptions({ projectRoot: root }),
+      path.resolve(root, "package.json"),
+    );
+
+    expect(graph.publicModules.map((module) => module.relativePath)).toEqual(["src/direct.ts"]);
+  });
+
+  it("falls back to conventional public API files when package exports do not resolve", () => {
+    const root = path.resolve("/repo");
+    const sourceFiles = sourceFilesByRelativePath(root, {
+      "src/index.ts": "export const ok = true;\n",
+      "src/private.ts": "export const privateValue = true;\n",
+    });
+    const graph = buildProjectGraph(
+      sourceFiles,
+      packageJsonForExports({ "./missing": "./dist/missing.js" }),
+      resolveArchitectureOptions({ projectRoot: root }),
+      path.resolve(root, "package.json"),
+    );
+
+    expect(graph.publicModules.map((module) => module.relativePath)).toEqual(["src/index.ts"]);
   });
 
   it("normalizes external type package names and public allowances", () => {
@@ -1937,6 +2334,73 @@ describe("architecture helper units", () => {
       { numRuns: 40 },
     );
   });
+
+  it("Property: schema enforces ratio option bounds inclusively", () => {
+    const ratioOptions = [
+      "maxExportedSiblingRatio",
+      "maxFolderEdgeDensity",
+    ] as const;
+
+    fc.assert(
+      fc.property(
+        fc.constantFrom(...ratioOptions),
+        fc.oneof(
+          fc.double({ min: 0.000001, max: 100, noNaN: true }).map((n) => 1 + n),
+          fc.double({ min: 0.000001, max: 100, noNaN: true }).map((n) => -n),
+        ),
+        (optionName, invalidRatio) => {
+          expect(() =>
+            resolveArchitectureOptions({ [optionName]: invalidRatio }),
+          ).toThrowError(new RegExp(optionName));
+        },
+      ),
+      { numRuns: 40 },
+    );
+
+    expect(resolveArchitectureOptions({ maxExportedSiblingRatio: 0 }).maxExportedSiblingRatio)
+      .toBe(0);
+    expect(resolveArchitectureOptions({ maxFolderEdgeDensity: 1 }).maxFolderEdgeDensity)
+      .toBe(1);
+  });
+
+  it("Property: schema rejects non-positive and non-integer count options", () => {
+    const positiveIntOptions = [
+      "minExportedSiblingModules",
+      "maxPublicExports",
+      "minPublicFacadeModules",
+      "minPackageMeshFolders",
+    ] as const;
+    const nonNegativeIntOptions = [
+      "maxSubpathExports",
+      "maxWildcardExports",
+      "maxPublicReexports",
+      "maxFolderCycles",
+    ] as const;
+
+    fc.assert(
+      fc.property(fc.constantFrom(...positiveIntOptions), (optionName) => {
+        expect(() =>
+          resolveArchitectureOptions({ [optionName]: 0 }),
+        ).toThrowError(new RegExp(optionName));
+        expect(() =>
+          resolveArchitectureOptions({ [optionName]: 1.5 }),
+        ).toThrowError(new RegExp(optionName));
+      }),
+      { numRuns: 40 },
+    );
+
+    fc.assert(
+      fc.property(fc.constantFrom(...nonNegativeIntOptions), (optionName) => {
+        expect(() =>
+          resolveArchitectureOptions({ [optionName]: -1 }),
+        ).toThrowError(new RegExp(optionName));
+        expect(() =>
+          resolveArchitectureOptions({ [optionName]: 1.5 }),
+        ).toThrowError(new RegExp(optionName));
+      }),
+      { numRuns: 40 },
+    );
+  });
 });
 
 describe("file-header directive parser", () => {
@@ -2155,6 +2619,35 @@ describe("layer membership and cross-layer imports", () => {
       }),
       { numRuns: 40 },
     );
+  });
+
+  it("Property: layer folder prefixes match only on path segment boundaries", () => {
+    fc.assert(
+      fc.property(
+        fc
+          .tuple(fc.stringMatching(/^[a-z]{3,8}$/), fc.stringMatching(/^[a-z]{1,4}$/))
+          .filter(([prefix, suffix]) => !`${prefix}${suffix}`.startsWith(`${prefix}/`)),
+        ([prefix, suffix]) => {
+          const layers = [
+            { name: "prefix", folders: [prefix], reason: "test: prefix layer" },
+          ];
+
+          expect(layerIndexFor(`${prefix}/${suffix}`, layers)).toBe(0);
+          expect(layerIndexFor(`${prefix}${suffix}`, layers)).toBeNull();
+        },
+      ),
+      { numRuns: 40 },
+    );
+  });
+
+  it("root layer entry matches the root folder only", () => {
+    const layers = [
+      { name: "root", folders: ["."], reason: "test: package root" },
+    ];
+
+    expect(layerIndexFor(".", layers)).toBe(0);
+    expect(layerIndexFor("feature", layers)).toBeNull();
+    expect(layerIndexFor("feature/deep", layers)).toBeNull();
   });
 });
 
