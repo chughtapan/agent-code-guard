@@ -123,8 +123,8 @@ reason. Common values to consider:
 ```
 
 Pick only the folders that actually exist in your repo with that role.
-Test directories like `__tests__/` and explicitly test-named files are
-already exempt regardless of this option.
+Test directories like `__tests__/`, `test-support/`, and explicitly
+test-named files are already exempt regardless of this option.
 
 ## Suppressing per-file via a directive
 
