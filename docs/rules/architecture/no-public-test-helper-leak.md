@@ -2,8 +2,9 @@
 
 **What it flags:** `package.json` exports that target test infrastructure —
 fixtures, factories, mock builders, test utilities, or files inside
-`__tests__/`, `__fixtures__/`, `test/`, `tests/`. The rule also catches
-exports of barrels that re-export from those folders.
+`__tests__/`, `__fixtures__/`, `test/`, `tests/`, `test-utils/`, or
+`test-support/`. The rule also catches exports of barrels that re-export
+from those folders.
 
 **Why:** Test helpers exist to make YOUR tests fast. They typically
 deep-import internals, embed test-only assumptions, and have weaker
@@ -93,8 +94,8 @@ starter values:
 ```
 
 If you don't intentionally expose test helpers, leave this empty — the
-rule then flags any `./test-utils`, `./fixtures`, or similar subpaths
-that slip into your `package.json` exports.
+rule then flags any `./test-utils`, `./test-support`, `./fixtures`, or
+similar subpaths that slip into your `package.json` exports.
 
 ## Suppressing exceptions
 

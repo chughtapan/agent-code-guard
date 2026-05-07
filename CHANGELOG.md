@@ -39,6 +39,22 @@
   `src/rules/` reflects ownership and removes the cross-domain-sibling
   flag the previous layout produced.
 
+### Fixed
+
+- Architecture test-file classification now treats `test-support/` as
+  test-only infrastructure alongside `test-utils/`, fixtures, and
+  `__tests__/` folders.
+
+### Testing
+
+- Added property-based coverage for architecture graph behavior:
+  source/output specifier resolution, folder SCCs and edge density,
+  export declaration classification, public API fallback selection,
+  option-schema numeric bounds, and layer-prefix boundary matching.
+- Refreshed the checked-in Stryker incremental summary after a
+  whole-project run: **85.01%** mutation score, 1,651 killed mutants,
+  229 survived mutants, 11 timeouts, and 64 no-coverage mutants.
+
 ## [0.0.6] - 2026-05-06
 
 ### Added
