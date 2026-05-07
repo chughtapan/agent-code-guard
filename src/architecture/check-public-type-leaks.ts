@@ -2,7 +2,7 @@ import ts from "typescript";
 import { uniqueDiagnostics } from "./diagnostics.js";
 import { publicApiSourceFiles } from "./source-program.js";
 import type {
-  NormalizedArchitectureOptions,
+  ResolvedArchitectureOptions,
   PackageJson,
   ArchitectureDiagnostic,
   ArchitectureSeverity,
@@ -13,7 +13,7 @@ const MAX_TYPE_DEPTH = 8;
 export function checkPublicVendorTypeLeaks(
   program: ts.Program | null,
   packageJson: PackageJson | null,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
   if (!program) return [];
 
@@ -30,7 +30,7 @@ export function checkPublicVendorTypeLeaks(
 
 export function externalReExportDiagnostics(
   sourceFile: ts.SourceFile,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
   return sourceFile.statements.flatMap((statement) => {
     if (!ts.isExportDeclaration(statement)) return [];
@@ -92,9 +92,9 @@ export function normalizeTypePackageName(packageName: string): string {
 
 export function packageAllowedInPublicTypes(
   packageName: string,
-  options: Pick<NormalizedArchitectureOptions, "packageRuntime" | "publicTypePackages">,
+  options: Pick<ResolvedArchitectureOptions, "packageRuntime" | "publicTypePackages">,
 ): boolean {
-  if (options.publicTypePackages.includes(packageName)) return true;
+  if (options.publicTypePackages.some((entry) => entry.package === packageName)) return true;
   if (packageName !== "node") return false;
   return options.packageRuntime === "node";
 }
@@ -103,7 +103,7 @@ function exportedSignatureDiagnostics(
   checker: ts.TypeChecker,
   sourceFile: ts.SourceFile,
   packageJson: PackageJson | null,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
   const moduleSymbol = checker.getSymbolAtLocation(sourceFile);
   if (!moduleSymbol) return [];
@@ -146,9 +146,9 @@ function publicTypeLeakSeverity(
 function infraTypeLeakDiagnostic(
   fileName: string,
   packageName: string,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
-  if (!options.infrastructureTypePackages.includes(packageName)) return [];
+  if (!options.infrastructureTypePackages.some((entry) => entry.package === packageName)) return [];
 
   return [
     {
@@ -179,7 +179,7 @@ function externalPackagesFromType(
   checker: ts.TypeChecker,
   type: ts.Type,
   location: ts.Node,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): ReadonlySet<string> {
   const packages = new Set<string>();
   const seenTypes = new Set<ts.Type>();

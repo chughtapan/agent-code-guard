@@ -10,12 +10,12 @@ import {
   type SourceModule,
 } from "./project-graph.js";
 import { packageAllowedInPublicTypes, packageNameFromSpecifier } from "./check-public-type-leaks.js";
-import type { NormalizedArchitectureOptions, ArchitectureDiagnostic } from "./types.js";
+import type { ResolvedArchitectureOptions, ArchitectureDiagnostic } from "./types.js";
 
 export function checkPublicSurface(
   graph: ProjectArchitectureGraph,
   sourceFiles: readonly ts.SourceFile[],
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
   const sourceFileByName = new Map(
     sourceFiles.map((sourceFile) => [path.resolve(sourceFile.fileName), sourceFile] as const),
@@ -53,7 +53,7 @@ function exportStarBoundaryDiagnostics(
 
 function largePublicSurfaceDiagnostics(
   graph: ProjectArchitectureGraph,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
   return graph.publicModules.flatMap((module) => {
     const diagnostics: ArchitectureDiagnostic[] = [];
@@ -88,7 +88,7 @@ function largePublicSurfaceDiagnostics(
 
 function curatedPublicFacadeDiagnostics(
   graph: ProjectArchitectureGraph,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
   return graph.publicModules.flatMap((module) => {
     if (!module.isIndex) return [];
@@ -140,7 +140,7 @@ function publicTestHelperLeakDiagnostics(
 function boundaryOwnedTypeDiagnostics(
   graph: ProjectArchitectureGraph,
   sourceFileByName: ReadonlyMap<string, ts.SourceFile>,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
   return graph.publicModules.flatMap((module) => {
     const sourceFile = sourceFileByName.get(module.fileName);
@@ -161,7 +161,7 @@ function boundaryOwnedTypeDiagnostics(
 function externalReexportBoundaryOwnedDiagnostics(
   sourceFile: ts.SourceFile,
   module: SourceModule,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
   return sourceFile.statements.flatMap((statement) => {
     if (!ts.isExportDeclaration(statement)) return [];
@@ -208,7 +208,7 @@ function exportedDeclarationTypeDiagnostics(
 
 function externalImportedIdentifiers(
   sourceFile: ts.SourceFile,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): ReadonlyMap<string, string> {
   const identifiers = new Map<string, string>();
 

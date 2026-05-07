@@ -30,7 +30,7 @@ import {
 } from "../src/architecture/check-public-type-leaks.js";
 import { cachedProjectArchitecture, clearArchitectureCache } from "../src/architecture/cache.js";
 import { uniqueDiagnostics } from "../src/architecture/diagnostics.js";
-import { normalizeArchitectureOptions } from "../src/architecture/options.js";
+import { resolveArchitectureOptions } from "../src/architecture/options.js";
 import { collectExportsValue, collectPackageExportEntries } from "../src/architecture/package-exports.js";
 import { readPackageJson } from "../src/architecture/package-json.js";
 import {
@@ -129,11 +129,11 @@ function packageJsonForExports(exportsValue: unknown): PackageJson {
 
 function packageExportDiagnostics(
   exportsValue: unknown,
-  options: Parameters<typeof normalizeArchitectureOptions>[0] = {},
+  options: Parameters<typeof resolveArchitectureOptions>[0] = {},
 ): readonly ArchitectureDiagnostic[] {
   return checkPackageExports(
     packageJsonForExports(exportsValue),
-    normalizeArchitectureOptions({ projectRoot: "/repo", ...options }),
+    resolveArchitectureOptions({ projectRoot: "/repo", ...options }),
     "/repo/package.json",
   );
 }
@@ -223,9 +223,9 @@ function writeNodePackage(root: string, packageName: string, declarations: strin
 
 function publicTypeDiagnostics(
   root: string,
-  options: Parameters<typeof normalizeArchitectureOptions>[0] = {},
+  options: Parameters<typeof resolveArchitectureOptions>[0] = {},
 ): readonly ArchitectureDiagnostic[] {
-  const normalizedOptions = normalizeArchitectureOptions({ projectRoot: root, ...options });
+  const normalizedOptions = resolveArchitectureOptions({ projectRoot: root, ...options });
   const program = createProgram(normalizedOptions);
   return checkPublicVendorTypeLeaks(program, readPackageJson(root), normalizedOptions);
 }
@@ -492,7 +492,7 @@ describe("architecture helper units", () => {
             packageExportDiagnostics(
               { ".": "./dist/index.js", [publicPath]: targetPath },
               {
-                allowedPublicSubpaths: [publicPath],
+                allowedPublicSubpaths: [{ subpath: publicPath, reason: "test fixture" }],
                 forbiddenSubpathSegments: [forbidden],
               },
             ),
@@ -608,7 +608,7 @@ describe("architecture helper units", () => {
               packageExportDiagnostics(
                 { ".": "./dist/index.js", [publicPath]: targetPath },
                 {
-                  allowedTestPublicSubpaths: [publicPath],
+                  allowedTestPublicSubpaths: [{ subpath: publicPath, reason: "test fixture" }],
                   forbiddenSubpathSegments: [],
                   implementationPathSegments: [],
                   maxSubpathExports: 100,
@@ -659,7 +659,7 @@ describe("architecture helper units", () => {
             diagnosticsForRule(
               packageExportDiagnostics(
                 { ".": "./dist/index.js", [publicPath]: targetPath },
-                { ...options, allowedPublicSubpaths: [publicPath] },
+                { ...options, allowedPublicSubpaths: [{ subpath: publicPath, reason: "test fixture" }] },
               ),
               "no-implementation-file-public-entry",
             ),
@@ -861,7 +861,7 @@ describe("architecture helper units", () => {
 
             const diagnostics = inventoryBarrelDiagnostic(
               sourceFile,
-              normalizeArchitectureOptions({
+              resolveArchitectureOptions({
                 projectRoot: root,
                 minExportedSiblingModules,
                 maxExportedSiblingRatio,
@@ -919,7 +919,7 @@ describe("architecture helper units", () => {
             expect(
               inventoryBarrelDiagnostic(
                 nonIndexSourceFile,
-                normalizeArchitectureOptions({
+                resolveArchitectureOptions({
                   projectRoot: root,
                   minExportedSiblingModules: 1,
                   maxExportedSiblingRatio: 0,
@@ -943,9 +943,9 @@ describe("architecture helper units", () => {
             expect(
               inventoryBarrelDiagnostic(
                 emptyIndexSourceFile,
-                normalizeArchitectureOptions({
+                resolveArchitectureOptions({
                   projectRoot: root,
-                  minExportedSiblingModules: 0,
+                  minExportedSiblingModules: 1,
                   maxExportedSiblingRatio: 0,
                 }),
               ),
@@ -977,7 +977,7 @@ describe("architecture helper units", () => {
             expect(
               inventoryBarrelDiagnostic(
                 sourceFile,
-                normalizeArchitectureOptions({
+                resolveArchitectureOptions({
                   projectRoot: root,
                   minExportedSiblingModules: exportedCount,
                   maxExportedSiblingRatio: exportedCount / eligibleCount,
@@ -1033,7 +1033,7 @@ describe("architecture helper units", () => {
             expect(
               inventoryBarrelDiagnostic(
                 sourceFile,
-                normalizeArchitectureOptions({
+                resolveArchitectureOptions({
                   projectRoot: root,
                   minExportedSiblingModules: eligibleCount + 1,
                   maxExportedSiblingRatio: 0,
@@ -1125,10 +1125,10 @@ describe("architecture helper units", () => {
   it("creates TypeScript programs only when configuration can be read and parsed", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-source-program-"));
     try {
-      expect(createProgram(normalizeArchitectureOptions({ projectRoot: root }))).toBeNull();
+      expect(createProgram(resolveArchitectureOptions({ projectRoot: root }))).toBeNull();
       expect(
         createProgram(
-          normalizeArchitectureOptions({
+          resolveArchitectureOptions({
             projectRoot: root,
             tsconfigPath: "missing-tsconfig.json",
           }),
@@ -1136,13 +1136,13 @@ describe("architecture helper units", () => {
       ).toBeNull();
 
       fs.writeFileSync(path.join(root, "tsconfig.json"), "{ invalid json");
-      expect(createProgram(normalizeArchitectureOptions({ projectRoot: root }))).toBeNull();
+      expect(createProgram(resolveArchitectureOptions({ projectRoot: root }))).toBeNull();
 
       fs.writeFileSync(
         path.join(root, "tsconfig.json"),
         JSON.stringify({ compilerOptions: { module: "DefinitelyNotAModuleKind" } }),
       );
-      expect(createProgram(normalizeArchitectureOptions({ projectRoot: root }))).toBeNull();
+      expect(createProgram(resolveArchitectureOptions({ projectRoot: root }))).toBeNull();
 
       fs.mkdirSync(path.join(root, "src"), { recursive: true });
       fs.writeFileSync(path.join(root, "src", "index.ts"), "export const ok = true;\n");
@@ -1159,10 +1159,10 @@ describe("architecture helper units", () => {
         }),
       );
 
-      expect(createProgram(normalizeArchitectureOptions({ projectRoot: root }))).not.toBeNull();
+      expect(createProgram(resolveArchitectureOptions({ projectRoot: root }))).not.toBeNull();
       expect(
         createProgram(
-          normalizeArchitectureOptions({
+          resolveArchitectureOptions({
             projectRoot: path.dirname(root),
             tsconfigPath: path.join(path.basename(root), "tsconfig.json"),
           }),
@@ -1268,7 +1268,7 @@ describe("architecture helper units", () => {
         ),
     );
     const program = programFromSourceFiles(sourceFiles);
-    const options = normalizeArchitectureOptions({ projectRoot: root });
+    const options = resolveArchitectureOptions({ projectRoot: root });
     const packageJson = packageJsonForExports({
       ".": "./dist/index.js",
       "./cli": "./dist/cli.js",
@@ -1330,7 +1330,7 @@ describe("architecture helper units", () => {
             publicApiSourceFiles(
               program,
               null,
-              normalizeArchitectureOptions({ projectRoot: root }),
+              resolveArchitectureOptions({ projectRoot: root }),
             ).map((sourceFile) =>
               path.relative(root, sourceFile.fileName).replaceAll("\\", "/"),
             ),
@@ -1432,7 +1432,7 @@ describe("architecture helper units", () => {
     expect(
       packageAllowedInPublicTypes("react", {
         packageRuntime: "universal",
-        publicTypePackages: ["react"],
+        publicTypePackages: [{ package: "react", reason: "test fixture" }],
       }),
     ).toBe(true);
     expect(
@@ -1468,10 +1468,10 @@ describe("architecture helper units", () => {
         );
         const diagnostics = externalReExportDiagnostics(
           sourceFile,
-          normalizeArchitectureOptions({
+          resolveArchitectureOptions({
             projectRoot: "/repo",
             infrastructureTypePackages: [],
-            publicTypePackages: allowed ? [packageName] : [],
+            publicTypePackages: allowed ? [{ package: packageName, reason: "test: explicitly allowed" }] : [],
           }),
         );
 
@@ -1504,7 +1504,7 @@ describe("architecture helper units", () => {
     expect(
       externalReExportDiagnostics(
         localSourceFile,
-        normalizeArchitectureOptions({ projectRoot: "/repo" }),
+        resolveArchitectureOptions({ projectRoot: "/repo" }),
       ),
     ).toEqual([]);
   });
@@ -1520,9 +1520,9 @@ describe("architecture helper units", () => {
     expect(
       externalReExportDiagnostics(
         infraSourceFile,
-        normalizeArchitectureOptions({
+        resolveArchitectureOptions({
           projectRoot: "/repo",
-          infrastructureTypePackages: ["kysely"],
+          infrastructureTypePackages: [{ package: "kysely", reason: "test fixture" }],
         }),
       ),
     ).toEqual([
@@ -1541,18 +1541,18 @@ describe("architecture helper units", () => {
     ]);
     expect(externalReExportDiagnostics(
       infraSourceFile,
-      normalizeArchitectureOptions({
+      resolveArchitectureOptions({
         projectRoot: "/repo",
-        infrastructureTypePackages: ["kysely"],
+        infrastructureTypePackages: [{ package: "kysely", reason: "test fixture" }],
       }),
     )[1]?.message).toContain(
       "Database, logging, transport, and SDK implementation choices",
     );
     expect(externalReExportDiagnostics(
       infraSourceFile,
-      normalizeArchitectureOptions({
+      resolveArchitectureOptions({
         projectRoot: "/repo",
-        infrastructureTypePackages: ["kysely"],
+        infrastructureTypePackages: [{ package: "kysely", reason: "test fixture" }],
       }),
     )[1]?.message).toContain("package-owned ports or DTOs");
 
@@ -1566,7 +1566,7 @@ describe("architecture helper units", () => {
     expect(
       externalReExportDiagnostics(
         nodeSourceFile,
-        normalizeArchitectureOptions({ projectRoot: "/repo", packageRuntime: "universal" }),
+        resolveArchitectureOptions({ projectRoot: "/repo", packageRuntime: "universal" }),
       ),
     ).toEqual([
       expect.objectContaining({
@@ -1577,7 +1577,7 @@ describe("architecture helper units", () => {
     expect(
       externalReExportDiagnostics(
         nodeSourceFile,
-        normalizeArchitectureOptions({ projectRoot: "/repo", packageRuntime: "node" }),
+        resolveArchitectureOptions({ projectRoot: "/repo", packageRuntime: "node" }),
       ),
     ).toEqual([]);
   });
@@ -1695,7 +1695,7 @@ describe("architecture helper units", () => {
         ].join("\n"),
       );
       const messages = diagnosticsForRule(
-        publicTypeDiagnostics(root, { publicTypePackages: ["allowed-lib"] }),
+        publicTypeDiagnostics(root, { publicTypePackages: [{ package: "allowed-lib", reason: "test fixture" }] }),
         "no-public-vendor-type-leak",
       ).map((diagnostic) => diagnostic.message);
       const leakedExportNames = messages.flatMap((message) => {
@@ -1737,7 +1737,7 @@ describe("architecture helper units", () => {
       ).toEqual(["warn"]);
       expect(
         diagnosticsForRule(
-          publicTypeDiagnostics(dependencyRoot, { publicTypePackages: ["vendor-lib"] }),
+          publicTypeDiagnostics(dependencyRoot, { publicTypePackages: [{ package: "vendor-lib", reason: "test fixture" }] }),
           "no-public-vendor-type-leak",
         ),
       ).toEqual([]);
@@ -1804,7 +1804,7 @@ describe("architecture helper units", () => {
 
   it("normalizes options and clears the architecture cache without retaining stale reports", () => {
     const root = path.resolve("/repo");
-    expect(normalizeArchitectureOptions({ projectRoot: root, tsconfigPath: "tsconfig.eslint.json" }))
+    expect(resolveArchitectureOptions({ projectRoot: root, tsconfigPath: "tsconfig.eslint.json" }))
       .toMatchObject({
         projectRoot: root,
         tsconfigPath: path.resolve(root, "tsconfig.eslint.json"),
@@ -1856,11 +1856,11 @@ describe("architecture helper units", () => {
         );
       }
 
-      const options = {
+      const options = resolveArchitectureOptions({
         projectRoot,
         minExportedSiblingModules: 1,
         maxExportedSiblingRatio: 0,
-      };
+      });
       const staleReport = cachedProjectArchitecture(options);
       expect(diagnosticsForRule(staleReport.diagnostics, "no-inventory-barrel")).toHaveLength(1);
 
