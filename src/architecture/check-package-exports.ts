@@ -2,7 +2,7 @@ import path from "node:path";
 import { collectPackageExportEntries } from "./package-exports.js";
 import { stripKnownExtension } from "./path-utils.js";
 import type {
-  NormalizedArchitectureOptions,
+  ResolvedArchitectureOptions,
   PackageExportEntry,
   PackageJson,
   ArchitectureDiagnostic,
@@ -10,7 +10,7 @@ import type {
 
 export function checkPackageExports(
   packageJson: PackageJson | null,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
   reportFile: string,
 ): readonly ArchitectureDiagnostic[] {
   if (!packageJson) return [];
@@ -45,11 +45,11 @@ export function packagePathSegments(pathLike: string): readonly string[] {
 
 function internalSubpathDiagnostics(
   entries: readonly PackageExportEntry[],
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
   reportFile: string,
 ): readonly ArchitectureDiagnostic[] {
   return entries.flatMap((entry) => {
-    if (options.allowedPublicSubpaths.includes(entry.publicPath)) return [];
+    if (options.allowedPublicSubpaths.some((s) => s.subpath === entry.publicPath)) return [];
 
     const exposesInternalPath =
       pathHasForbiddenSegment(entry.publicPath, options.forbiddenSubpathSegments) ||
@@ -72,7 +72,7 @@ function internalSubpathDiagnostics(
 
 function subpathBudgetDiagnostics(
   entries: readonly PackageExportEntry[],
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
   reportFile: string,
 ): readonly ArchitectureDiagnostic[] {
   const uniqueSubpaths = new Set(
@@ -95,7 +95,7 @@ function subpathBudgetDiagnostics(
 
 function wildcardExportDiagnostics(
   entries: readonly PackageExportEntry[],
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
   reportFile: string,
 ): readonly ArchitectureDiagnostic[] {
   const wildcardEntries = entries.filter((entry) => entry.publicPath.includes("*"));
@@ -113,11 +113,11 @@ function wildcardExportDiagnostics(
 
 function testHelperExportDiagnostics(
   entries: readonly PackageExportEntry[],
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
   reportFile: string,
 ): readonly ArchitectureDiagnostic[] {
   return entries.flatMap((entry) => {
-    if (options.allowedTestPublicSubpaths.includes(entry.publicPath)) return [];
+    if (options.allowedTestPublicSubpaths.some((s) => s.subpath === entry.publicPath)) return [];
 
     const exposesTestShape =
       pathHasForbiddenSegment(entry.publicPath, testOnlySegments) ||
@@ -140,11 +140,11 @@ function testHelperExportDiagnostics(
 
 function implementationFilePublicEntryDiagnostics(
   entries: readonly PackageExportEntry[],
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
   reportFile: string,
 ): readonly ArchitectureDiagnostic[] {
   return entries.flatMap((entry) => {
-    if (options.allowedPublicSubpaths.includes(entry.publicPath)) return [];
+    if (options.allowedPublicSubpaths.some((s) => s.subpath === entry.publicPath)) return [];
 
     const exposesImplementation =
       pathHasForbiddenSegment(entry.publicPath, options.implementationPathSegments) ||

@@ -11,19 +11,24 @@ pnpm add -D eslint-plugin-agent-code-guard
 
 Your coding agent is miscalibrated. It was trained on human-written TypeScript — decades of it — written under one constraint that does not apply to it: typing was expensive for humans. That is why its training corpus is saturated with `throw new Error("bad")`, `as Record<string, unknown>`, `try { ... } catch {}`, `Promise<T>` return types, `process.env.FOO!`, raw SQL strings, and `vi.mock` inside integration tests. Those were the compromises humans made when keyboard time was scarce. An agent does not pay the scarcity; it inherits the patterns anyway.
 
-This plugin is the floor. Thirty-eight rules under the `recommended` preset (twenty-seven errors, eleven warns), plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
+This plugin is the floor. Thirty-nine rules under the `recommended` preset (twenty-eight errors, eleven warns), plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
 
 ## Architecture guard
 
 Beyond syntactic patterns, the plugin reasons about *project architecture*: what each file consumes and exports, what each folder consumes and exports, and what the package exposes and pulls into its runtime graph. This is the operational form of Parnas information hiding, Liskov abstraction/substitutability, and Martin package coupling metrics.
 
-As of `0.0.6`, fifteen architecture rules ship in `recommended`. Seven are **errors** — clear bugs with no defensible exception (cycles, exposed internals, uncurated public boundaries, vendor-type leaks). Eight are **warns** — heuristic or layered-architecture-dependent rules where the right call needs human judgment.
+As of `0.0.6`, sixteen architecture rules ship in `recommended`. Eight are **errors** — clear bugs with no defensible exception (cycles, exposed internals, uncurated public boundaries, vendor-type leaks, plus the always-on `architecture-directive-parse-error` that surfaces malformed suppression directives). Eight are **warns** — heuristic or layered-architecture-dependent rules where the right call needs human judgment.
 
-When `no-public-vendor-type-leak` legitimately fires (e.g., an ESLint plugin re-exporting `@typescript-eslint/utils`, a Node-targeted package using `node:*`), declare the public contract explicitly via the rule options — no auto-magic, no presets:
+When `no-public-vendor-type-leak` legitimately fires (e.g., an ESLint plugin re-exporting `@typescript-eslint/utils`, a Node-targeted package using `node:*`), declare the public contract explicitly via the rule options. Each entry requires a written `reason`; bare strings are rejected by the schema. Writing the reason IS the architectural decision:
 
 ```js
 const ARCHITECTURE_OPTIONS = {
-  publicTypePackages: ["@typescript-eslint/utils"],
+  publicTypePackages: [
+    {
+      package: "@typescript-eslint/utils",
+      reason: "this package is an ESLint plugin; the TSESLint rule contract is the public API",
+    },
+  ],
   packageRuntime: "node",
 };
 
@@ -31,7 +36,16 @@ const ARCHITECTURE_OPTIONS = {
 "agent-code-guard/no-public-vendor-type-leak": ["error", ARCHITECTURE_OPTIONS],
 ```
 
-Typing those packages out is the point — the act of declaration *is* the "do I want this in my contract?" decision.
+For per-file exceptions (e.g., a generated barrel that legitimately participates in a cycle), use a file-header directive instead — `eslint-disable-next-line` does not work for architecture rules because their diagnostics report at the Program node:
+
+```ts
+// @agent-code-guard/architecture-exception: no-folder-cycle
+// reason: generated barrel; cycle resolved at codegen time
+
+export * from "../app/host";
+```
+
+The `reason:` line is required. Malformed directives surface as `architecture-directive-parse-error` diagnostics so they can never silently fail to suppress.
 
 A standalone `architecture` preset (warn-level, all fifteen rules) remains for incremental adoption when you want to step up to the architecture checks one repo at a time without flipping CI red:
 
@@ -84,6 +98,7 @@ See [`docs/architecture-boundary-ledger.md`](docs/architecture-boundary-ledger.m
 | [`agent-code-guard/no-package-mesh`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-package-mesh.md) | Folder dependency graphs whose density crosses the mesh threshold (warn) |
 | [`agent-code-guard/require-curated-public-facade`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/require-curated-public-facade.md) | Public facades that mirror filesystem inventory instead of curating contracts (warn) |
 | [`agent-code-guard/require-boundary-owned-types`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/require-boundary-owned-types.md) | Public boundary types that reuse imported vendor names instead of package-owned ones (warn) |
+| `agent-code-guard/architecture-directive-parse-error` | Always-on. Surfaces malformed `// @agent-code-guard/architecture-exception:` directives so they cannot silently fail to suppress |
 
 Each rule ships a Before/After doc at the GitHub link above and locally at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`.
 
@@ -157,8 +172,8 @@ Peer dependencies: `eslint` ≥ 9, `typescript` ≥ 5.
 
 The import alias (e.g., `guard` in the example above) is your choice; adjust the `<import>.configs.*` path accordingly. Access presets via your import identifier:
 
-- `<import>.configs.recommended.rules` — application source. All rules except `no-vitest-mocks` (the AI-pattern floor plus the architecture rules at curated severity: 7 errors, 8 warns).
-- `<import>.configs.architecture.rules` — same fifteen architecture rules as `recommended`, but all at warn level. Use this when stepping up to the architecture checks for the first time, before flipping CI red.
+- `<import>.configs.recommended.rules` — application source. All rules except `no-vitest-mocks` (the AI-pattern floor plus the architecture rules at curated severity: 8 errors, 8 warns; includes the always-on `architecture-directive-parse-error`).
+- `<import>.configs.architecture.rules` — the fifteen architecture rules at warn level plus `architecture-directive-parse-error` at error. Use this when stepping up to the architecture checks for the first time, before flipping CI red.
 - `<import>.configs.integrationTests.rules` — integration-test glob only. Enforces `no-vitest-mocks` so integration tests actually hit real dependencies.
 
 ## Disabling a rule

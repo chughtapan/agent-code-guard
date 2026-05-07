@@ -7,7 +7,7 @@ import {
   stripKnownExtension,
   withTrailingSeparator,
 } from "./path-utils.js";
-import type { NormalizedArchitectureOptions, PackageJson } from "./types.js";
+import type { ResolvedArchitectureOptions, PackageJson } from "./types.js";
 
 export type ModuleEdgeKind = "import" | "reexport";
 
@@ -64,7 +64,7 @@ export interface ProjectArchitectureGraph {
 export function buildProjectGraph(
   sourceFiles: readonly ts.SourceFile[],
   packageJson: PackageJson | null,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
   reportFile: string,
 ): ProjectArchitectureGraph {
   const sourceFilesByPath = new Map(
@@ -173,7 +173,7 @@ function sourceModuleFromSourceFile(
   sourceFile: ts.SourceFile,
   sourceFilesByPath: ReadonlyMap<string, ts.SourceFile>,
   publicFileNames: ReadonlySet<string>,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): SourceModule {
   const fileName = path.resolve(sourceFile.fileName);
   const folder = folderKeyForFile(fileName, options.projectRoot);
@@ -300,7 +300,7 @@ function packageNameFromSpecifier(specifier: string): string | null {
 function publicApiFileNames(
   sourceFilesByPath: ReadonlyMap<string, ts.SourceFile>,
   packageJson: PackageJson | null,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): ReadonlySet<string> {
   const publicFiles = new Set<string>();
 
