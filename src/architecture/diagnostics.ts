@@ -1,10 +1,10 @@
-import type { TopologyDiagnostic } from "./types.js";
+import type { ArchitectureDiagnostic } from "./types.js";
 
 export function uniqueDiagnostics(
-  diagnostics: readonly TopologyDiagnostic[],
-): readonly TopologyDiagnostic[] {
+  diagnostics: readonly ArchitectureDiagnostic[],
+): readonly ArchitectureDiagnostic[] {
   const seen = new Set<string>();
-  const unique: TopologyDiagnostic[] = [];
+  const unique: ArchitectureDiagnostic[] = [];
 
   for (const diagnostic of diagnostics) {
     const key = `${diagnostic.ruleId}\0${diagnostic.file}\0${diagnostic.message}`;

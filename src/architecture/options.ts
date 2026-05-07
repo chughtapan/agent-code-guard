@@ -1,13 +1,13 @@
 import path from "node:path";
 import {
   DEFAULT_TOPOLOGY_OPTIONS,
-  type NormalizedTopologyOptions,
-  type TopologyOptions,
+  type NormalizedArchitectureOptions,
+  type ArchitectureOptions,
 } from "./types.js";
 
-export function normalizeTopologyOptions(
-  options: TopologyOptions = {},
-): NormalizedTopologyOptions {
+export function normalizeArchitectureOptions(
+  options: ArchitectureOptions = {},
+): NormalizedArchitectureOptions {
   const projectRoot = path.resolve(options.projectRoot ?? process.cwd());
 
   return {

@@ -24,80 +24,79 @@ import promiseType from "./rules/promise-type.js";
 import recordCast from "./rules/record-cast.js";
 import tagDiscriminant from "./rules/tag-discriminant.js";
 import thenChain from "./rules/then-chain.js";
-import topologyBoundaries from "./rules/topology-boundaries.js";
-import { createTopologyDiagnosticRule } from "./rules/topology-diagnostic-rule.js";
+import { createArchitectureDiagnosticRule } from "./rules/architecture-diagnostic-rule.js";
 
-const noInventoryBarrel = createTopologyDiagnosticRule(
+const noInventoryBarrel = createArchitectureDiagnosticRule(
   "no-inventory-barrel",
   ["no-inventory-barrel"],
   "Flag index files that export most sibling modules instead of a curated abstraction.",
 );
-const noInternalSubpathExport = createTopologyDiagnosticRule(
+const noInternalSubpathExport = createArchitectureDiagnosticRule(
   "no-internal-subpath-export",
   ["no-internal-subpath-export"],
   "Flag package exports that expose internal, source, utility, helper, or wildcard paths.",
 );
-const noPublicVendorTypeLeak = createTopologyDiagnosticRule(
+const noPublicVendorTypeLeak = createArchitectureDiagnosticRule(
   "no-public-vendor-type-leak",
   ["no-public-vendor-type-leak"],
   "Flag public API types that mention dependency-owned vendor types.",
 );
-const noExportStarBoundary = createTopologyDiagnosticRule(
+const noExportStarBoundary = createArchitectureDiagnosticRule(
   "no-export-star-boundary",
   ["no-export-star-boundary"],
   "Flag public or index boundaries that use export-star declarations.",
 );
-const noFolderCycle = createTopologyDiagnosticRule(
+const noFolderCycle = createArchitectureDiagnosticRule(
   "no-folder-cycle",
   ["no-folder-cycle"],
   "Flag strongly connected folder dependency components.",
 );
-const noRootInternalCycle = createTopologyDiagnosticRule(
+const noRootInternalCycle = createArchitectureDiagnosticRule(
   "no-root-internal-cycle",
   ["no-root-internal-cycle"],
   "Flag root/public files and internal files that depend on each other.",
 );
-const noLargePublicSurface = createTopologyDiagnosticRule(
+const noLargePublicSurface = createArchitectureDiagnosticRule(
   "no-large-public-surface",
   ["no-large-public-surface"],
   "Flag public entry files with too many exported symbols or local reexports.",
 );
-const noCrossDomainSiblingImport = createTopologyDiagnosticRule(
+const noCrossDomainSiblingImport = createArchitectureDiagnosticRule(
   "no-cross-domain-sibling-import",
   ["no-cross-domain-sibling-import"],
   "Flag direct imports between sibling feature folders.",
 );
-const noUpwardLayerImport = createTopologyDiagnosticRule(
+const noUpwardLayerImport = createArchitectureDiagnosticRule(
   "no-upward-layer-import",
   ["no-upward-layer-import"],
   "Flag lower-level files importing parent or root facades.",
 );
-const noPublicTestHelperLeak = createTopologyDiagnosticRule(
+const noPublicTestHelperLeak = createArchitectureDiagnosticRule(
   "no-public-test-helper-leak",
   ["no-public-test-helper-leak"],
   "Flag test helper surfaces exposed as public package API.",
 );
-const noImplementationFilePublicEntry = createTopologyDiagnosticRule(
+const noImplementationFilePublicEntry = createArchitectureDiagnosticRule(
   "no-implementation-file-public-entry",
   ["no-implementation-file-public-entry"],
   "Flag public package subpaths named after concrete implementation files.",
 );
-const noPublicInfraTypeLeak = createTopologyDiagnosticRule(
+const noPublicInfraTypeLeak = createArchitectureDiagnosticRule(
   "no-public-infra-type-leak",
   ["no-public-infra-type-leak"],
   "Flag public API types that expose infrastructure libraries.",
 );
-const noPackageMesh = createTopologyDiagnosticRule(
+const noPackageMesh = createArchitectureDiagnosticRule(
   "no-package-mesh",
   ["no-package-mesh"],
   "Flag dense cyclic package folder graphs.",
 );
-const requireCuratedPublicFacade = createTopologyDiagnosticRule(
+const requireCuratedPublicFacade = createArchitectureDiagnosticRule(
   "require-curated-public-facade",
   ["require-curated-public-facade"],
   "Require public facades to curate semantic contracts instead of filesystem inventory.",
 );
-const requireBoundaryOwnedTypes = createTopologyDiagnosticRule(
+const requireBoundaryOwnedTypes = createArchitectureDiagnosticRule(
   "require-boundary-owned-types",
   ["require-boundary-owned-types"],
   "Require public boundary types to use package-owned names instead of imported vendor names.",
@@ -128,7 +127,6 @@ const rules = {
   "no-coverage-threshold-gate": noCoverageThresholdGate,
   "no-hardcoded-assertion-literals": noHardcodedAssertionLiterals,
   "tag-discriminant": tagDiscriminant,
-  "topology-boundaries": topologyBoundaries,
   "no-inventory-barrel": noInventoryBarrel,
   "no-internal-subpath-export": noInternalSubpathExport,
   "no-public-vendor-type-leak": noPublicVendorTypeLeak,
@@ -165,7 +163,7 @@ interface Plugin {
   configs: {
     recommended: PluginConfig;
     integrationTests: PluginConfig;
-    topology: PluginConfig;
+    architecture: PluginConfig;
   };
 }
 
@@ -199,6 +197,27 @@ const plugin: Plugin = {
         "agent-code-guard/no-coverage-threshold-gate": "warn",
         "agent-code-guard/no-hardcoded-assertion-literals": "warn",
         "agent-code-guard/tag-discriminant": "error",
+
+        // Architecture rules: clear bugs (cycles, exposed internals, uncurated
+        // public boundaries) at error; judgment calls (heuristic thresholds,
+        // layered/domain assumptions) at warn. The full set is also available
+        // standalone via configs.architecture (all warn-level) for incremental
+        // adoption.
+        "agent-code-guard/no-folder-cycle": "error",
+        "agent-code-guard/no-root-internal-cycle": "error",
+        "agent-code-guard/no-internal-subpath-export": "error",
+        "agent-code-guard/no-public-test-helper-leak": "error",
+        "agent-code-guard/no-export-star-boundary": "error",
+        "agent-code-guard/no-implementation-file-public-entry": "error",
+        "agent-code-guard/no-public-vendor-type-leak": "error",
+        "agent-code-guard/no-public-infra-type-leak": "warn",
+        "agent-code-guard/no-inventory-barrel": "warn",
+        "agent-code-guard/no-large-public-surface": "warn",
+        "agent-code-guard/no-upward-layer-import": "warn",
+        "agent-code-guard/no-cross-domain-sibling-import": "warn",
+        "agent-code-guard/no-package-mesh": "warn",
+        "agent-code-guard/require-curated-public-facade": "warn",
+        "agent-code-guard/require-boundary-owned-types": "warn",
       },
     },
     integrationTests: {
@@ -207,7 +226,7 @@ const plugin: Plugin = {
         "agent-code-guard/no-vitest-mocks": "error",
       },
     },
-    topology: {
+    architecture: {
       plugins: { "agent-code-guard": null! },
       rules: {
         "agent-code-guard/no-inventory-barrel": "warn",
@@ -232,6 +251,6 @@ const plugin: Plugin = {
 
 plugin.configs.recommended.plugins["agent-code-guard"] = plugin;
 plugin.configs.integrationTests.plugins["agent-code-guard"] = plugin;
-plugin.configs.topology.plugins["agent-code-guard"] = plugin;
+plugin.configs.architecture.plugins["agent-code-guard"] = plugin;
 
 export default plugin;

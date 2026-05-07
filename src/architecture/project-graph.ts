@@ -7,7 +7,7 @@ import {
   stripKnownExtension,
   withTrailingSeparator,
 } from "./path-utils.js";
-import type { NormalizedTopologyOptions, PackageJson } from "./types.js";
+import type { NormalizedArchitectureOptions, PackageJson } from "./types.js";
 
 export type ModuleEdgeKind = "import" | "reexport";
 
@@ -49,7 +49,7 @@ export interface FolderEdge {
   readonly files: readonly string[];
 }
 
-export interface ProjectTopologyGraph {
+export interface ProjectArchitectureGraph {
   readonly projectRoot: string;
   readonly reportFile: string;
   readonly modules: readonly SourceModule[];
@@ -64,9 +64,9 @@ export interface ProjectTopologyGraph {
 export function buildProjectGraph(
   sourceFiles: readonly ts.SourceFile[],
   packageJson: PackageJson | null,
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
   reportFile: string,
-): ProjectTopologyGraph {
+): ProjectArchitectureGraph {
   const sourceFilesByPath = new Map(
     sourceFiles.map((sourceFile) => [path.resolve(sourceFile.fileName), sourceFile] as const),
   );
@@ -173,7 +173,7 @@ function sourceModuleFromSourceFile(
   sourceFile: ts.SourceFile,
   sourceFilesByPath: ReadonlyMap<string, ts.SourceFile>,
   publicFileNames: ReadonlySet<string>,
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
 ): SourceModule {
   const fileName = path.resolve(sourceFile.fileName);
   const folder = folderKeyForFile(fileName, options.projectRoot);
@@ -300,7 +300,7 @@ function packageNameFromSpecifier(specifier: string): string | null {
 function publicApiFileNames(
   sourceFilesByPath: ReadonlyMap<string, ts.SourceFile>,
   packageJson: PackageJson | null,
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
 ): ReadonlySet<string> {
   const publicFiles = new Set<string>();
 

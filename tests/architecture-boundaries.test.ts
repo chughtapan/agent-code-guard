@@ -6,23 +6,23 @@ import * as tsParser from "@typescript-eslint/parser";
 import * as fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import plugin from "../src/index.js";
-import { analyzeProjectTopology } from "../src/topology/analyze-project.js";
-import { clearTopologyCache } from "../src/topology/cache.js";
-import type { TopologyDiagnostic, TopologyOptions } from "../src/topology/types.js";
+import { analyzeProjectArchitecture } from "../src/architecture/analyze-project.js";
+import { clearArchitectureCache } from "../src/architecture/cache.js";
+import type { ArchitectureDiagnostic, ArchitectureOptions } from "../src/architecture/types.js";
 
 const tempRoots: string[] = [];
 const segmentArb = fc.stringMatching(/^[a-z][a-z0-9]{0,7}$/);
 const ratioArb = fc.constantFrom(0, 0.25, 0.5, 0.6, 0.75, 1);
 
 afterEach(() => {
-  clearTopologyCache();
+  clearArchitectureCache();
   for (const root of tempRoots.splice(0)) {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
 function makeProject(files: Record<string, string>): string {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-topology-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-architecture-"));
   tempRoots.push(root);
 
   const withDefaults = {
@@ -73,22 +73,22 @@ function makeProject(files: Record<string, string>): string {
 
 function diagnosticsFor(
   root: string,
-  options: Omit<TopologyOptions, "projectRoot"> = {},
-): readonly TopologyDiagnostic[] {
-  return analyzeProjectTopology({ projectRoot: root, ...options }).diagnostics;
+  options: Omit<ArchitectureOptions, "projectRoot"> = {},
+): readonly ArchitectureDiagnostic[] {
+  return analyzeProjectArchitecture({ projectRoot: root, ...options }).diagnostics;
 }
 
 function diagnosticsByRule(
   root: string,
-  ruleId: TopologyDiagnostic["ruleId"],
-  options: Omit<TopologyOptions, "projectRoot"> = {},
-): readonly TopologyDiagnostic[] {
+  ruleId: ArchitectureDiagnostic["ruleId"],
+  options: Omit<ArchitectureOptions, "projectRoot"> = {},
+): readonly ArchitectureDiagnostic[] {
   return diagnosticsFor(root, options).filter((diagnostic) => diagnostic.ruleId === ruleId);
 }
 
 function diagnosticMessages(
   root: string,
-  options: Omit<TopologyOptions, "projectRoot"> = {},
+  options: Omit<ArchitectureOptions, "projectRoot"> = {},
 ): readonly string[] {
   return diagnosticsFor(root, options).map((diagnostic) => diagnostic.message);
 }
@@ -157,13 +157,13 @@ function nodeModuleTypePackage(packageName: string, typeName: string): Record<st
 }
 
 function hasRule(
-  diagnostics: readonly TopologyDiagnostic[],
-  ruleId: TopologyDiagnostic["ruleId"],
+  diagnostics: readonly ArchitectureDiagnostic[],
+  ruleId: ArchitectureDiagnostic["ruleId"],
 ): boolean {
   return diagnostics.some((diagnostic) => diagnostic.ruleId === ruleId);
 }
 
-describe("topology analyzer", () => {
+describe("architecture analyzer", () => {
   it("Property: inventory barrels fire exactly when exported sibling count crosses count and ratio thresholds", () => {
     fc.assert(
       fc.property(
@@ -350,7 +350,7 @@ describe("topology analyzer", () => {
       ].join("\n"),
     });
 
-    const diagnostics = analyzeProjectTopology({
+    const diagnostics = analyzeProjectArchitecture({
       projectRoot: root,
       publicTypePackages: ["openai"],
     }).diagnostics;
@@ -448,46 +448,7 @@ describe("topology analyzer", () => {
     );
   });
 
-  it("surfaces topology diagnostics through the ESLint rule", () => {
-    const root = makeProject({
-      "src/widgets/index.ts": [
-        'export { A } from "./a";',
-        'export { B } from "./b";',
-        'export { C } from "./c";',
-        'export { D } from "./d";',
-      ].join("\n"),
-      "src/widgets/a.ts": "export const A = 1;\n",
-      "src/widgets/b.ts": "export const B = 1;\n",
-      "src/widgets/c.ts": "export const C = 1;\n",
-      "src/widgets/d.ts": "export const D = 1;\n",
-      "src/widgets/e.ts": "export const E = 1;\n",
-    });
-    const filename = path.join(root, "src", "widgets", "index.ts");
-    const lintFilename = path.join("src", "widgets", "index.ts");
-    const linter = new Linter({ cwd: root });
-    const messages = linter.verify(
-      fs.readFileSync(filename, "utf8"),
-      [
-        {
-          files: ["**/*.ts"],
-          languageOptions: {
-            parser: tsParser as Linter.Parser,
-            parserOptions: { ecmaVersion: 2022, sourceType: "module" },
-          },
-          plugins: { "agent-code-guard": plugin },
-          rules: {
-            "agent-code-guard/topology-boundaries": ["error", { projectRoot: root }],
-          },
-        },
-      ],
-      { filename: lintFilename },
-    );
-
-    expect(messages).toHaveLength(1);
-    expect(messages[0]?.message).toContain("This exports inventory");
-  });
-
-  it("surfaces topology diagnostics through individual ESLint rules", () => {
+  it("surfaces architecture diagnostics through individual ESLint rules", () => {
     const root = makeProject({
       "src/widgets/index.ts": [
         'export { A } from "./a";',
@@ -526,15 +487,15 @@ describe("topology analyzer", () => {
     expect(messages[0]?.message).toContain("This exports inventory");
   });
 
-  it("topology preset exposes individual topology rules", () => {
-    expect(plugin.configs.topology.rules).toMatchObject({
+  it("architecture preset exposes individual architecture rules", () => {
+    expect(plugin.configs.architecture.rules).toMatchObject({
       "agent-code-guard/no-inventory-barrel": "warn",
       "agent-code-guard/no-public-vendor-type-leak": "warn",
       "agent-code-guard/no-folder-cycle": "warn",
       "agent-code-guard/require-curated-public-facade": "warn",
     });
-    expect(plugin.configs.topology.rules).not.toHaveProperty(
-      "agent-code-guard/topology-boundaries",
+    expect(plugin.configs.architecture.rules).not.toHaveProperty(
+      "agent-code-guard/architecture-boundaries",
     );
   });
 
@@ -565,7 +526,7 @@ describe("topology analyzer", () => {
           },
           plugins: { "agent-code-guard": plugin },
           rules: {
-            "agent-code-guard/topology-boundaries": "error",
+            "agent-code-guard/no-inventory-barrel": "error",
           },
         },
       ],
