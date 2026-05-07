@@ -1,54 +1,34 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { JSONSchema4 } from "@typescript-eslint/utils/json-schema";
+import { JSONSchema } from "effect";
 import { cachedProjectArchitecture } from "../architecture/cache.js";
+import { ArchitectureOptionsSchema, type ArchitectureOptionsInput } from "../architecture/option-schemas.js";
+import { ArchitectureOptionsError, resolveArchitectureOptions } from "../architecture/options.js";
 import {
-  DEFAULT_ARCHITECTURE_OPTIONS,
-  type ArchitectureDiagnostic,
-  type ArchitectureOptions,
-} from "../architecture/types.js";
+  ARCHITECTURE_DIAGNOSTIC_RULE_IDS,
+  ARCHITECTURE_DIRECTIVE_PARSE_ERROR_RULE_ID,
+  type ArchitectureDiagnosticRuleId,
+  type ArchitectureRuleId,
+} from "../architecture/rule-ids.js";
 import { createRule } from "../utils/create-rule.js";
 
-type Options = [ArchitectureOptions?];
+type Options = [ArchitectureOptionsInput?];
 type MessageIds = "architectureViolation";
-export type ArchitectureDiagnosticRuleId = ArchitectureDiagnostic["ruleId"];
+export type { ArchitectureDiagnosticRuleId };
 
-const schema: readonly JSONSchema4[] = [
-  {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      projectRoot: { type: "string" },
-      tsconfigPath: { type: "string" },
-      minExportedSiblingModules: { type: "number", minimum: 1 },
-      maxExportedSiblingRatio: { type: "number", minimum: 0, maximum: 1 },
-      countTypeOnlyExports: { type: "boolean" },
-      allowedPublicSubpaths: { type: "array", items: { type: "string" } },
-      allowedTestPublicSubpaths: { type: "array", items: { type: "string" } },
-      forbiddenSubpathSegments: { type: "array", items: { type: "string" } },
-      implementationPathSegments: { type: "array", items: { type: "string" } },
-      maxSubpathExports: { type: "number", minimum: 0 },
-      maxWildcardExports: { type: "number", minimum: 0 },
-      maxPublicExports: { type: "number", minimum: 1 },
-      maxPublicReexports: { type: "number", minimum: 0 },
-      minPublicFacadeModules: { type: "number", minimum: 1 },
-      minPackageMeshFolders: { type: "number", minimum: 2 },
-      maxFolderEdgeDensity: { type: "number", minimum: 0, maximum: 1 },
-      maxFolderCycles: { type: "number", minimum: 0 },
-      sharedFolderNames: { type: "array", items: { type: "string" } },
-      infrastructureTypePackages: { type: "array", items: { type: "string" } },
-      publicTypePackages: { type: "array", items: { type: "string" } },
-      packageRuntime: { type: "string", enum: ["browser", "node", "universal"] },
-    },
-  },
-];
+// Generate the ESLint JSONSchema from the Effect schema once at module load.
+// Single source of truth for option shape: changes flow through the schema
+// definition and ESLint picks them up automatically.
+const optionsJsonSchema = JSONSchema.make(ArchitectureOptionsSchema) as JSONSchema4;
+const schema: readonly JSONSchema4[] = [optionsJsonSchema];
 
 export function createArchitectureDiagnosticRule(
   name: string,
-  diagnosticRuleIds: readonly ArchitectureDiagnosticRuleId[],
+  diagnosticRuleIds: readonly ArchitectureRuleId[],
   description: string,
 ) {
-  const allowedRuleIds = new Set<ArchitectureDiagnosticRuleId>(diagnosticRuleIds);
+  const allowedRuleIds = new Set<ArchitectureRuleId>(diagnosticRuleIds);
 
   return createRule<Options, MessageIds>({
     name,
@@ -62,19 +42,36 @@ export function createArchitectureDiagnosticRule(
       fixable: undefined,
       hasSuggestions: false,
     },
-    defaultOptions: [DEFAULT_ARCHITECTURE_OPTIONS],
-    create(context, [rawOptions]) {
+    defaultOptions: [{}],
+    create(context, [rawOptions = {}]) {
       const cwd = context.cwd ?? process.cwd();
       const filename = path.isAbsolute(context.filename)
         ? path.resolve(context.filename)
-        : path.resolve(rawOptions?.projectRoot ?? cwd, context.filename);
+        : path.resolve(rawOptions.projectRoot ?? cwd, context.filename);
       const projectRoot =
-        rawOptions?.projectRoot ?? findNearestPackageRoot(filename) ?? cwd;
-      const options = {
-        ...DEFAULT_ARCHITECTURE_OPTIONS,
-        ...rawOptions,
-        projectRoot,
-      };
+        rawOptions.projectRoot ?? findNearestPackageRoot(filename) ?? cwd;
+
+      let options;
+      try {
+        options = resolveArchitectureOptions(rawOptions, projectRoot);
+      } catch (error) {
+        if (error instanceof ArchitectureOptionsError) {
+          // Surface schema-decode failures as a single Program-level
+          // diagnostic so the user sees the config problem on every file
+          // instead of a confusing crash.
+          return {
+            Program(node) {
+              context.report({
+                node,
+                messageId: "architectureViolation",
+                data: { message: error.message },
+              });
+            },
+          };
+        }
+        throw error;
+      }
+
       const report = cachedProjectArchitecture(options);
 
       return {
@@ -94,23 +91,10 @@ export function createArchitectureDiagnosticRule(
   });
 }
 
-export const architectureDiagnosticRuleIds = [
-  "no-inventory-barrel",
-  "no-internal-subpath-export",
-  "no-public-vendor-type-leak",
-  "no-export-star-boundary",
-  "no-folder-cycle",
-  "no-root-internal-cycle",
-  "no-large-public-surface",
-  "no-cross-domain-sibling-import",
-  "no-upward-layer-import",
-  "no-public-test-helper-leak",
-  "no-implementation-file-public-entry",
-  "no-public-infra-type-leak",
-  "no-package-mesh",
-  "require-curated-public-facade",
-  "require-boundary-owned-types",
-] as const satisfies readonly ArchitectureDiagnosticRuleId[];
+export {
+  ARCHITECTURE_DIAGNOSTIC_RULE_IDS as architectureDiagnosticRuleIds,
+  ARCHITECTURE_DIRECTIVE_PARSE_ERROR_RULE_ID,
+};
 
 function findNearestPackageRoot(fileName: string): string | null {
   for (let directory = path.dirname(fileName); ; directory = path.dirname(directory)) {

@@ -101,6 +101,11 @@ const requireBoundaryOwnedTypes = createArchitectureDiagnosticRule(
   ["require-boundary-owned-types"],
   "Require public boundary types to use package-owned names instead of imported vendor names.",
 );
+const architectureDirectiveParseError = createArchitectureDiagnosticRule(
+  "architecture-directive-parse-error",
+  ["architecture-directive-parse-error"],
+  "Surface malformed @agent-code-guard/architecture-exception directives so they cannot silently fail to suppress.",
+);
 
 const rules = {
   "async-keyword": asyncKeyword,
@@ -142,6 +147,7 @@ const rules = {
   "no-package-mesh": noPackageMesh,
   "require-curated-public-facade": requireCuratedPublicFacade,
   "require-boundary-owned-types": requireBoundaryOwnedTypes,
+  "architecture-directive-parse-error": architectureDirectiveParseError,
 } as const;
 
 const require = createRequire(import.meta.url);
@@ -218,6 +224,7 @@ const plugin: Plugin = {
         "agent-code-guard/no-package-mesh": "warn",
         "agent-code-guard/require-curated-public-facade": "warn",
         "agent-code-guard/require-boundary-owned-types": "warn",
+        "agent-code-guard/architecture-directive-parse-error": "error",
       },
     },
     integrationTests: {
@@ -244,6 +251,7 @@ const plugin: Plugin = {
         "agent-code-guard/no-package-mesh": "warn",
         "agent-code-guard/require-curated-public-facade": "warn",
         "agent-code-guard/require-boundary-owned-types": "warn",
+        "agent-code-guard/architecture-directive-parse-error": "error",
       },
     },
   },

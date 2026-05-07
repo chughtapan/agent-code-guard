@@ -6,7 +6,12 @@ import tsParser from "@typescript-eslint/parser";
 // (createRequire, node:fs, node:path) in their public surface — list them
 // explicitly so no-public-vendor-type-leak can verify intent.
 const ARCHITECTURE_OPTIONS = {
-  publicTypePackages: ["@typescript-eslint/utils"],
+  publicTypePackages: [
+    {
+      package: "@typescript-eslint/utils",
+      reason: "this package is an ESLint plugin; the TSESLint rule contract is the public API",
+    },
+  ],
   packageRuntime: "node",
 };
 

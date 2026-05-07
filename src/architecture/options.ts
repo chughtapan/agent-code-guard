@@ -1,62 +1,76 @@
 import path from "node:path";
-import {
-  DEFAULT_ARCHITECTURE_OPTIONS,
-  type NormalizedArchitectureOptions,
-  type ArchitectureOptions,
-} from "./types.js";
+import { Data, Either, Schema } from "effect";
+import { ArrayFormatter } from "effect/ParseResult";
+import { ArchitectureOptionsSchema, type ArchitectureOptionsInput } from "./option-schemas.js";
+import type { ArchitectureOptions, ResolvedArchitectureOptions } from "./types.js";
 
-export function normalizeArchitectureOptions(
-  options: ArchitectureOptions = {},
-): NormalizedArchitectureOptions {
-  const projectRoot = path.resolve(options.projectRoot ?? process.cwd());
+const decodeOptions = Schema.decodeUnknownEither(ArchitectureOptionsSchema);
+
+// Memoize the schema decode on the raw input reference. ESLint hands the
+// same rawOptions object to create() for every (rule × file) in a lint
+// pass; without this WeakMap, that's thousands of identical decode
+// invocations. We memoize the decoded shape (not the resolved shape) so
+// that callers passing a different projectRoot override still pay the
+// cheap path.resolve cost but skip the expensive decode.
+const decodedCache = new WeakMap<object, ArchitectureOptions>();
+
+export interface ArchitectureOptionsIssue {
+  readonly path: ReadonlyArray<PropertyKey>;
+  readonly message: string;
+}
+
+export class ArchitectureOptionsError extends Data.TaggedError("ArchitectureOptionsError")<{
+  readonly message: string;
+  readonly issues: ReadonlyArray<ArchitectureOptionsIssue>;
+}> {}
+
+function decodeOrThrow(raw: unknown): ArchitectureOptions {
+  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+    const cached = decodedCache.get(raw);
+    if (cached) return cached;
+  }
+
+  return Either.match(decodeOptions(raw), {
+    onLeft: (parseError) => {
+      const issues: ArchitectureOptionsIssue[] = ArrayFormatter.formatErrorSync(parseError).map((issue) => ({
+        path: issue.path,
+        message: issue.message,
+      }));
+      const summary = issues
+        .map((issue) =>
+          issue.path.length > 0
+            ? `  • ${issue.path.join(".")}: ${issue.message}`
+            : `  • ${issue.message}`,
+        )
+        .join("\n");
+      throw new ArchitectureOptionsError({
+        message: `Invalid agent-code-guard architecture options:\n${summary}`,
+        issues,
+      });
+    },
+    onRight: (parsed) => {
+      if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+        decodedCache.set(raw, parsed);
+      }
+      return parsed;
+    },
+  });
+}
+
+export function resolveArchitectureOptions(
+  raw: unknown = {},
+  overrideProjectRoot?: string,
+): ResolvedArchitectureOptions {
+  const parsed = decodeOrThrow(raw);
+  const projectRoot = path.resolve(overrideProjectRoot ?? parsed.projectRoot ?? process.cwd());
 
   return {
+    ...parsed,
     projectRoot,
-    tsconfigPath: options.tsconfigPath
-      ? path.resolve(projectRoot, options.tsconfigPath)
+    tsconfigPath: parsed.tsconfigPath
+      ? path.resolve(projectRoot, parsed.tsconfigPath)
       : null,
-    minExportedSiblingModules:
-      options.minExportedSiblingModules ??
-      DEFAULT_ARCHITECTURE_OPTIONS.minExportedSiblingModules,
-    maxExportedSiblingRatio:
-      options.maxExportedSiblingRatio ??
-      DEFAULT_ARCHITECTURE_OPTIONS.maxExportedSiblingRatio,
-    countTypeOnlyExports:
-      options.countTypeOnlyExports ?? DEFAULT_ARCHITECTURE_OPTIONS.countTypeOnlyExports,
-    allowedPublicSubpaths:
-      options.allowedPublicSubpaths ?? DEFAULT_ARCHITECTURE_OPTIONS.allowedPublicSubpaths,
-    allowedTestPublicSubpaths:
-      options.allowedTestPublicSubpaths ??
-      DEFAULT_ARCHITECTURE_OPTIONS.allowedTestPublicSubpaths,
-    forbiddenSubpathSegments:
-      options.forbiddenSubpathSegments ??
-      DEFAULT_ARCHITECTURE_OPTIONS.forbiddenSubpathSegments,
-    implementationPathSegments:
-      options.implementationPathSegments ??
-      DEFAULT_ARCHITECTURE_OPTIONS.implementationPathSegments,
-    maxSubpathExports:
-      options.maxSubpathExports ?? DEFAULT_ARCHITECTURE_OPTIONS.maxSubpathExports,
-    maxWildcardExports:
-      options.maxWildcardExports ?? DEFAULT_ARCHITECTURE_OPTIONS.maxWildcardExports,
-    maxPublicExports:
-      options.maxPublicExports ?? DEFAULT_ARCHITECTURE_OPTIONS.maxPublicExports,
-    maxPublicReexports:
-      options.maxPublicReexports ?? DEFAULT_ARCHITECTURE_OPTIONS.maxPublicReexports,
-    minPublicFacadeModules:
-      options.minPublicFacadeModules ?? DEFAULT_ARCHITECTURE_OPTIONS.minPublicFacadeModules,
-    minPackageMeshFolders:
-      options.minPackageMeshFolders ?? DEFAULT_ARCHITECTURE_OPTIONS.minPackageMeshFolders,
-    maxFolderEdgeDensity:
-      options.maxFolderEdgeDensity ?? DEFAULT_ARCHITECTURE_OPTIONS.maxFolderEdgeDensity,
-    maxFolderCycles:
-      options.maxFolderCycles ?? DEFAULT_ARCHITECTURE_OPTIONS.maxFolderCycles,
-    sharedFolderNames:
-      options.sharedFolderNames ?? DEFAULT_ARCHITECTURE_OPTIONS.sharedFolderNames,
-    infrastructureTypePackages:
-      options.infrastructureTypePackages ??
-      DEFAULT_ARCHITECTURE_OPTIONS.infrastructureTypePackages,
-    publicTypePackages:
-      options.publicTypePackages ?? DEFAULT_ARCHITECTURE_OPTIONS.publicTypePackages,
-    packageRuntime: options.packageRuntime ?? DEFAULT_ARCHITECTURE_OPTIONS.packageRuntime,
   };
 }
+
+export type ArchitectureRuleOptionInput = ArchitectureOptionsInput;

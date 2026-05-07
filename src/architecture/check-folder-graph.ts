@@ -4,11 +4,11 @@ import type {
   ProjectArchitectureGraph,
   SourceModule,
 } from "./project-graph.js";
-import type { NormalizedArchitectureOptions, ArchitectureDiagnostic } from "./types.js";
+import type { ResolvedArchitectureOptions, ArchitectureDiagnostic } from "./types.js";
 
 export function checkFolderGraph(
   graph: ProjectArchitectureGraph,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
   const components = stronglyConnectedFolderComponents(graph.folderEdges);
   return [
@@ -137,7 +137,7 @@ function rootInternalCycleDiagnostics(
 function packageMeshDiagnostics(
   graph: ProjectArchitectureGraph,
   components: readonly (readonly string[])[],
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
   if (graph.folders.length < options.minPackageMeshFolders) return [];
 
@@ -161,7 +161,7 @@ function packageMeshDiagnostics(
 
 function crossDomainSiblingImportDiagnostics(
   graph: ProjectArchitectureGraph,
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
 ): readonly ArchitectureDiagnostic[] {
   return graph.localEdges.flatMap((edge) => {
     if (edge.kind !== "import") return [];
@@ -226,8 +226,8 @@ function importsUpward(fromModule: SourceModule, toModule: SourceModule): boolea
 }
 
 function sharedFolder(
-  options: NormalizedArchitectureOptions,
+  options: ResolvedArchitectureOptions,
   folderName: string,
 ): boolean {
-  return options.sharedFolderNames.includes(folderName);
+  return options.sharedFolderNames.some((entry) => entry.folder === folderName);
 }
