@@ -308,7 +308,11 @@ describe("architecture analyzer", () => {
 
         expect(
           hasRule(
-            diagnosticsFor(root, { publicTypePackages: allowed ? [packageName] : [] }),
+            diagnosticsFor(root, {
+              publicTypePackages: allowed
+                ? [{ package: packageName, reason: "test: explicitly allowed" }]
+                : [],
+            }),
             "no-public-vendor-type-leak",
           ),
         ).toBe(!allowed);
@@ -352,7 +356,7 @@ describe("architecture analyzer", () => {
 
     const diagnostics = analyzeProjectArchitecture({
       projectRoot: root,
-      publicTypePackages: ["openai"],
+      publicTypePackages: [{ package: "openai", reason: "test: explicitly allowed" }],
     }).diagnostics;
 
     expect(diagnostics).not.toContainEqual(

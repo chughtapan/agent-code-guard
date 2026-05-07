@@ -1,62 +1,67 @@
 import path from "node:path";
-import {
-  DEFAULT_ARCHITECTURE_OPTIONS,
-  type NormalizedArchitectureOptions,
-  type ArchitectureOptions,
-} from "./types.js";
+import { Data, Either, Schema } from "effect";
+import { ArrayFormatter } from "effect/ParseResult";
+import { ArchitectureOptionsSchema, type ArchitectureOptionsInput } from "./option-schemas.js";
+import type { ResolvedArchitectureOptions } from "./types.js";
 
-export function normalizeArchitectureOptions(
-  options: ArchitectureOptions = {},
-): NormalizedArchitectureOptions {
-  const projectRoot = path.resolve(options.projectRoot ?? process.cwd());
+const decodeOptions = Schema.decodeUnknownEither(ArchitectureOptionsSchema);
 
-  return {
-    projectRoot,
-    tsconfigPath: options.tsconfigPath
-      ? path.resolve(projectRoot, options.tsconfigPath)
-      : null,
-    minExportedSiblingModules:
-      options.minExportedSiblingModules ??
-      DEFAULT_ARCHITECTURE_OPTIONS.minExportedSiblingModules,
-    maxExportedSiblingRatio:
-      options.maxExportedSiblingRatio ??
-      DEFAULT_ARCHITECTURE_OPTIONS.maxExportedSiblingRatio,
-    countTypeOnlyExports:
-      options.countTypeOnlyExports ?? DEFAULT_ARCHITECTURE_OPTIONS.countTypeOnlyExports,
-    allowedPublicSubpaths:
-      options.allowedPublicSubpaths ?? DEFAULT_ARCHITECTURE_OPTIONS.allowedPublicSubpaths,
-    allowedTestPublicSubpaths:
-      options.allowedTestPublicSubpaths ??
-      DEFAULT_ARCHITECTURE_OPTIONS.allowedTestPublicSubpaths,
-    forbiddenSubpathSegments:
-      options.forbiddenSubpathSegments ??
-      DEFAULT_ARCHITECTURE_OPTIONS.forbiddenSubpathSegments,
-    implementationPathSegments:
-      options.implementationPathSegments ??
-      DEFAULT_ARCHITECTURE_OPTIONS.implementationPathSegments,
-    maxSubpathExports:
-      options.maxSubpathExports ?? DEFAULT_ARCHITECTURE_OPTIONS.maxSubpathExports,
-    maxWildcardExports:
-      options.maxWildcardExports ?? DEFAULT_ARCHITECTURE_OPTIONS.maxWildcardExports,
-    maxPublicExports:
-      options.maxPublicExports ?? DEFAULT_ARCHITECTURE_OPTIONS.maxPublicExports,
-    maxPublicReexports:
-      options.maxPublicReexports ?? DEFAULT_ARCHITECTURE_OPTIONS.maxPublicReexports,
-    minPublicFacadeModules:
-      options.minPublicFacadeModules ?? DEFAULT_ARCHITECTURE_OPTIONS.minPublicFacadeModules,
-    minPackageMeshFolders:
-      options.minPackageMeshFolders ?? DEFAULT_ARCHITECTURE_OPTIONS.minPackageMeshFolders,
-    maxFolderEdgeDensity:
-      options.maxFolderEdgeDensity ?? DEFAULT_ARCHITECTURE_OPTIONS.maxFolderEdgeDensity,
-    maxFolderCycles:
-      options.maxFolderCycles ?? DEFAULT_ARCHITECTURE_OPTIONS.maxFolderCycles,
-    sharedFolderNames:
-      options.sharedFolderNames ?? DEFAULT_ARCHITECTURE_OPTIONS.sharedFolderNames,
-    infrastructureTypePackages:
-      options.infrastructureTypePackages ??
-      DEFAULT_ARCHITECTURE_OPTIONS.infrastructureTypePackages,
-    publicTypePackages:
-      options.publicTypePackages ?? DEFAULT_ARCHITECTURE_OPTIONS.publicTypePackages,
-    packageRuntime: options.packageRuntime ?? DEFAULT_ARCHITECTURE_OPTIONS.packageRuntime,
-  };
+// Memoize on the raw input reference. ESLint calls create() for every rule
+// per file; the same rawOptions object flows through identical decode work
+// thousands of times in a single lint pass.
+const memo = new WeakMap<object, ResolvedArchitectureOptions>();
+
+export interface ArchitectureOptionsIssue {
+  readonly path: ReadonlyArray<PropertyKey>;
+  readonly message: string;
 }
+
+export class ArchitectureOptionsError extends Data.TaggedError("ArchitectureOptionsError")<{
+  readonly message: string;
+  readonly issues: ReadonlyArray<ArchitectureOptionsIssue>;
+}> {}
+
+export function resolveArchitectureOptions(
+  raw: unknown = {},
+): ResolvedArchitectureOptions {
+  if (typeof raw === "object" && raw !== null) {
+    const cached = memo.get(raw);
+    if (cached) return cached;
+  }
+
+  return Either.match(decodeOptions(raw), {
+    onLeft: (parseError) => {
+      const issues: ArchitectureOptionsIssue[] = ArrayFormatter.formatErrorSync(parseError).map((issue) => ({
+        path: issue.path,
+        message: issue.message,
+      }));
+      const summary = issues
+        .map((issue) =>
+          issue.path.length > 0
+            ? `  • ${issue.path.join(".")}: ${issue.message}`
+            : `  • ${issue.message}`,
+        )
+        .join("\n");
+      throw new ArchitectureOptionsError({
+        message: `Invalid agent-code-guard architecture options:\n${summary}`,
+        issues,
+      });
+    },
+    onRight: (parsed) => {
+      const projectRoot = path.resolve(parsed.projectRoot ?? process.cwd());
+      const resolved: ResolvedArchitectureOptions = {
+        ...parsed,
+        projectRoot,
+        tsconfigPath: parsed.tsconfigPath
+          ? path.resolve(projectRoot, parsed.tsconfigPath)
+          : null,
+      };
+      if (typeof raw === "object" && raw !== null) {
+        memo.set(raw, resolved);
+      }
+      return resolved;
+    },
+  });
+}
+
+export type ArchitectureRuleOptionInput = ArchitectureOptionsInput;
