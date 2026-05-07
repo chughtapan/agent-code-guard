@@ -94,23 +94,36 @@ Consumers can pass values they obtained from `createServer()` factories but
 can't read fields off them — which is correct, since field shape is your
 implementation concern.
 
-## Options
+## How to configure
+
+The plugin ships no default for `infrastructureTypePackages`. Without
+configuration the rule is dormant. Each entry requires a written reason.
+Recommended starter values for common stacks:
 
 ```js
 {
   "agent-code-guard/no-public-infra-type-leak": ["warn", {
-    // Packages considered "infrastructure" — types from these will be
-    // flagged when they appear in your public surface. Each entry MUST
-    // include both `package` and `reason`; bare strings are rejected by
-    // the schema. Defaults cover common storage/transport/logging libraries
-    // (Kysely, Pino, Express, etc.) — see option-schemas.ts. Add or override
-    // entries for packages specific to your domain.
     infrastructureTypePackages: [
-      { package: "@my-org/message-broker", reason: "internal transport SDK; consumers must not depend on its types" },
+      { package: "kysely", reason: "SQL query builder is implementation choice" },
+      { package: "pg", reason: "Postgres driver is implementation choice" },
+      { package: "drizzle-orm", reason: "ORM is implementation choice" },
+      { package: "prisma", reason: "ORM is implementation choice" },
+      { package: "@prisma/client", reason: "ORM client is implementation choice" },
+      { package: "typeorm", reason: "ORM is implementation choice" },
+      { package: "sequelize", reason: "ORM is implementation choice" },
+      { package: "pino", reason: "structured logger is implementation choice" },
+      { package: "winston", reason: "structured logger is implementation choice" },
+      { package: "bunyan", reason: "structured logger is implementation choice" },
+      { package: "express", reason: "HTTP framework is implementation choice" },
+      { package: "fastify", reason: "HTTP framework is implementation choice" },
+      { package: "@modelcontextprotocol/sdk", reason: "MCP transport is implementation choice" },
     ],
   }]
 }
 ```
+
+Drop entries you don't use; add packages specific to your domain (custom
+message brokers, internal storage SDKs, etc.) with their own reasons.
 
 ## Suppressing per-file via a directive
 

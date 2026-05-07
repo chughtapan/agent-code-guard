@@ -17,9 +17,9 @@ This plugin is the floor. Thirty-nine rules under the `recommended` preset (twen
 
 Beyond syntactic patterns, the plugin reasons about *project architecture*: what each file consumes and exports, what each folder consumes and exports, and what the package exposes and pulls into its runtime graph. This is the operational form of Parnas information hiding, Liskov abstraction/substitutability, and Martin package coupling metrics.
 
-As of `0.0.6`, sixteen architecture rules ship in `recommended`. Eight are **errors** — clear bugs with no defensible exception (cycles, exposed internals, uncurated public boundaries, vendor-type leaks, plus the always-on `architecture-directive-parse-error` that surfaces malformed suppression directives). Eight are **warns** — heuristic or layered-architecture-dependent rules where the right call needs human judgment.
+Sixteen architecture rules ship in `recommended`. Eight are **errors** — clear bugs with no defensible exception (cycles, exposed internals, uncurated public boundaries, vendor-type leaks, plus the always-on `architecture-directive-parse-error` that surfaces malformed suppression directives). Eight are **warns** — heuristic or layered-architecture-dependent rules where the right call needs human judgment.
 
-When `no-public-vendor-type-leak` legitimately fires (e.g., an ESLint plugin re-exporting `@typescript-eslint/utils`, a Node-targeted package using `node:*`), declare the public contract explicitly via the rule options. Each entry requires a written `reason`; bare strings are rejected by the schema. Writing the reason IS the architectural decision:
+**The plugin ships no policy defaults.** Every architectural list option (`forbiddenSubpathSegments`, `implementationPathSegments`, `sharedFolderNames`, `infrastructureTypePackages`, `allowedPublicSubpaths`, `allowedTestPublicSubpaths`, `publicTypePackages`, `layers`) defaults to `[]`. Each per-rule doc under [`docs/rules/architecture/`](docs/rules/architecture/) shows recommended starter values you can copy into your config. The act of writing those values with reasons IS the architectural decision — same principle the `{value, reason}` shape already enforces:
 
 ```js
 const ARCHITECTURE_OPTIONS = {
@@ -46,6 +46,22 @@ export * from "../app/host";
 ```
 
 The `reason:` line is required. Malformed directives surface as `architecture-directive-parse-error` diagnostics so they can never silently fail to suppress.
+
+For an explicit layered architecture (e.g., `entrypoint → app → domain → adapters → kernel`), declare the layers in your config; `no-upward-layer-import` then enforces direction:
+
+```js
+"agent-code-guard/no-upward-layer-import": ["error", {
+  layers: [
+    { name: "entrypoint", folders: ["."], reason: "composition root" },
+    { name: "app", folders: ["app"], reason: "request orchestration" },
+    { name: "domain", folders: ["domain"], reason: "business logic" },
+    { name: "adapters", folders: ["adapters"], reason: "outbound implementations" },
+    { name: "kernel", folders: ["shared", "ports"], reason: "domain-owned ports + shared types" },
+  ],
+}],
+```
+
+Without `layers` declared, `no-upward-layer-import` is dormant. See [`no-upward-layer-import.md`](docs/rules/architecture/no-upward-layer-import.md) for the full layer-direction semantics.
 
 A standalone `architecture` preset (warn-level, all fifteen rules) remains for incremental adoption when you want to step up to the architecture checks one repo at a time without flipping CI red:
 

@@ -2,6 +2,43 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Explicit `layers` option** for `no-upward-layer-import`. Declare your
+  architecture as an ordered array of layers (entrypoint → app → domain →
+  adapters → kernel, etc.); each layer lists its folder paths and a
+  written reason. Layer N may import from any folder in layer N+1, N+2,
+  ... (downward, including skipping layers); upward imports flag with
+  layer names in the diagnostic message. Folder match uses
+  longest-prefix; ties resolve to the lower layer index. Within-layer
+  cycles still get caught by `no-folder-cycle`.
+- When `layers` are declared and both endpoints of an import land in
+  layered folders, `no-cross-domain-sibling-import` defers to the layers
+  system entirely. Layers express direction across folders; the sibling
+  rule is a fallback for the no-layer case.
+
+### Changed (BREAKING)
+
+- **All architectural list options now default to `[]`.** The plugin no
+  longer ships hardcoded opinions. Every architectural policy
+  (`forbiddenSubpathSegments`, `implementationPathSegments`,
+  `sharedFolderNames`, `infrastructureTypePackages`,
+  `allowedPublicSubpaths`, `allowedTestPublicSubpaths`,
+  `publicTypePackages`) defaults to an empty array; the user declares
+  exactly the values that fit their repo, each with a written reason.
+  Each per-rule doc under [`docs/rules/architecture/`](docs/rules/architecture/)
+  shows recommended starter values to copy in.
+- **Removed the depth-based heuristic in `no-upward-layer-import`.** The
+  rule used to use folder-path nesting (child imports parent index) as a
+  proxy for layering. It now ONLY fires when `layers` is configured. With
+  no layers declared, the rule is dormant. Users who relied on the
+  heuristic see fewer diagnostics until they declare their layers.
+- **Source layout: the architecture analyzer moved from
+  `src/architecture/` to `src/rules/architecture/`.** The analyzer is
+  consumed only by the architecture-rule factory; placing it under
+  `src/rules/` reflects ownership and removes the cross-domain-sibling
+  flag the previous layout produced.
+
 ## [0.0.6] - 2026-05-06
 
 ### Added

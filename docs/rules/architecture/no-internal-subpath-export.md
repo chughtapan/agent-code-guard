@@ -70,34 +70,34 @@ For libraries with one clear entry point:
 Consumers get exactly one place to import from. Anything they need is
 re-exported from `index.ts` deliberately.
 
-## Options
+## How to configure
+
+The plugin ships no defaults for `forbiddenSubpathSegments` or
+`allowedPublicSubpaths`. Without configuration the rule is dormant.
+Recommended starter values:
 
 ```js
 {
   "agent-code-guard/no-internal-subpath-export": ["error", {
-    // Subpaths that ARE intentionally part of the public contract. The
-    // rule won't flag these even if their target path looks internal.
-    // Each entry MUST include both `subpath` and `reason`; bare strings
-    // are rejected by the schema.
+    // Subpaths that ARE part of the public contract. Reasons are required;
+    // bare strings are rejected by the schema. Pick what's actually public
+    // for your package.
     allowedPublicSubpaths: [
       { subpath: ".", reason: "primary entrypoint" },
       { subpath: "./cli", reason: "CLI invocation contract" },
       { subpath: "./testing", reason: "consumer test helpers; documented in README §Testing" },
     ],
 
-    // Strictness lists below stay as bare strings — adding entries makes
-    // the rule STRICTER, not more permissive, so there's no architectural
-    // exception to acknowledge.
-    forbiddenSubpathSegments: ["src", "internal", "private", "impl", "utils",
-                                "helpers", "shared", "adapters",
-                                "__generated__", "__fixtures__", "__tests__"],
+    // Path segments that mark a target as private. Bare strings (no
+    // reason needed) — adding an entry makes the rule stricter, which
+    // is the whole point.
+    forbiddenSubpathSegments: [
+      "src", "internal", "private", "impl", "implementation",
+      "utils", "helpers", "lib", "shared", "common", "adapters",
+      "__generated__", "__fixtures__", "__tests__",
+    ],
 
-    // Soft cap on number of subpath exports. Above this, the rule flags
-    // "your public surface is too wide." Default: 5.
     maxSubpathExports: 5,
-
-    // Wildcard exports (`"./*": "..."`) — usually accidental and dangerous.
-    // Default: 0 wildcards allowed.
     maxWildcardExports: 0,
   }]
 }
