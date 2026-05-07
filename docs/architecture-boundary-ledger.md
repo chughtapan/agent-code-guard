@@ -1,6 +1,6 @@
 # Architecture Boundary Ledger
 
-Status: design doctrine for the `agent-code-guard` architecture analyzer. The shipped pass is `agent-code-guard/architecture-boundaries`; new checks should deepen the same project graph instead of adding prompt-time coupling.
+Status: design doctrine for the `agent-code-guard` architecture analyzer. The shipped checks are the fifteen individual architecture rules under `docs/rules/architecture/` (turn them all on at once via `...guard.configs.architecture.rules`); new checks should deepen the same project graph instead of adding prompt-time coupling.
 
 ## Why this exists
 
@@ -220,7 +220,7 @@ The architecture analyzer is the floor. It does not read an architect artifact, 
 - optional `agent-code-guard` architecture config;
 - optional baselines for pre-existing debt.
 
-The `safer-by-default` architect skill is the ceiling. It can teach agents to design with a Boundary Ledger, but that ledger is guidance for humans and downstream implementation skills. It is not an input contract for Guard.
+The companion `agent-code-guard` Claude Code skill is the ceiling. It can teach agents to design with a Boundary Ledger, but that ledger is guidance for humans and downstream implementation skills. It is not an input contract for Guard.
 
 Guard decides good and bad from intrinsic source facts:
 

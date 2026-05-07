@@ -4,7 +4,7 @@ import { ESLintUtils } from "@typescript-eslint/utils";
 // with filesystem access can read them from `node_modules/eslint-plugin-agent-code-guard/docs/rules/`
 // even before the URLs resolve.
 const GITHUB_OWNER = "chughtapan";
-const GITHUB_REPO = "safer-by-default";
+const GITHUB_REPO = "agent-code-guard";
 
 export const createRule = ESLintUtils.RuleCreator(
   (name) =>
