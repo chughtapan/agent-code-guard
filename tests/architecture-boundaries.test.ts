@@ -484,6 +484,52 @@ describe("architecture analyzer", () => {
     expect(messages.some((m) => m.includes("imports upward"))).toBe(false);
   });
 
+  it("allows sibling domain imports through declared shared folders and test files", () => {
+    const root = makeProject({
+      "src/payments/charge.ts": [
+        'import { sendReceipt } from "../mail/send-receipt";',
+        'import { formatMoney } from "../shared/format-money";',
+        "export const charge = [sendReceipt, formatMoney];",
+      ].join("\n"),
+      "src/payments/charge.test.ts": [
+        'import { sendReceipt } from "../mail/send-receipt";',
+        "export const testOnly = sendReceipt;",
+      ].join("\n"),
+      "src/mail/send-receipt.ts": "export const sendReceipt = true;\n",
+      "src/shared/format-money.ts": "export const formatMoney = true;\n",
+    });
+
+    const diagnostics = diagnosticsByRule(root, "no-cross-domain-sibling-import", {
+      sharedFolderNames: [
+        { folder: "shared", reason: "test: package-wide formatting helpers" },
+      ],
+    });
+
+    expect(diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
+      expect.stringContaining("src/payments/charge.ts imports src/mail/send-receipt.ts"),
+    ]);
+  });
+
+  it("does not treat re-exports or test files as upward layer imports", () => {
+    const root = makeProject({
+      "src/index.ts": "export const rootValue = true;\n",
+      "src/feature/reexport-root.ts": 'export { rootValue } from "../index";\n',
+      "src/feature/use-root.test.ts": [
+        'import { rootValue } from "../index";',
+        "export const useRoot = rootValue;",
+      ].join("\n"),
+    });
+
+    expect(
+      diagnosticsByRule(root, "no-upward-layer-import", {
+        layers: [
+          { name: "entrypoint", folders: ["."], reason: "test: composition root" },
+          { name: "feature", folders: ["feature"], reason: "test: feature layer" },
+        ],
+      }),
+    ).toEqual([]);
+  });
+
   it("Property: folder cycles and package mesh follow generated folder dependency shape", () => {
     fc.assert(
       fc.property(
