@@ -18,8 +18,6 @@ export function createProgram(options: NormalizedTopologyOptions): ts.Program | 
   if (!configPath) return null;
 
   const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
-  if (configFile.error) return null;
-
   const parsed = ts.parseJsonConfigFileContent(
     configFile.config,
     ts.sys,

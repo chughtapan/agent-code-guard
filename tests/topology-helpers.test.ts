@@ -28,7 +28,7 @@ import {
   packageNameFromFileName,
   packageNameFromSpecifier,
 } from "../src/topology/check-public-type-leaks.js";
-import { clearTopologyCache } from "../src/topology/cache.js";
+import { cachedProjectTopology, clearTopologyCache } from "../src/topology/cache.js";
 import { uniqueDiagnostics } from "../src/topology/diagnostics.js";
 import { normalizeTopologyOptions } from "../src/topology/options.js";
 import { collectExportsValue, collectPackageExportEntries } from "../src/topology/package-exports.js";
@@ -52,6 +52,7 @@ import {
   topFolder,
 } from "../src/topology/project-graph.js";
 import {
+  hasSourceExtension,
   OUTPUT_EXTENSIONS,
   replaceKnownExtension,
   SOURCE_EXTENSIONS,
@@ -209,6 +210,17 @@ function writePublicTypeProject(
   return root;
 }
 
+function writeNodePackage(root: string, packageName: string, declarations: string): void {
+  const packageJsonPath = path.join(root, "node_modules", packageName, "package.json");
+  const declarationPath = path.join(root, "node_modules", packageName, "index.d.ts");
+  fs.mkdirSync(path.dirname(packageJsonPath), { recursive: true });
+  fs.writeFileSync(
+    packageJsonPath,
+    JSON.stringify({ name: packageName, version: "1.0.0", types: "index.d.ts" }),
+  );
+  fs.writeFileSync(declarationPath, declarations);
+}
+
 function publicTypeDiagnostics(
   root: string,
   options: Parameters<typeof normalizeTopologyOptions>[0] = {},
@@ -216,6 +228,13 @@ function publicTypeDiagnostics(
   const normalizedOptions = normalizeTopologyOptions({ projectRoot: root, ...options });
   const program = createProgram(normalizedOptions);
   return checkPublicVendorTypeLeaks(program, readPackageJson(root), normalizedOptions);
+}
+
+function nestedReadonlyObjectType(leafType: string, depth: number): string {
+  return Array.from({ length: depth }).reduceRight(
+    (inner, _unused, index) => `{ readonly step${index}: ${inner}; }`,
+    leafType,
+  );
 }
 
 describe("topology helper units", () => {
@@ -336,6 +355,8 @@ describe("topology helper units", () => {
   it("reads package.json into typed dependency maps without unsafe record casts", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-package-json-"));
     try {
+      expect(readPackageJson(root)).toBeNull();
+
       fs.writeFileSync(
         path.join(root, "package.json"),
         JSON.stringify({
@@ -420,6 +441,38 @@ describe("topology helper units", () => {
         },
       ),
       { numRuns: 80 },
+    );
+  });
+
+  it("documents why internal and test-only package exports are bad", () => {
+    const internalDiagnostic = diagnosticsForRule(
+      packageExportDiagnostics(
+        { ".": "./dist/index.js", "./internal/client": "./dist/internal/client.js" },
+        { forbiddenSubpathSegments: ["internal"] },
+      ),
+      "no-internal-subpath-export",
+    )[0];
+    expect(internalDiagnostic?.message).toBe(
+      'package.json export "./internal/client" exposes implementation path ' +
+        '"./dist/internal/client.js". Public exports should be curated entrypoints, ' +
+        "not src/internal/utils/helpers.",
+    );
+
+    const testDiagnostic = diagnosticsForRule(
+      packageExportDiagnostics(
+        { ".": "./dist/index.js", "./fixture": "./dist/__fixtures__/fixture.js" },
+        {
+          forbiddenSubpathSegments: [],
+          implementationPathSegments: [],
+          maxSubpathExports: 100,
+        },
+      ),
+      "no-public-test-helper-leak",
+    )[0];
+    expect(testDiagnostic?.message).toBe(
+      'package.json export "./fixture" exposes test-only path ' +
+        '"./dist/__fixtures__/fixture.js". Test helpers need an explicitly allowed testing ' +
+        "subpath so consumers do not treat them as production API.",
     );
   });
 
@@ -623,6 +676,8 @@ describe("topology helper units", () => {
   });
 
   it("maps source and output extensions deterministically", () => {
+    expect(hasSourceExtension("foo.ts")).toBe(true);
+    expect(hasSourceExtension("foo.js")).toBe(false);
     expect(stripKnownExtension("foo.ts")).toBe("foo");
     expect(stripKnownExtension("foo.mjs")).toBe("foo");
     expect(stripKnownExtension("foo.css")).toBe("foo.css");
@@ -653,15 +708,42 @@ describe("topology helper units", () => {
     );
   });
 
+  it("Property: source extension detection only accepts terminal TypeScript source extensions", () => {
+    fc.assert(
+      fc.property(
+        fc.array(segmentArb, { minLength: 1, maxLength: 4 }),
+        sourceExtensionArb,
+        fc.constantFrom(...OUTPUT_EXTENSIONS, ".css", ".json", ".txt"),
+        (segments, sourceExtension, nonSourceExtension) => {
+          const basePath = segments.join("/");
+          expect(hasSourceExtension(`${basePath}${sourceExtension}`)).toBe(true);
+          expect(hasSourceExtension(`${basePath}${nonSourceExtension}`)).toBe(false);
+          expect(hasSourceExtension(`${basePath}${sourceExtension}.map`)).toBe(false);
+        },
+      ),
+      { numRuns: 80 },
+    );
+  });
+
   it("recognizes eligible sibling source modules and exported sibling specifiers", () => {
     expect(sourceModuleKey("feature.ts")).toBe("feature");
+    expect(sourceModuleKey("feature.txt")).toBeNull();
+    expect(sourceModuleKey("feature.d.ts")).toBeNull();
     expect(sourceModuleKey("feature.test.ts")).toBeNull();
     expect(sourceModuleKey("feature.generated.ts")).toBeNull();
     expect(isExcludedSourceFile("index.ts")).toBe(true);
+    expect(isExcludedSourceFile("feature.test.ts.extra")).toBe(false);
+    expect(isExcludedSourceFile("feature.test.xts")).toBe(false);
+    expect(isExcludedSourceFile("feature.generated.ts.extra")).toBe(false);
+    expect(isExcludedSourceFile("feature.generated.xts")).toBe(false);
     expect(siblingModuleKeyFromSpecifier("./feature")).toBe("feature");
     expect(siblingModuleKeyFromSpecifier("./feature/index.js")).toBe("feature");
+    expect(siblingModuleKeyFromSpecifier("./feature\\index.js")).toBe("feature");
+    expect(siblingModuleKeyFromSpecifier("./feature//index.js")).toBe("feature");
+    expect(siblingModuleKeyFromSpecifier("./index")).toBeNull();
     expect(siblingModuleKeyFromSpecifier("../feature")).toBeNull();
     expect(siblingModuleKeyFromSpecifier("./nested/deeper")).toBeNull();
+    expect(siblingModuleKeyFromSpecifier("./nested/index/deeper")).toBeNull();
 
     const sourceFile = ts.createSourceFile(
       "index.ts",
@@ -687,12 +769,26 @@ describe("topology helper units", () => {
   });
 
   it("Property: only index source files are treated as boundary barrels", () => {
+    expect(isIndexSourceFile("index.css")).toBe(false);
+    expect(isIndexSourceFile("index.js.map")).toBe(false);
+
     fc.assert(
       fc.property(segmentArb, sourceExtensionArb, (name, extension) => {
         const fileName = `${name}${extension}`;
         expect(isIndexSourceFile(fileName)).toBe(name === "index");
       }),
       { numRuns: 100 },
+    );
+
+    fc.assert(
+      fc.property(
+        segmentArb,
+        fc.constantFrom(".js.map", ".css", ".json", ".txt"),
+        (name, extension) => {
+          expect(isIndexSourceFile(`${name}${extension}`)).toBe(false);
+        },
+      ),
+      { numRuns: 80 },
     );
   });
 
@@ -763,22 +859,103 @@ describe("topology helper units", () => {
               exportedCount >= minExportedSiblingModules &&
               exportedCount / eligibleCount >= maxExportedSiblingRatio;
 
-            expect(
-              inventoryBarrelDiagnostic(
-                sourceFile,
-                normalizeTopologyOptions({
-                  projectRoot: root,
-                  minExportedSiblingModules,
-                  maxExportedSiblingRatio,
-                }),
-              ).length > 0,
-            ).toBe(shouldFlag);
+            const diagnostics = inventoryBarrelDiagnostic(
+              sourceFile,
+              normalizeTopologyOptions({
+                projectRoot: root,
+                minExportedSiblingModules,
+                maxExportedSiblingRatio,
+              }),
+            );
+
+            if (shouldFlag) {
+              expect(diagnostics).toHaveLength(1);
+              expect(diagnostics[0]?.message).toContain(
+                path.relative(root, sourceFile.fileName),
+              );
+              expect(diagnostics[0]?.message).toContain(
+                `${exportedCount} of ${eligibleCount}`,
+              );
+              expect(diagnostics[0]?.message).toContain(
+                "This exports inventory, not an abstraction",
+              );
+              expect(diagnostics[0]?.message).toContain(
+                "ports, factories, and stable types only",
+              );
+            } else {
+              expect(diagnostics).toEqual([]);
+            }
           } finally {
             fs.rmSync(root, { recursive: true, force: true });
           }
         },
       ),
       { numRuns: 80 },
+    );
+  });
+
+  it("Property: inventory diagnostics only run on index files with eligible siblings", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 8 }),
+        fc.integer({ min: 1, max: 8 }),
+        (eligibleCount, exportedCount) => {
+          const root = fs.mkdtempSync(path.join(os.tmpdir(), "acg-inventory-boundary-"));
+          try {
+            const directory = path.join(root, "src", "widgets");
+            const indexSourceFile = writeSiblingModules(
+              directory,
+              eligibleCount,
+              Math.min(exportedCount, eligibleCount),
+            );
+            const nonIndexSourceFile = ts.createSourceFile(
+              path.join(directory, "facade.ts"),
+              indexSourceFile.text,
+              ts.ScriptTarget.Latest,
+              true,
+              ts.ScriptKind.TS,
+            );
+
+            expect(
+              inventoryBarrelDiagnostic(
+                nonIndexSourceFile,
+                normalizeTopologyOptions({
+                  projectRoot: root,
+                  minExportedSiblingModules: 1,
+                  maxExportedSiblingRatio: 0,
+                }),
+              ),
+            ).toEqual([]);
+
+            fs.rmSync(directory, { recursive: true, force: true });
+            fs.mkdirSync(directory, { recursive: true });
+            const emptyIndexPath = path.join(directory, "index.ts");
+            const emptyIndexText = 'export { Ghost } from "./ghost";';
+            fs.writeFileSync(emptyIndexPath, emptyIndexText);
+            const emptyIndexSourceFile = ts.createSourceFile(
+              emptyIndexPath,
+              emptyIndexText,
+              ts.ScriptTarget.Latest,
+              true,
+              ts.ScriptKind.TS,
+            );
+
+            expect(
+              inventoryBarrelDiagnostic(
+                emptyIndexSourceFile,
+                normalizeTopologyOptions({
+                  projectRoot: root,
+                  minExportedSiblingModules: 0,
+                  maxExportedSiblingRatio: 0,
+                }),
+              ),
+            ).toEqual([]);
+          } finally {
+            fs.rmSync(root, { recursive: true, force: true });
+          }
+        },
+      ),
+      { numRuns: 60 },
     );
   });
 
@@ -1311,6 +1488,7 @@ describe("topology helper units", () => {
           ]);
           expect(diagnostics[0]?.message).toContain(specifier);
           expect(diagnostics[0]?.message).toContain("domain-owned public types");
+          expect(diagnostics[0]?.message).toContain("publicTypePackages");
         }
       }),
       { numRuns: 40 },
@@ -1356,9 +1534,27 @@ describe("topology helper units", () => {
       expect.objectContaining({
         ruleId: "no-public-infra-type-leak",
         severity: "error",
-        message: expect.stringContaining("package-owned ports or DTOs"),
+        message: expect.stringContaining(
+          `Public API references infrastructure package "kysely"`,
+        ),
       }),
     ]);
+    expect(externalReExportDiagnostics(
+      infraSourceFile,
+      normalizeTopologyOptions({
+        projectRoot: "/repo",
+        infrastructureTypePackages: ["kysely"],
+      }),
+    )[1]?.message).toContain(
+      "Database, logging, transport, and SDK implementation choices",
+    );
+    expect(externalReExportDiagnostics(
+      infraSourceFile,
+      normalizeTopologyOptions({
+        projectRoot: "/repo",
+        infrastructureTypePackages: ["kysely"],
+      }),
+    )[1]?.message).toContain("package-owned ports or DTOs");
 
     const nodeSourceFile = ts.createSourceFile(
       "/repo/src/index.ts",
@@ -1393,10 +1589,15 @@ describe("topology helper units", () => {
           packageName,
           [
             `import type { VendorShape } from "${packageName}";`,
+            `import type * as VendorNamespace from "${packageName}";`,
             "export interface PublicProperties { readonly raw: VendorShape; }",
+            "export interface PublicNamespace { readonly raw: VendorNamespace.VendorShape; }",
+            `export interface PublicImportType { readonly raw: import("${packageName}").VendorShape; }`,
             "export type PublicUnion = { readonly own: string } | VendorShape;",
             "export interface PublicGeneric { readonly items: ReadonlyArray<VendorShape<string>>; }",
             "export interface PublicCallable { readonly run: (input: VendorShape) => VendorShape; }",
+            "export interface PublicParamOnly { readonly accept: (input: VendorShape) => void; }",
+            "export interface PublicReturnOnly { readonly create: () => VendorShape; }",
             "export interface PublicConstructable { readonly make: new (input: VendorShape) => VendorShape; }",
             "export const identity = (input: VendorShape): VendorShape => input;",
           ].join("\n"),
@@ -1410,9 +1611,13 @@ describe("topology helper units", () => {
           const messages = vendorDiagnostics.map((diagnostic) => diagnostic.message);
           const expectedExportNames = [
             "PublicProperties",
+            "PublicNamespace",
+            "PublicImportType",
             "PublicUnion",
             "PublicGeneric",
             "PublicCallable",
+            "PublicParamOnly",
+            "PublicReturnOnly",
             "PublicConstructable",
             "identity",
           ];
@@ -1423,6 +1628,7 @@ describe("topology helper units", () => {
                 (message) =>
                   message.includes(`export "${exportName}" references`) &&
                   message.includes(packageName) &&
+                  message.includes("types. Wrap vendor types behind domain-owned public types") &&
                   message.includes("publicTypePackages"),
               ),
           );
@@ -1433,6 +1639,78 @@ describe("topology helper units", () => {
       }),
       { numRuns: 3 },
     );
+  });
+
+  it("limits public signature traversal depth while preserving exact-boundary leaks", () => {
+    const root = writePublicTypeProject(
+      "vendor-lib",
+      [
+        'import type { VendorShape } from "vendor-lib";',
+        "type LocalBox<T> = { readonly boxed: T };",
+        'import type { OpaqueBox, PublicBox } from "allowed-lib";',
+        `export type PublicExactDepth = ${nestedReadonlyObjectType("VendorShape", 8)};`,
+        `export interface PublicAllowedGenericExact { readonly box: PublicBox<${nestedReadonlyObjectType(
+          "VendorShape",
+          6,
+        )}>; }`,
+        `export interface PublicAllowedOpaqueGenericExact { readonly box: OpaqueBox<${nestedReadonlyObjectType(
+          "VendorShape",
+          6,
+        )}>; }`,
+        `export type PublicTooDeepProperty = ${nestedReadonlyObjectType("VendorShape", 9)};`,
+        `export type PublicTooDeepUnion = ${nestedReadonlyObjectType(
+          "{ readonly own: string } | VendorShape",
+          8,
+        )};`,
+        `export interface PublicTooDeepReturn { readonly run: () => ${nestedReadonlyObjectType(
+          "VendorShape",
+          7,
+        )}; }`,
+        `export interface PublicTooDeepParam { readonly run: (input: ${nestedReadonlyObjectType(
+          "VendorShape",
+          7,
+        )}) => void; }`,
+        `export interface PublicTooDeepGeneric { readonly items: LocalBox<${nestedReadonlyObjectType(
+          "VendorShape",
+          7,
+        )}>; }`,
+        `export interface PublicAllowedGenericTooDeep { readonly box: PublicBox<${nestedReadonlyObjectType(
+          "VendorShape",
+          7,
+        )}>; }`,
+        `export interface PublicAllowedOpaqueGenericTooDeep { readonly box: OpaqueBox<${nestedReadonlyObjectType(
+          "VendorShape",
+          7,
+        )}>; }`,
+      ].join("\n"),
+    );
+
+    try {
+      writeNodePackage(
+        root,
+        "allowed-lib",
+        [
+          "export interface PublicBox<T> { readonly boxed: T; }",
+          "export interface OpaqueBox<T> {}",
+        ].join("\n"),
+      );
+      const messages = diagnosticsForRule(
+        publicTypeDiagnostics(root, { publicTypePackages: ["allowed-lib"] }),
+        "no-public-vendor-type-leak",
+      ).map((diagnostic) => diagnostic.message);
+      const leakedExportNames = messages.flatMap((message) => {
+        const match = /export "([^"]+)" references/.exec(message);
+        return match ? [match[1]] : [];
+      });
+
+      expect(leakedExportNames).toContain("PublicExactDepth");
+      expect(leakedExportNames).toContain("PublicAllowedGenericExact");
+      expect(leakedExportNames).toContain("PublicAllowedOpaqueGenericExact");
+      expect(leakedExportNames.filter((exportName) => exportName.startsWith("PublicTooDeep")))
+        .toEqual([]);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("warns for peer dependency public types while dependencies and devDependencies are errors", () => {
@@ -1534,6 +1812,68 @@ describe("topology helper units", () => {
         maxExportedSiblingRatio: 0.6,
       });
 
-    expect(() => clearTopologyCache()).not.toThrow();
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), "acg-topology-cache-"));
+    try {
+      fs.writeFileSync(
+        path.join(projectRoot, "package.json"),
+        JSON.stringify({
+          name: "fixture",
+          version: "1.0.0",
+          type: "module",
+          exports: { ".": "./dist/index.js" },
+        }),
+      );
+      fs.writeFileSync(
+        path.join(projectRoot, "tsconfig.json"),
+        JSON.stringify({
+          compilerOptions: {
+            target: "ES2022",
+            module: "NodeNext",
+            moduleResolution: "NodeNext",
+            strict: true,
+            skipLibCheck: true,
+            declaration: true,
+            outDir: "./dist",
+            rootDir: "./src",
+          },
+          include: ["src/**/*"],
+        }),
+      );
+      fs.mkdirSync(path.join(projectRoot, "src"), { recursive: true });
+      fs.writeFileSync(
+        path.join(projectRoot, "src", "index.ts"),
+        [
+          'export { M0 } from "./m0.js";',
+          'export { M1 } from "./m1.js";',
+          'export { M2 } from "./m2.js";',
+          'export { M3 } from "./m3.js";',
+        ].join("\n"),
+      );
+      for (let index = 0; index < 4; index += 1) {
+        fs.writeFileSync(
+          path.join(projectRoot, "src", `m${index}.ts`),
+          `export const M${index} = ${index};\n`,
+        );
+      }
+
+      const options = {
+        projectRoot,
+        minExportedSiblingModules: 1,
+        maxExportedSiblingRatio: 0,
+      };
+      const staleReport = cachedProjectTopology(options);
+      expect(diagnosticsForRule(staleReport.diagnostics, "no-inventory-barrel")).toHaveLength(1);
+
+      fs.writeFileSync(path.join(projectRoot, "src", "index.ts"), "export const ok = true;\n");
+      expect(cachedProjectTopology(options)).toBe(staleReport);
+
+      clearTopologyCache();
+      expect(
+        diagnosticsForRule(cachedProjectTopology(options).diagnostics, "no-inventory-barrel"),
+      ).toEqual([]);
+    } finally {
+      clearTopologyCache();
+      fs.rmSync(projectRoot, { recursive: true, force: true });
+    }
   });
 });

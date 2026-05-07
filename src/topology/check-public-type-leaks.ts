@@ -83,7 +83,6 @@ export function packageNameFromFileName(fileName: string): string | null {
 }
 
 export function normalizeTypePackageName(packageName: string): string {
-  if (packageName === "@types/node") return "node";
   if (!packageName.startsWith("@types/")) return packageName;
 
   const withoutPrefix = packageName.slice("@types/".length);
@@ -228,7 +227,7 @@ function visitCompositeType(
   }
 
   for (const property of type.getProperties()) {
-    const declaration = property.valueDeclaration ?? property.declarations?.[0];
+    const declaration = property.declarations?.[0];
     if (declaration) visit(checker.getTypeOfSymbolAtLocation(property, declaration), depth + 1);
   }
 }
@@ -239,17 +238,14 @@ function visitTypeArguments(
   depth: number,
   visit: (type: ts.Type, depth: number) => void,
 ): void {
-  if (!isTypeReference(type)) return;
-  for (const argument of checker.getTypeArguments(type)) visit(argument, depth + 1);
+  for (const argument of checker.getTypeArguments(type as ts.TypeReference)) {
+    visit(argument, depth + 1);
+  }
 }
 
 function packageNameFromType(type: ts.Type): string | null {
-  for (const symbol of [type.aliasSymbol, type.symbol]) {
-    const packageName = packageNameFromSymbol(symbol);
-    if (packageName !== null) return packageName;
-  }
-
-  return null;
+  const aliasPackage = packageNameFromSymbol(type.aliasSymbol);
+  return aliasPackage ?? packageNameFromSymbol(type.symbol);
 }
 
 function packageNameFromSymbol(symbol: ts.Symbol | undefined): string | null {
@@ -264,12 +260,7 @@ function packageNameFromSymbol(symbol: ts.Symbol | undefined): string | null {
 
 function packageNameFromNodeModulesPath(afterNodeModules: string): string | null {
   const [firstSegment, secondSegment] = afterNodeModules.split("/");
-  if (!firstSegment) return null;
   return firstSegment.startsWith("@") && secondSegment
     ? `${firstSegment}/${secondSegment}`
     : firstSegment;
-}
-
-function isTypeReference(type: ts.Type): type is ts.TypeReference {
-  return (type.flags & ts.TypeFlags.Object) !== 0 && "target" in type;
 }
