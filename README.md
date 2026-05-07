@@ -11,27 +11,37 @@ pnpm add -D eslint-plugin-agent-code-guard
 
 Your coding agent is miscalibrated. It was trained on human-written TypeScript — decades of it — written under one constraint that does not apply to it: typing was expensive for humans. That is why its training corpus is saturated with `throw new Error("bad")`, `as Record<string, unknown>`, `try { ... } catch {}`, `Promise<T>` return types, `process.env.FOO!`, raw SQL strings, and `vi.mock` inside integration tests. Those were the compromises humans made when keyboard time was scarce. An agent does not pay the scarcity; it inherits the patterns anyway.
 
-This plugin is the floor. Twenty-three rules under the `recommended` preset (twenty errors, three warns), plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
+This plugin is the floor. Thirty-eight rules under the `recommended` preset (twenty-seven errors, eleven warns), plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
 
-## Topology guard
+## Architecture guard
 
-The project-level topology preset checks what each file consumes and exports, what each folder consumes and exports, and what the package exposes and pulls into its runtime graph. This is the operational form of Parnas information hiding, Liskov abstraction/substitutability, and Martin package coupling metrics.
+Beyond syntactic patterns, the plugin reasons about *project architecture*: what each file consumes and exports, what each folder consumes and exports, and what the package exposes and pulls into its runtime graph. This is the operational form of Parnas information hiding, Liskov abstraction/substitutability, and Martin package coupling metrics.
 
-Enable it separately from `recommended` while the project graph checks mature:
+As of `0.0.6`, fifteen architecture rules ship in `recommended`. Seven are **errors** — clear bugs with no defensible exception (cycles, exposed internals, uncurated public boundaries, vendor-type leaks). Eight are **warns** — heuristic or layered-architecture-dependent rules where the right call needs human judgment.
+
+When `no-public-vendor-type-leak` legitimately fires (e.g., an ESLint plugin re-exporting `@typescript-eslint/utils`, a Node-targeted package using `node:*`), declare the public contract explicitly via the rule options — no auto-magic, no presets:
 
 ```js
-export default [
-  {
-    files: ["src/**/*.ts"],
-    plugins: { "agent-code-guard": guard },
-    rules: {
-      ...guard.configs.topology.rules,
-    },
-  },
-];
+const ARCHITECTURE_OPTIONS = {
+  publicTypePackages: ["@typescript-eslint/utils"],
+  packageRuntime: "node",
+};
+
+// then per-rule:
+"agent-code-guard/no-public-vendor-type-leak": ["error", ARCHITECTURE_OPTIONS],
 ```
 
-See [`docs/topology-boundary-ledger.md`](docs/topology-boundary-ledger.md) for the Boundary Ledger design. The shipped analyzer now emits package, file, folder, facade, mesh, and public type boundary diagnostics from the same project graph. Each topology policy has its own rule name and doc; [`agent-code-guard/topology-boundaries`](docs/rules/topology-boundaries.md) remains as a compatibility meta-rule that reports all topology diagnostics.
+Typing those packages out is the point — the act of declaration *is* the "do I want this in my contract?" decision.
+
+A standalone `architecture` preset (warn-level, all fifteen rules) remains for incremental adoption when you want to step up to the architecture checks one repo at a time without flipping CI red:
+
+```js
+rules: {
+  ...guard.configs.architecture.rules,
+}
+```
+
+See [`docs/architecture-boundary-ledger.md`](docs/architecture-boundary-ledger.md) for the Boundary Ledger design. The analyzer emits package, file, folder, facade, mesh, and public type boundary diagnostics from the same project graph; each policy has its own rule name and doc under [`docs/rules/architecture/`](docs/rules/architecture/).
 
 | Rule | Catches |
 |---|---|
@@ -59,6 +69,21 @@ See [`docs/topology-boundary-ledger.md`](docs/topology-boundary-ledger.md) for t
 | [`agent-code-guard/no-hardcoded-assertion-literals`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-hardcoded-assertion-literals.md) | Hardcoded string/number literals in test assertions (warn) |
 | [`agent-code-guard/tag-discriminant`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/tag-discriminant.md) | Manual `_tag` checks on tagged errors instead of `Effect.catchTag(...)` |
 | [`agent-code-guard/no-vitest-mocks`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-vitest-mocks.md) | `vi.mock(...)` inside files that match the integration-tests glob |
+| [`agent-code-guard/no-folder-cycle`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-folder-cycle.md) | Strongly connected folder dependency components |
+| [`agent-code-guard/no-root-internal-cycle`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-root-internal-cycle.md) | Root/public files and internal files that depend on each other |
+| [`agent-code-guard/no-internal-subpath-export`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-internal-subpath-export.md) | `package.json` exports that expose `src/`, `internal/`, helpers, fixtures, etc. |
+| [`agent-code-guard/no-public-test-helper-leak`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-public-test-helper-leak.md) | `package.json` exports that expose test-only fixtures or helpers |
+| [`agent-code-guard/no-export-star-boundary`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-export-star-boundary.md) | `export *` declarations on public or index boundaries |
+| [`agent-code-guard/no-implementation-file-public-entry`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-implementation-file-public-entry.md) | Public exports that point at adapter / handler / service implementation files |
+| [`agent-code-guard/no-public-vendor-type-leak`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-public-vendor-type-leak.md) | Public API types that mention dependency-owned vendor types — declare via `publicTypePackages` |
+| [`agent-code-guard/no-public-infra-type-leak`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-public-infra-type-leak.md) | Public API types that leak infrastructure packages (Kysely, Pino, etc.) (warn) |
+| [`agent-code-guard/no-inventory-barrel`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-inventory-barrel.md) | `index.ts` files that re-export most of their siblings instead of curating (warn) |
+| [`agent-code-guard/no-large-public-surface`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-large-public-surface.md) | Public re-export fanout that exceeds the configured budget (warn) |
+| [`agent-code-guard/no-upward-layer-import`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-upward-layer-import.md) | Internal modules importing from root-layer or public-layer paths (warn) |
+| [`agent-code-guard/no-cross-domain-sibling-import`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-cross-domain-sibling-import.md) | Sibling-domain imports that bypass the domain's public boundary (warn) |
+| [`agent-code-guard/no-package-mesh`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-package-mesh.md) | Folder dependency graphs whose density crosses the mesh threshold (warn) |
+| [`agent-code-guard/require-curated-public-facade`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/require-curated-public-facade.md) | Public facades that mirror filesystem inventory instead of curating contracts (warn) |
+| [`agent-code-guard/require-boundary-owned-types`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/require-boundary-owned-types.md) | Public boundary types that reuse imported vendor names instead of package-owned ones (warn) |
 
 Each rule ships a Before/After doc at the GitHub link above and locally at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`.
 
@@ -132,7 +157,8 @@ Peer dependencies: `eslint` ≥ 9, `typescript` ≥ 5.
 
 The import alias (e.g., `guard` in the example above) is your choice; adjust the `<import>.configs.*` path accordingly. Access presets via your import identifier:
 
-- `<import>.configs.recommended.rules` — application source. All rules except `no-vitest-mocks`.
+- `<import>.configs.recommended.rules` — application source. All rules except `no-vitest-mocks` (the AI-pattern floor plus the architecture rules at curated severity: 7 errors, 8 warns).
+- `<import>.configs.architecture.rules` — same fifteen architecture rules as `recommended`, but all at warn level. Use this when stepping up to the architecture checks for the first time, before flipping CI red.
 - `<import>.configs.integrationTests.rules` — integration-test glob only. Enforces `no-vitest-mocks` so integration tests actually hit real dependencies.
 
 ## Disabling a rule
@@ -163,11 +189,11 @@ Install both for the full calibration loop:
 
 ```
 # The floor (this repo) — lint checks:
-pnpm add -D eslint-plugin-agent-code-guard@^0.0.5
+pnpm add -D eslint-plugin-agent-code-guard@^0.0.6
 
 # The ceiling (Claude Code skills + binaries):
 mkdir -p ~/.claude/skills
-git clone --single-branch --depth 1 --branch v0.0.5 \
+git clone --single-branch --depth 1 --branch v0.0.6 \
   https://github.com/chughtapan/agent-code-guard.git \
   ~/.claude/skills/agent-code-guard
 cd ~/.claude/skills/agent-code-guard && pnpm install
