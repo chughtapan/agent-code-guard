@@ -2,6 +2,68 @@
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-05-06
+
+### Added
+
+- Fifteen architecture rules — analyzer reasons about file/folder/package boundaries:
+  - **Cycles:** `no-folder-cycle`, `no-root-internal-cycle`
+  - **Public package surface:** `no-internal-subpath-export`, `no-public-test-helper-leak`,
+    `no-export-star-boundary`, `no-implementation-file-public-entry`,
+    `no-large-public-surface`, `require-curated-public-facade`
+  - **Type leaks:** `no-public-vendor-type-leak`, `no-public-infra-type-leak`,
+    `require-boundary-owned-types`
+  - **Layered/domain hygiene:** `no-cross-domain-sibling-import`, `no-upward-layer-import`,
+    `no-package-mesh`, `no-inventory-barrel`
+- Per-rule docs under [`docs/rules/architecture/`](docs/rules/architecture/) and a Boundary
+  Ledger design doc at [`docs/architecture-boundary-ledger.md`](docs/architecture-boundary-ledger.md).
+- Tag-driven npm publish workflow (`.github/workflows/publish.yml`).
+
+### Changed
+
+- **The `recommended` preset now includes the architecture rules at curated severity:**
+  7 errors (clear bugs — cycles, exposed internals, uncurated public boundaries,
+  vendor-type leaks) and 8 warns (heuristic / layered-architecture / domain-dependent
+  rules where the right call needs human judgment). The recommended preset is now
+  38 rules total: 27 errors, 11 warns.
+- Public-contract declaration is intentionally explicit. When `no-public-vendor-type-leak`
+  legitimately fires (ESLint plugins re-exporting `@typescript-eslint/utils`,
+  Node-targeted packages using `node:*`), declare the contract via the rule's
+  `publicTypePackages` and `packageRuntime` options. No auto-detection, no preset
+  shortcuts — typing those packages out *is* the "do I want this in my contract?"
+  decision.
+- Standalone preset is now `configs.architecture` (was `configs.topology`). All fifteen
+  architecture rules at warn-level for incremental adoption.
+- Source layout: analyzer subsystem moved from `src/topology/` to `src/architecture/`.
+  All identifiers renamed (`TopologyOptions` → `ArchitectureOptions`,
+  `cachedProjectTopology` → `cachedProjectArchitecture`, etc.).
+- Architecture rule docs moved from `docs/rules/<rule>.md` to
+  `docs/rules/architecture/<rule>.md`.
+- Boundary Ledger doc renamed: `docs/topology-boundary-ledger.md` →
+  `docs/architecture-boundary-ledger.md`.
+
+### Removed
+
+- **`agent-code-guard/architecture-boundaries`** (formerly `topology-boundaries`)
+  aggregate rule. The standalone `architecture` preset already covers the
+  "turn them all on" use case via `...guard.configs.architecture.rules`. Users
+  who enabled the aggregate rule directly should switch to the preset spread.
+
+### Fixed
+
+- `src/architecture/check-public-type-leaks.ts` and `src/architecture/source-program.ts`:
+  removed mutation-test-confirmed dead code paths (the `@types/node` short-circuit,
+  the `property.valueDeclaration` fallback, the `isTypeReference` helper, and the
+  `configFile.error` early return) so the analyzer behavior is exactly what the
+  tests assert.
+
+### Testing
+
+- New property tests for source-extension detection, sibling-specifier parsing,
+  inventory barrel boundary conditions, public-signature depth-limit traversal
+  with allowlisted generic containers, and message-content assertions on the
+  no-public-vendor-type-leak and no-public-infra-type-leak diagnostics.
+
 ## [0.0.5] - 2026-04-24
 
 ### Added

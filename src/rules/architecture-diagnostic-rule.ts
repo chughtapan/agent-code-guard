@@ -1,17 +1,17 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { JSONSchema4 } from "@typescript-eslint/utils/json-schema";
-import { cachedProjectTopology } from "../topology/cache.js";
+import { cachedProjectArchitecture } from "../architecture/cache.js";
 import {
-  DEFAULT_TOPOLOGY_OPTIONS,
-  type TopologyDiagnostic,
-  type TopologyOptions,
-} from "../topology/types.js";
+  DEFAULT_ARCHITECTURE_OPTIONS,
+  type ArchitectureDiagnostic,
+  type ArchitectureOptions,
+} from "../architecture/types.js";
 import { createRule } from "../utils/create-rule.js";
 
-type Options = [TopologyOptions?];
-type MessageIds = "topologyViolation";
-export type TopologyDiagnosticRuleId = TopologyDiagnostic["ruleId"];
+type Options = [ArchitectureOptions?];
+type MessageIds = "architectureViolation";
+export type ArchitectureDiagnosticRuleId = ArchitectureDiagnostic["ruleId"];
 
 const schema: readonly JSONSchema4[] = [
   {
@@ -43,12 +43,12 @@ const schema: readonly JSONSchema4[] = [
   },
 ];
 
-export function createTopologyDiagnosticRule(
+export function createArchitectureDiagnosticRule(
   name: string,
-  diagnosticRuleIds: readonly TopologyDiagnosticRuleId[],
+  diagnosticRuleIds: readonly ArchitectureDiagnosticRuleId[],
   description: string,
 ) {
-  const allowedRuleIds = new Set<TopologyDiagnosticRuleId>(diagnosticRuleIds);
+  const allowedRuleIds = new Set<ArchitectureDiagnosticRuleId>(diagnosticRuleIds);
 
   return createRule<Options, MessageIds>({
     name,
@@ -56,13 +56,13 @@ export function createTopologyDiagnosticRule(
       type: "problem",
       docs: { description },
       messages: {
-        topologyViolation: "{{message}}",
+        architectureViolation: "{{message}}",
       },
       schema,
       fixable: undefined,
       hasSuggestions: false,
     },
-    defaultOptions: [DEFAULT_TOPOLOGY_OPTIONS],
+    defaultOptions: [DEFAULT_ARCHITECTURE_OPTIONS],
     create(context, [rawOptions]) {
       const cwd = context.cwd ?? process.cwd();
       const filename = path.isAbsolute(context.filename)
@@ -71,11 +71,11 @@ export function createTopologyDiagnosticRule(
       const projectRoot =
         rawOptions?.projectRoot ?? findNearestPackageRoot(filename) ?? cwd;
       const options = {
-        ...DEFAULT_TOPOLOGY_OPTIONS,
+        ...DEFAULT_ARCHITECTURE_OPTIONS,
         ...rawOptions,
         projectRoot,
       };
-      const report = cachedProjectTopology(options);
+      const report = cachedProjectArchitecture(options);
 
       return {
         Program(node) {
@@ -84,7 +84,7 @@ export function createTopologyDiagnosticRule(
             if (path.resolve(diagnostic.file) !== filename) continue;
             context.report({
               node,
-              messageId: "topologyViolation",
+              messageId: "architectureViolation",
               data: { message: diagnostic.message },
             });
           }
@@ -94,7 +94,7 @@ export function createTopologyDiagnosticRule(
   });
 }
 
-export const topologyDiagnosticRuleIds = [
+export const architectureDiagnosticRuleIds = [
   "no-inventory-barrel",
   "no-internal-subpath-export",
   "no-public-vendor-type-leak",
@@ -110,7 +110,7 @@ export const topologyDiagnosticRuleIds = [
   "no-package-mesh",
   "require-curated-public-facade",
   "require-boundary-owned-types",
-] as const satisfies readonly TopologyDiagnosticRuleId[];
+] as const satisfies readonly ArchitectureDiagnosticRuleId[];
 
 function findNearestPackageRoot(fileName: string): string | null {
   for (let directory = path.dirname(fileName); ; directory = path.dirname(directory)) {

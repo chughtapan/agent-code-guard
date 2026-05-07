@@ -2,7 +2,7 @@ import path from "node:path";
 import ts from "typescript";
 import { replaceKnownExtension, SOURCE_EXTENSIONS, withTrailingSeparator } from "./path-utils.js";
 import { collectPackageExportEntries } from "./package-exports.js";
-import type { NormalizedTopologyOptions, PackageJson } from "./types.js";
+import type { NormalizedArchitectureOptions, PackageJson } from "./types.js";
 
 const PUBLIC_ENTRYPOINT_CANDIDATES = [
   "src/index.ts",
@@ -11,15 +11,13 @@ const PUBLIC_ENTRYPOINT_CANDIDATES = [
   "index.tsx",
 ] as const;
 
-export function createProgram(options: NormalizedTopologyOptions): ts.Program | null {
+export function createProgram(options: NormalizedArchitectureOptions): ts.Program | null {
   const configPath =
     options.tsconfigPath ??
     ts.findConfigFile(options.projectRoot, ts.sys.fileExists, "tsconfig.json");
   if (!configPath) return null;
 
   const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
-  if (configFile.error) return null;
-
   const parsed = ts.parseJsonConfigFileContent(
     configFile.config,
     ts.sys,
@@ -62,7 +60,7 @@ export function findPackageReportFile(
 export function publicApiSourceFiles(
   program: ts.Program,
   packageJson: PackageJson | null,
-  options: NormalizedTopologyOptions,
+  options: NormalizedArchitectureOptions,
 ): readonly ts.SourceFile[] {
   const projectFiles = projectSourceFiles(program, options.projectRoot);
   const byPath = new Map(
