@@ -21,3 +21,12 @@ const config = yield* Config.all({
 ```
 
 Scripts and bootstraps that intentionally read env can suppress the line with a reason. Default application code should not reach into `process.env` directly.
+
+## Disabling per-line
+
+For one-off cases at a real boundary (a bin, a build script, a config-loading boundary) that genuinely need a runtime read, suppress with a written reason — the [`eslint-comments/require-description`](https://eslint-community.github.io/eslint-plugin-eslint-comments/rules/require-description.html) rule keeps the reason mandatory:
+
+```ts
+// eslint-disable-next-line agent-code-guard/no-process-env-at-runtime -- bin entrypoint, no Config layer yet
+const port = process.env.PORT ?? "3000";
+```

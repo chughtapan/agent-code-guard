@@ -107,6 +107,4 @@ subpath to something contract-shaped and re-export from there. Don't shrink
 
 A public name is a promise. Naming the promise after a current
 implementation pattern locks the package into that pattern forever, or
-forces a breaking change to escape. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full naming-by-contract treatment.
+forces a breaking change to escape.

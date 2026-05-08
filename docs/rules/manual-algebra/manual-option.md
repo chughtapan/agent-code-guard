@@ -35,3 +35,12 @@ const renderSession = (id: SessionId) =>
 ```
 
 Domain-state unions and transport wrappers stay allowed when they are just data. This rule is about reusable maybe-value control-flow helpers, not every `_tag` union in the codebase.
+
+## Disabling per-line
+
+If the union is intentionally hand-rolled at a boundary (e.g., a wire-format type that must match a JSON contract), suppress with a written reason:
+
+```ts
+// eslint-disable-next-line agent-code-guard/manual-option -- wire format dictated by external API
+type Maybe<T> = { _tag: "Some"; value: T } | { _tag: "None" };
+```

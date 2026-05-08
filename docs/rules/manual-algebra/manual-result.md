@@ -46,3 +46,12 @@ const parsePort = (raw: string) =>
 ```
 
 Transport/data shapes are still allowed. A response type like `{ ok: true } | { ok: false }` stays out of scope unless it grows into a reusable algebra with constructors, guards, or combinators.
+
+## Disabling per-line
+
+If the union is intentionally hand-rolled at a boundary (e.g., a wire-format response type that must match a JSON contract), suppress with a written reason:
+
+```ts
+// eslint-disable-next-line agent-code-guard/manual-result -- wire format dictated by external API
+type Result<T, E> = { _tag: "Ok"; value: T } | { _tag: "Err"; error: E };
+```

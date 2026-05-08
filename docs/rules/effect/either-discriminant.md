@@ -23,3 +23,12 @@ return Either.match({
 ```
 
 If the Either exists only to bridge into Effect code, prefer lifting it immediately and staying in the Effect pipeline.
+
+## Disabling per-line
+
+For a single bridge into non-Effect code that genuinely needs `_tag`-shape access, suppress with a written reason:
+
+```ts
+// eslint-disable-next-line agent-code-guard/either-discriminant -- exporting to a JSON wire format that uses the tag literally
+return { ok: result._tag === "Right", value: result.right };
+```

@@ -29,3 +29,12 @@ program.pipe(
 ```
 
 Generic `Error` is fine at the true process edge. Inside an Effect error channel, keep failures typed.
+
+## Disabling per-line
+
+If you genuinely need to bridge into a generic `Error` at the process edge (e.g. logging into a system that only accepts `Error`), suppress with a written reason:
+
+```ts
+// eslint-disable-next-line agent-code-guard/effect-error-erasure -- bridge to legacy logger that only accepts Error
+return Effect.fail(new Error(reason));
+```

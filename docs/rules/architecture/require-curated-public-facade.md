@@ -113,6 +113,4 @@ facades, not punish deliberately wide ones.
 
 Facades are the most powerful boundary tool a package has — they hide
 arbitrarily complex internals behind a small named surface. Inventory
-barrels squander that power. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full facade treatment.
+barrels squander that power.

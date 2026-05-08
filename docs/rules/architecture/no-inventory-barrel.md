@@ -107,6 +107,4 @@ barrels in domain folders, not utility hubs.
 ## Rationale
 
 Barrels and curated facades look similar but mean opposite things. A
-facade hides design decisions; an inventory barrel publishes them. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full curation treatment.
+facade hides design decisions; an inventory barrel publishes them.

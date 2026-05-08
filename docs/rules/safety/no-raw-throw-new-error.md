@@ -6,6 +6,7 @@ Test-file patterns (any one matches):
 - `**/*.test.*`, `**/*.spec.*`
 - `**/test/**`, `**/tests/**`
 - `**/__tests__/**` (Jest default)
+- `**/test-support/**`, `**/fixture/**`, `**/fixtures/**`, `**/__fixtures__/**`
 - `**/e2e/**`
 
 **Why:** A raw throw hides three facts: which call sites it can happen at, which callers know how to handle it, and what the user actually sees. Those surface at runtime, usually in production, usually with bad error messages. A typed error channel (tagged `Data.TaggedError`, a discriminated-union result, or `Effect.fail`) forces the caller to discriminate; the compiler enforces exhaustiveness.

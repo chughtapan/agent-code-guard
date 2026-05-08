@@ -26,3 +26,12 @@ const row = raw;
 ```
 
 Allowed exceptions should be rare and local, with an inline suppression reason.
+
+## Disabling per-line
+
+For one-off cases (the rare narrowing that has external proof, e.g. a runtime-validated payload), suppress with a written reason:
+
+```ts
+// eslint-disable-next-line agent-code-guard/as-unknown-as -- runtime guard validated this shape upstream
+const profile = raw as unknown as UserProfile;
+```

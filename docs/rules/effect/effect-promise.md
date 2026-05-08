@@ -20,3 +20,12 @@ const user = yield* Effect.tryPromise({
 ```
 
 If the Promise truly cannot reject, document that invariant locally and suppress the line with a reason. Default to `tryPromise`; force the proof to be explicit.
+
+## Disabling per-line
+
+When the promise truly cannot reject — e.g. wrapping a function whose contract is documented infallible — suppress with a written reason:
+
+```ts
+// eslint-disable-next-line agent-code-guard/effect-promise -- @types/foo says fooSettled never rejects; verified upstream
+const settled = Effect.promise(() => fooSettled());
+```

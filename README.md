@@ -11,13 +11,13 @@ pnpm add -D eslint-plugin-agent-code-guard
 
 Your coding agent is miscalibrated. It was trained on human-written TypeScript — decades of it — written under one constraint that does not apply to it: typing was expensive for humans. That is why its training corpus is saturated with `throw new Error("bad")`, `as Record<string, unknown>`, `try { ... } catch {}`, `Promise<T>` return types, `process.env.FOO!`, raw SQL strings, and `vi.mock` inside integration tests. Those were the compromises humans made when keyboard time was scarce. An agent does not pay the scarcity; it inherits the patterns anyway.
 
-This plugin is the floor. Thirty-nine rules under the `recommended` preset (twenty-eight errors, eleven warns), plus an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
+This plugin is the floor. Fifty-plus rules under the `recommended` preset, a bundled `strict` preset that adds SonarJS plus tight complexity budgets, and an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
 
 ## Architecture guard
 
 Beyond syntactic patterns, the plugin reasons about *project architecture*: what each file consumes and exports, what each folder consumes and exports, and what the package exposes and pulls into its runtime graph. This is the operational form of Parnas information hiding, Liskov abstraction/substitutability, and Martin package coupling metrics.
 
-Sixteen architecture rules ship in `recommended`. Eight are **errors** — clear bugs with no defensible exception (cycles, exposed internals, uncurated public boundaries, vendor-type leaks, plus the always-on `architecture-directive-parse-error` that surfaces malformed suppression directives). Eight are **warns** — heuristic or layered-architecture-dependent rules where the right call needs human judgment.
+Twenty-one architecture rules ship in `recommended`, plus the always-on `architecture-directive-parse-error` that surfaces malformed suppression directives. Clear bugs with no defensible exception run as **errors**; heuristic or layered-architecture-dependent rules run as **warns** where the right call needs human judgment.
 
 **The plugin ships no policy defaults.** Every architectural list option (`forbiddenSubpathSegments`, `implementationPathSegments`, `sharedFolderNames`, `infrastructureTypePackages`, `allowedPublicSubpaths`, `allowedTestPublicSubpaths`, `publicTypePackages`, `layers`) defaults to `[]`. Each per-rule doc under [`docs/rules/architecture/`](docs/rules/architecture/) shows recommended starter values you can copy into your config. The act of writing those values with reasons IS the architectural decision — same principle the `{value, reason}` shape already enforces:
 
@@ -63,7 +63,7 @@ For an explicit layered architecture (e.g., `entrypoint → app → domain → a
 
 Without `layers` declared, `no-upward-layer-import` is dormant. See [`no-upward-layer-import.md`](docs/rules/architecture/no-upward-layer-import.md) for the full layer-direction semantics.
 
-A standalone `architecture` preset (warn-level, all fifteen rules) remains for incremental adoption when you want to step up to the architecture checks one repo at a time without flipping CI red:
+A standalone `architecture` preset (warn-level, all architecture diagnostics, plus directive parse errors) remains for incremental adoption when you want to step up to the architecture checks one repo at a time without flipping CI red:
 
 ```js
 rules: {
@@ -71,52 +71,96 @@ rules: {
 }
 ```
 
-See [`docs/architecture-boundary-ledger.md`](docs/architecture-boundary-ledger.md) for the Boundary Ledger design. The analyzer emits package, file, folder, facade, mesh, and public type boundary diagnostics from the same project graph; each policy has its own rule name and doc under [`docs/rules/architecture/`](docs/rules/architecture/).
+The analyzer emits package, file, folder, facade, mesh, and public-type boundary diagnostics from the same project graph; each policy has its own rule name and doc under [`docs/rules/architecture/`](docs/rules/architecture/).
+
+### Async flow
 
 | Rule | Catches |
 |---|---|
-| [`agent-code-guard/async-keyword`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/async-keyword.md) | `async` functions outside Effect/Kysely patterns |
-| [`agent-code-guard/as-unknown-as`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/as-unknown-as.md) | `as unknown as` cast chains that bypass type checking |
-| [`agent-code-guard/promise-type`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/promise-type.md) | `Promise<T>` return types that erase the error channel |
-| [`agent-code-guard/then-chain`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/then-chain.md) | `.then(...)` chains that hide error propagation |
-| [`agent-code-guard/bare-catch`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/bare-catch.md) | `try { ... } catch {}` that swallows the error silently |
-| [`agent-code-guard/effect-promise`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/effect-promise.md) | `Effect.promise(...)` calls that turn rejections into defects |
-| [`agent-code-guard/effect-error-erasure`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/effect-error-erasure.md) | `Effect.fail(new Error(...))` and similar generic error wrapping inside the Effect channel |
-| [`agent-code-guard/either-discriminant`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/either-discriminant.md) | `Either.isLeft(...)`, `Either.isRight(...)`, and `_tag === "Left" / "Right"` |
-| [`agent-code-guard/manual-result`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/manual-result.md) | Reusable hand-rolled `Result` / `Either` algebras instead of `Either` / `Effect` |
-| [`agent-code-guard/manual-option`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/manual-option.md) | Reusable hand-rolled `Option` / `Maybe` algebras instead of `Option` |
-| [`agent-code-guard/manual-brand`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/manual-brand.md) | Hand-rolled nominal brands that should use `Brand.nominal(...)` or `Schema.brand(...)` (warn) |
-| [`agent-code-guard/manual-tagged-error`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/manual-tagged-error.md) | Hand-rolled tagged error classes and error unions that should use `Data.TaggedError(...)` |
-| [`agent-code-guard/no-unbounded-concurrency`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-unbounded-concurrency.md) | `Effect.*(..., { concurrency: "unbounded" })` fan-out with no visible bound |
-| [`agent-code-guard/no-process-env-at-runtime`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-process-env-at-runtime.md) | Runtime `process.env` access instead of reading config once at the boundary |
-| [`agent-code-guard/record-cast`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/record-cast.md) | `as Record<string, unknown>` and similar unsafe casts |
-| [`agent-code-guard/no-raw-sql`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-raw-sql.md) | Raw SQL strings that bypass the typed query builder |
-| [`agent-code-guard/no-manual-enum-cast`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-manual-enum-cast.md) | `as "a" \| "b"` string-union casts that should be generated unions |
-| [`agent-code-guard/no-hardcoded-secrets`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-hardcoded-secrets.md) | AWS/GCP/Azure keys, API tokens, passwords — see doc for patterns and entropy thresholds |
-| [`agent-code-guard/no-raw-throw-new-error`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-raw-throw-new-error.md) | `throw new Error(...)` outside tests — return a tagged error instead |
-| [`agent-code-guard/no-test-skip-only`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-test-skip-only.md) | `.skip` / `.only` / `xit` / `xdescribe` in committed test files |
-| [`agent-code-guard/no-coverage-threshold-gate`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-coverage-threshold-gate.md) | `coverageThreshold` gates in jest/vitest/vite configs (warn) |
-| [`agent-code-guard/no-hardcoded-assertion-literals`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-hardcoded-assertion-literals.md) | Hardcoded string/number literals in test assertions (warn) |
-| [`agent-code-guard/tag-discriminant`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/tag-discriminant.md) | Manual `_tag` checks on tagged errors instead of `Effect.catchTag(...)` |
-| [`agent-code-guard/no-vitest-mocks`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/no-vitest-mocks.md) | `vi.mock(...)` inside files that match the integration-tests glob |
-| [`agent-code-guard/no-folder-cycle`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-folder-cycle.md) | Strongly connected folder dependency components |
-| [`agent-code-guard/no-root-internal-cycle`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-root-internal-cycle.md) | Root/public files and internal files that depend on each other |
-| [`agent-code-guard/no-internal-subpath-export`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-internal-subpath-export.md) | `package.json` exports that expose `src/`, `internal/`, helpers, fixtures, etc. |
-| [`agent-code-guard/no-public-test-helper-leak`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-public-test-helper-leak.md) | `package.json` exports that expose test-only fixtures or helpers |
-| [`agent-code-guard/no-export-star-boundary`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-export-star-boundary.md) | `export *` declarations on public or index boundaries |
-| [`agent-code-guard/no-implementation-file-public-entry`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-implementation-file-public-entry.md) | Public exports that point at adapter / handler / service implementation files |
-| [`agent-code-guard/no-public-vendor-type-leak`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-public-vendor-type-leak.md) | Public API types that mention dependency-owned vendor types — declare via `publicTypePackages` |
-| [`agent-code-guard/no-public-infra-type-leak`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-public-infra-type-leak.md) | Public API types that leak infrastructure packages (Kysely, Pino, etc.) (warn) |
-| [`agent-code-guard/no-inventory-barrel`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-inventory-barrel.md) | `index.ts` files that re-export most of their siblings instead of curating (warn) |
-| [`agent-code-guard/no-large-public-surface`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-large-public-surface.md) | Public re-export fanout that exceeds the configured budget (warn) |
-| [`agent-code-guard/no-upward-layer-import`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-upward-layer-import.md) | Internal modules importing from root-layer or public-layer paths (warn) |
-| [`agent-code-guard/no-cross-domain-sibling-import`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-cross-domain-sibling-import.md) | Sibling-domain imports that bypass the domain's public boundary (warn) |
-| [`agent-code-guard/no-package-mesh`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/no-package-mesh.md) | Folder dependency graphs whose density crosses the mesh threshold (warn) |
-| [`agent-code-guard/require-curated-public-facade`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/require-curated-public-facade.md) | Public facades that mirror filesystem inventory instead of curating contracts (warn) |
-| [`agent-code-guard/require-boundary-owned-types`](https://github.com/chughtapan/agent-code-guard/blob/main/docs/rules/architecture/require-boundary-owned-types.md) | Public boundary types that reuse imported vendor names instead of package-owned ones (warn) |
-| `agent-code-guard/architecture-directive-parse-error` | Always-on. Surfaces malformed `// @agent-code-guard/architecture-exception:` directives so they cannot silently fail to suppress |
+| [`async-keyword`](docs/rules/async-flow/async-keyword.md) | `async` functions outside Effect/Kysely patterns |
+| [`promise-type`](docs/rules/async-flow/promise-type.md) | `Promise<T>` return types that erase the error channel |
+| [`then-chain`](docs/rules/async-flow/then-chain.md) | `.then(...)` chains that hide error propagation |
+| [`bare-catch`](docs/rules/async-flow/bare-catch.md) | `try { ... } catch {}` that swallows the error silently |
+| [`no-conditional-chaining`](docs/rules/async-flow/no-conditional-chaining.md) | Optional/nullish parameters accepted outside explicit parser/normalizer boundaries (warn) |
+| [`no-unbounded-concurrency`](docs/rules/async-flow/no-unbounded-concurrency.md) | `Effect.*(..., { concurrency: "unbounded" })` fan-out with no visible bound |
 
-Each rule ships a Before/After doc at the GitHub link above and locally at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<rule-name>.md`.
+### Effect
+
+| Rule | Catches |
+|---|---|
+| [`effect-promise`](docs/rules/effect/effect-promise.md) | `Effect.promise(...)` calls that turn rejections into defects |
+| [`effect-error-erasure`](docs/rules/effect/effect-error-erasure.md) | `Effect.fail(new Error(...))` and similar generic error wrapping inside the Effect channel |
+| [`either-discriminant`](docs/rules/effect/either-discriminant.md) | `Either.isLeft(...)`, `Either.isRight(...)`, and `_tag === "Left" / "Right"` |
+| [`tag-discriminant`](docs/rules/effect/tag-discriminant.md) | Manual `_tag` checks on tagged errors instead of `Effect.catchTag(...)` |
+| [`no-effect-error-coalescing`](docs/rules/effect/no-effect-error-coalescing.md) | `Effect.mapError` / `catchAll` wrappers that collapse typed error variants into one broad error (warn) |
+
+### Manual algebra
+
+| Rule | Catches |
+|---|---|
+| [`manual-result`](docs/rules/manual-algebra/manual-result.md) | Reusable hand-rolled `Result` / `Either` algebras instead of `Either` / `Effect` |
+| [`manual-option`](docs/rules/manual-algebra/manual-option.md) | Reusable hand-rolled `Option` / `Maybe` algebras instead of `Option` |
+| [`manual-tagged-error`](docs/rules/manual-algebra/manual-tagged-error.md) | Hand-rolled tagged error classes and error unions that should use `Data.TaggedError(...)` |
+| [`manual-brand`](docs/rules/manual-algebra/manual-brand.md) | Hand-rolled nominal brands that should use `Brand.nominal(...)` or `Schema.brand(...)` (warn) |
+| [`no-manual-brand-constructor`](docs/rules/manual-algebra/no-manual-brand-constructor.md) | Cast helpers such as `asUserId` / `makeUserId` that manually construct branded values (warn) |
+| [`no-exported-brand-constructor`](docs/rules/manual-algebra/no-exported-brand-constructor.md) | Exported brand or schema constructors instead of local constructors plus exported boundary functions/types (warn) |
+| [`no-manual-enum-cast`](docs/rules/manual-algebra/no-manual-enum-cast.md) | `as "a" \| "b"` string-union casts that should be generated unions |
+
+### Safety
+
+| Rule | Catches |
+|---|---|
+| [`as-unknown-as`](docs/rules/safety/as-unknown-as.md) | `as unknown as` cast chains that bypass type checking |
+| [`record-cast`](docs/rules/safety/record-cast.md) | `as Record<string, unknown>` and similar unsafe casts |
+| [`no-process-env-at-runtime`](docs/rules/safety/no-process-env-at-runtime.md) | Runtime `process.env` access instead of reading config once at the boundary |
+| [`no-raw-sql`](docs/rules/safety/no-raw-sql.md) | Raw SQL strings that bypass the typed query builder |
+| [`no-hardcoded-secrets`](docs/rules/safety/no-hardcoded-secrets.md) | AWS/GCP/Azure keys, API tokens, passwords — see doc for patterns and entropy thresholds |
+| [`no-raw-throw-new-error`](docs/rules/safety/no-raw-throw-new-error.md) | `throw new Error(...)` outside tests — return a tagged error instead |
+
+### Testing
+
+| Rule | Catches |
+|---|---|
+| [`no-test-skip-only`](docs/rules/testing/no-test-skip-only.md) | `.skip` / `.only` / `xit` / `xdescribe` in committed test files |
+| [`no-example-only-tests`](docs/rules/testing/no-example-only-tests.md) | Test scopes with multiple examples but no property/generative invariant test (warn) |
+| [`no-coverage-threshold-gate`](docs/rules/testing/no-coverage-threshold-gate.md) | `coverageThreshold` gates in jest/vitest/vite configs (warn) |
+| [`no-hardcoded-assertion-literals`](docs/rules/testing/no-hardcoded-assertion-literals.md) | Hardcoded string/number literals in test assertions (warn) |
+| [`no-vitest-mocks`](docs/rules/testing/no-vitest-mocks.md) | `vi.mock(...)` inside files that match the integration-tests glob |
+
+### Tooling
+
+| Rule | Catches |
+|---|---|
+| [`require-knip-in-lint`](docs/rules/tooling/require-knip-in-lint.md) | `package.json` default quality scripts that omit Knip |
+
+### Architecture
+
+| Rule | Catches |
+|---|---|
+| [`no-folder-cycle`](docs/rules/architecture/no-folder-cycle.md) | Strongly connected folder dependency components |
+| [`no-root-internal-cycle`](docs/rules/architecture/no-root-internal-cycle.md) | Root/public files and internal files that depend on each other |
+| [`no-internal-subpath-export`](docs/rules/architecture/no-internal-subpath-export.md) | `package.json` exports that expose `src/`, `internal/`, helpers, fixtures, etc. |
+| [`no-public-test-helper-leak`](docs/rules/architecture/no-public-test-helper-leak.md) | `package.json` exports that expose test-only fixtures or helpers |
+| [`no-export-star-boundary`](docs/rules/architecture/no-export-star-boundary.md) | `export *` declarations on public or index boundaries |
+| [`no-implementation-file-public-entry`](docs/rules/architecture/no-implementation-file-public-entry.md) | Public exports that point at adapter / handler / service implementation files |
+| [`no-public-vendor-type-leak`](docs/rules/architecture/no-public-vendor-type-leak.md) | Public API types that mention dependency-owned vendor types — declare via `publicTypePackages` |
+| [`no-public-infra-type-leak`](docs/rules/architecture/no-public-infra-type-leak.md) | Public API types that leak infrastructure packages (Kysely, Pino, etc.) (warn) |
+| [`no-inventory-barrel`](docs/rules/architecture/no-inventory-barrel.md) | `index.ts` files that re-export most of their siblings instead of curating (warn) |
+| [`no-large-public-surface`](docs/rules/architecture/no-large-public-surface.md) | Public re-export fanout that exceeds the configured budget (warn) |
+| [`no-upward-layer-import`](docs/rules/architecture/no-upward-layer-import.md) | Cross-layer imports that move upward when `layers` is configured (warn; dormant otherwise) |
+| [`no-cross-domain-sibling-import`](docs/rules/architecture/no-cross-domain-sibling-import.md) | Sibling-domain imports that bypass the domain's public boundary (warn) |
+| [`no-package-mesh`](docs/rules/architecture/no-package-mesh.md) | Folder dependency graphs whose density crosses the mesh threshold (warn) |
+| [`no-large-folder`](docs/rules/architecture/no-large-folder.md) | Folders with too many direct production children, or too many children once tests are included (warn) |
+| [`folder-readme-required`](docs/rules/architecture/folder-readme-required.md) | Folders with many semantic children but no boundary README (warn) |
+| [`no-distant-folder-import`](docs/rules/architecture/no-distant-folder-import.md) | Local imports that reach across too many folder hops, regardless of layer declarations (warn) |
+| [`require-curated-public-facade`](docs/rules/architecture/require-curated-public-facade.md) | Public facades that mirror filesystem inventory instead of curating contracts (warn) |
+| [`require-boundary-owned-types`](docs/rules/architecture/require-boundary-owned-types.md) | Public boundary types that reuse imported vendor names instead of package-owned ones (warn) |
+| [`folder-explicit-api-required`](docs/rules/architecture/folder-explicit-api-required.md) | Folders consumed through multiple concrete files instead of a semantic facade (warn) |
+| [`file-implicit-boundary-module`](docs/rules/architecture/file-implicit-boundary-module.md) | Non-facade files acting as accidental boundaries between callers and implementation helpers (warn) |
+| [`shared-kernel-cohesion`](docs/rules/architecture/shared-kernel-cohesion.md) | Shared kernels whose exports serve mostly disjoint consumer communities (warn) |
+| `architecture-directive-parse-error` | Always-on. Surfaces malformed `// @agent-code-guard/architecture-exception:` directives so they cannot silently fail to suppress |
+
+Rule IDs in your config are namespaced as `agent-code-guard/<rule>`. Each rule ships a Before/After doc at the link above and locally at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<family>/<rule-name>.md`.
 
 ## Configure
 
@@ -130,7 +174,7 @@ import guard from "eslint-plugin-agent-code-guard";
 import tsParser from "@typescript-eslint/parser";
 
 export default [
-  // Application source — prod rules, test files excluded
+  // Application source - prod rules, SonarJS, and strict complexity budgets
   {
     files: ["src/**/*.ts"],
     ignores: ["**/*.test.ts", "**/*.spec.ts"],
@@ -138,19 +182,22 @@ export default [
       parser: tsParser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: { "agent-code-guard": guard },
-    rules: guard.configs.recommended.rules,
+    plugins: guard.configs.strict.plugins,
+    settings: guard.configs.strict.settings,
+    rules: guard.configs.strict.rules,
   },
 
-  // Test files — only the test-hygiene rule fires here
+  // Test files - same complexity bar, with test-specific guard rules
   {
-    files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts"],
+    files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts", "**/test-support/**/*.ts"],
     languageOptions: {
       parser: tsParser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: { "agent-code-guard": guard },
+    plugins: guard.configs.strict.plugins,
+    settings: guard.configs.strict.settings,
     rules: {
+      ...guard.configs.strict.rules,
       "agent-code-guard/no-test-skip-only": "error",
       "agent-code-guard/no-hardcoded-assertion-literals": "warn",
     },
@@ -182,14 +229,15 @@ export default [
 ];
 ```
 
-Peer dependencies: `eslint` ≥ 9, `typescript` ≥ 5.
+Peer dependencies: `eslint` ≥ 9, `typescript` ≥ 5. SonarJS is a dependency of this package, so users of `guard.configs.strict` do not install `eslint-plugin-sonarjs` separately. Knip is also bundled and re-exposed as the `knip` bin, so downstream repos can put `knip` or `pnpm knip` in their scripts without installing Knip directly.
 
 ## Presets
 
 The import alias (e.g., `guard` in the example above) is your choice; adjust the `<import>.configs.*` path accordingly. Access presets via your import identifier:
 
-- `<import>.configs.recommended.rules` — application source. All rules except `no-vitest-mocks` (the AI-pattern floor plus the architecture rules at curated severity: 8 errors, 8 warns; includes the always-on `architecture-directive-parse-error`).
-- `<import>.configs.architecture.rules` — the fifteen architecture rules at warn level plus `architecture-directive-parse-error` at error. Use this when stepping up to the architecture checks for the first time, before flipping CI red.
+- `<import>.configs.recommended.rules` — application source. All rules except `no-vitest-mocks` (the AI-pattern floor plus the architecture rules at curated severity; includes the always-on `architecture-directive-parse-error`).
+- `<import>.configs.strict` — flat-config fragment with `plugins`, `settings`, and `rules`. It includes SonarJS recommended rules, `recommended`, and strict complexity budgets (`complexity`, `max-depth`, `max-lines`, `max-lines-per-function`, `max-statements`, cognitive complexity, nested control flow, and related limits).
+- `<import>.configs.architecture.rules` — the architecture diagnostics at warn level plus `architecture-directive-parse-error` at error. Use this when stepping up to the architecture checks for the first time, before flipping CI red.
 - `<import>.configs.integrationTests.rules` — integration-test glob only. Enforces `no-vitest-mocks` so integration tests actually hit real dependencies.
 
 ## Disabling a rule
@@ -240,7 +288,11 @@ pnpm build
 pnpm test
 ```
 
-Each rule has an independent test file under `tests/`. The test harness uses `@typescript-eslint/rule-tester`.
+Tests live next to the code they verify. Rule-family tests are under
+`src/rules/<family>/*.test.ts`, architecture analyzer tests sit inside the
+architecture subfolder they exercise, and shared fixtures live under local
+`test-support/` folders. `tsconfig.json` excludes `*.test.ts` and
+`test-support/` from the production build, while Vitest still discovers them.
 
 ## Mutation testing
 

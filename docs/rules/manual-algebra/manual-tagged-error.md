@@ -53,3 +53,12 @@ return new PlannedHarnessIngressError({
 ```
 
 This rule stays focused on error construction. `_tag`-based domain models that are not being returned as errors or embedded into error payloads are still out of scope.
+
+## Disabling per-line
+
+If the tagged class is intentionally a hand-rolled boundary (e.g., a domain error layer that pre-dates Effect adoption), suppress with a written reason:
+
+```ts
+// eslint-disable-next-line agent-code-guard/manual-tagged-error -- legacy v1 error class; replaced when callers move to v2
+class LegacyError { readonly _tag = "LegacyError" as const; }
+```

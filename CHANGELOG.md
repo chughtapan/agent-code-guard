@@ -1,5 +1,71 @@
 # Changelog
 
+## [Unreleased]
+
+### Added — syntax rules
+
+- **`no-conditional-chaining`** (warn) — flags functions that accept optional
+  or nullable parameters outside explicit parser/normalizer boundaries.
+  Optional input belongs at the boundary; the rest of the call graph should
+  receive a concrete value.
+- **`no-effect-error-coalescing`** (warn) — flags `Effect.mapError` /
+  `catchAll` / `catchAllCause` callbacks that collapse typed error variants
+  into one broad wrapper. Preserve the typed error union or handle each tag
+  explicitly.
+- **`no-example-only-tests`** (warn) — flags test scopes that accumulate
+  example cases without a property/generative invariant. Examples are
+  regression anchors; without an invariant they don't state what the suite
+  actually proves.
+- **`no-exported-brand-constructor`** (warn) — flags exported brand and
+  schema constructors (`Brand.nominal`, Effect `Schema.*`, Zod `z.*`,
+  TypeBox `Type.*`). Keep constructors local; export derived types and
+  boundary functions.
+- **`no-manual-brand-constructor`** (warn) — flags reusable cast helpers
+  like `asUserId` / `makeUserId` that brand by casting. Brand at a boundary
+  (parser, decoder, `Brand.nominal`, `Schema.brand`).
+- **`require-knip-in-lint`** (error) — flags `package.json` default lint
+  scripts that omit Knip. Dead-code detection only works when it stays in
+  the routine path. The plugin re-exposes a bundled `knip` bin.
+
+### Added — architecture rules
+
+- **`no-large-folder`** (warn) — flags folders with too many direct
+  production children, or too many children once tests are included.
+  Defaults: 10 production / 20 including tests / 20 unpaired tests.
+- **`folder-readme-required`** (warn) — flags folders with at least N
+  semantic children and no README. Default threshold: 4 children.
+- **`no-distant-folder-import`** (warn) — flags imports that reach across
+  too many folder hops, regardless of layer declarations. Layer rules catch
+  direction; this catches reach. Default: 4 hops.
+- **`folder-explicit-api-required`** (warn) — flags folders consumed by
+  outside code through 2+ concrete files instead of a semantic facade
+  (index.ts or declared `facadeFiles`).
+- **`file-implicit-boundary-module`** (warn) — flags non-facade files that
+  behave like accidental boundaries: 2+ production incoming, 2+ outgoing
+  implementation, 2+ exported names.
+- **`shared-kernel-cohesion`** (warn) — flags shared helpers whose exports
+  serve mostly disjoint consumer communities (median pairwise overlap
+  below 0.25). Sample-size guards default to 6+ exports and 4+ consumers.
+
+### Changed
+
+- **Source layout: rules grouped by family.** `src/rules/<rule>.ts` is now
+  `src/rules/<family>/<rule>.ts` under `async-flow/`, `effect/`,
+  `manual-algebra/`, `safety/`, `testing/`, and `tooling/`. The architecture
+  analyzer continues to live under `src/rules/architecture/`. Each family
+  has a README naming what belongs there. The plugin entrypoint and rule
+  IDs are unchanged.
+- **Doc layout mirrors the source family folders.** Per-rule docs moved
+  from `docs/rules/<rule>.md` to `docs/rules/<family>/<rule>.md`.
+  Architecture docs already lived under `docs/rules/architecture/` and stay
+  there.
+
+### Removed
+
+- **`docs/architecture-boundary-ledger.md`** — the design doctrine doc was
+  retired. The per-rule docs name the design principle each diagnostic
+  enforces; the ledger had become redundant narrative.
+
 ## [0.0.7] - 2026-05-07
 
 ### Added
@@ -68,8 +134,7 @@
     `require-boundary-owned-types`
   - **Layered/domain hygiene:** `no-cross-domain-sibling-import`, `no-upward-layer-import`,
     `no-package-mesh`, `no-inventory-barrel`
-- Per-rule docs under [`docs/rules/architecture/`](docs/rules/architecture/) and a Boundary
-  Ledger design doc at [`docs/architecture-boundary-ledger.md`](docs/architecture-boundary-ledger.md).
+- Per-rule docs under [`docs/rules/architecture/`](docs/rules/architecture/).
 - Tag-driven npm publish workflow (`.github/workflows/publish.yml`).
 - **File-header directive suppression** — `// @agent-code-guard/architecture-exception: <rule-id>`
   followed by a `// reason: <text>` line at the top of a source file suppresses
@@ -145,8 +210,6 @@
   `cachedProjectTopology` → `cachedProjectArchitecture`, etc.).
 - Architecture rule docs moved from `docs/rules/<rule>.md` to
   `docs/rules/architecture/<rule>.md`.
-- Boundary Ledger doc renamed: `docs/topology-boundary-ledger.md` →
-  `docs/architecture-boundary-ledger.md`.
 
 ### Removed
 

@@ -1,6 +1,6 @@
 # `agent-code-guard/no-hardcoded-assertion-literals`
 
-**What it flags:** In test files (`**/*.test.*`, `**/*.spec.*`, `**/tests/**`, `**/__tests__/**`): string or number literals passed directly to assertion matchers (`.toBe`, `.toEqual`, `.toStrictEqual`, `.toContain`, `.toMatch`, `assert.equal`, `assert.strictEqual`, `assert.deepEqual`, `assertEquals`, `assertEqual`).
+**What it flags:** In test files (`**/*.test.*`, `**/*.spec.*`, `**/tests/**`, `**/__tests__/**`, `**/test-support/**`, `**/fixtures/**`): string or number literals passed directly to assertion matchers (`.toBe`, `.toEqual`, `.toStrictEqual`, `.toContain`, `.toMatch`, `assert.equal`, `assert.strictEqual`, `assert.deepEqual`, `assertEquals`, `assertEqual`).
 
 Allowed: strings shorter than `allowShorterThan` (default: 4 chars), boundary numbers (`-1, 0, 1, 2`), named constants, imported values, enum members, and regex arguments to `.toMatch`.
 
@@ -60,3 +60,12 @@ export default [
 ## Rationale
 
 `expect(result).toBe("processed")` ties the test to a string with no named contract. If `"processed"` is part of the public API, it should be an exported constant — both the implementation and the test import it. If it is NOT contractual, the test should assert a structural property (`toBeNull()`, `toHaveLength(0)`) instead of exact content.
+
+## Disabling per-line
+
+For an assertion that intentionally pins a string literal (e.g., asserting a one-time error message that is itself the regression target), suppress with a written reason:
+
+```ts
+// eslint-disable-next-line agent-code-guard/no-hardcoded-assertion-literals -- pins legacy error message exactly
+expect(error.message).toBe("legacy: token expired");
+```

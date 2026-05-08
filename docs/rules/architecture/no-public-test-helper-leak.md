@@ -121,6 +121,4 @@ needs the same care as the main API.
 Test helpers are convenience for the package author, not a contract for the
 consumer. Mixing the two creates the most painful kind of breaking change —
 consumers rolled forward, your "internal" helper changed shape, their tests
-break, and the blame ladder is unclear. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full public-package-surface treatment.
+break, and the blame ladder is unclear.

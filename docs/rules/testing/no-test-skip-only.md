@@ -1,6 +1,6 @@
 # `agent-code-guard/no-test-skip-only`
 
-**What it flags:** In test files (`**/*.test.*`, `**/*.spec.*`, `**/test/**`, `**/tests/**`, `**/__tests__/**`, `**/e2e/**`):
+**What it flags:** In test files (`**/*.test.*`, `**/*.spec.*`, `**/test/**`, `**/tests/**`, `**/__tests__/**`, `**/test-support/**`, `**/fixtures/**`, `**/e2e/**`):
 
 - `it.skip(...)`, `test.skip(...)`, `describe.skip(...)` — skipped tests.
 - `it.only(...)`, `test.only(...)`, `describe.only(...)` — focused tests that silently disable everything else.
@@ -47,7 +47,7 @@ export default [
   },
   // Test hygiene — covers test files
   {
-    files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts"],
+    files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts", "**/test-support/**/*.ts"],
     languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
     plugins: { "agent-code-guard": guard },
     rules: { "agent-code-guard/no-test-skip-only": "error" },

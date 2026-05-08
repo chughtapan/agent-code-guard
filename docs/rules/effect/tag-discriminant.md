@@ -25,3 +25,12 @@ const value = yield* program.pipe(
 ```
 
 Use `catchTags` when multiple tagged failures share the same boundary.
+
+## Disabling per-line
+
+For one-off cases where `catchTag` doesn't fit (e.g., extracting the tag for a logger), suppress with a written reason:
+
+```ts
+// eslint-disable-next-line agent-code-guard/tag-discriminant -- structured-log field extraction
+logger.error({ kind: error._tag, raw: error });
+```
