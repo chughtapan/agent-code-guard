@@ -37,6 +37,20 @@ function firstArgLooksLikeSql(arg: TSESTree.CallExpressionArgument): boolean {
     taggedTemplateLooksLikeSql(arg);
 }
 
+function isQueryMethodCall(node: TSESTree.CallExpression): boolean {
+  const callee = node.callee;
+  if (callee.type !== AST_NODE_TYPES.MemberExpression) return false;
+  if (callee.computed) return false;
+  const prop = callee.property;
+  return prop.type === AST_NODE_TYPES.Identifier && prop.name === "query";
+}
+
+function isRawSqlQueryCall(node: TSESTree.CallExpression): boolean {
+  if (!isQueryMethodCall(node)) return false;
+  const first = node.arguments[0];
+  return first !== undefined && firstArgLooksLikeSql(first);
+}
+
 export default createRule<[Options], "rawSql" | "rawSqlWith">({
   name: "no-raw-sql",
   meta: {
@@ -66,28 +80,16 @@ export default createRule<[Options], "rawSql" | "rawSqlWith">({
     const recommend = options?.recommend;
     return {
       CallExpression(node) {
-        const callee = node.callee;
-        if (callee.type !== AST_NODE_TYPES.MemberExpression) return;
-        const prop = callee.property;
-        if (
-          prop.type !== AST_NODE_TYPES.Identifier ||
-          prop.name !== "query" ||
-          callee.computed
-        ) {
-          return;
-        }
-        const first = node.arguments[0];
-        if (!first) return;
-        if (!firstArgLooksLikeSql(first)) return;
+        if (!isRawSqlQueryCall(node)) return;
         if (recommend !== undefined && recommend !== "") {
           context.report({
             node,
             messageId: "rawSqlWith",
             data: { tool: recommend },
           });
-        } else {
-          context.report({ node, messageId: "rawSql" });
+          return;
         }
+        context.report({ node, messageId: "rawSql" });
       },
     };
   },

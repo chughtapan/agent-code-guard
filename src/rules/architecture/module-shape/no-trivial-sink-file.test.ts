@@ -1,3 +1,4 @@
+import * as fc from "fast-check";
 import { afterEach, expect, it } from "vitest";
 import {
   cleanupArchitectureFixtures,
@@ -6,6 +7,24 @@ import {
 } from "../test-support/analyzer-fixtures.js";
 
 afterEach(cleanupArchitectureFixtures);
+
+it("Property: a leaf with multiple consumers never fires no-trivial-sink-file", () => {
+  fc.assert(
+    fc.property(fc.integer({ min: 2, max: 6 }), (consumerCount) => {
+      const files: Record<string, string> = {
+        "src/feature/leaf.ts": "export const VALUE = 1;\n",
+      };
+      for (let i = 0; i < consumerCount; i += 1) {
+        files[`src/feature/consumer-${i}.ts`] =
+          `import { VALUE } from "./leaf.js";\nexport const c${i} = VALUE;\n`;
+      }
+      const root = makeProject(files);
+      const diagnostics = diagnosticsByRule(root, "no-trivial-sink-file");
+      expect(diagnostics).toHaveLength(0);
+    }),
+    { numRuns: 5 },
+  );
+});
 
 it("flags a small single-export file with exactly one consumer", () => {
   const root = makeProject({
