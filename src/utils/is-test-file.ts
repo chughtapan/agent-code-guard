@@ -3,6 +3,9 @@ const TEST_FILE_PATTERNS = [
   /\.spec\.[cm]?[jt]sx?$/,
   /[\\/]tests?[\\/]/,
   /[\\/]__tests__[\\/]/,
+  /[\\/]test-support[\\/]/,
+  /[\\/]fixtures?[\\/]/,
+  /[\\/]__fixtures__[\\/]/,
   /[\\/]e2e[\\/]/,
 ];
 

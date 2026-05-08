@@ -153,6 +153,4 @@ and consider promoting the rule from warn to off in your config.
 
 Infrastructure choices are the things you're MOST likely to want to change
 later. Coupling them into your public types is exactly the future-pain
-trade you should avoid. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full substitutability treatment.
+trade you should avoid.

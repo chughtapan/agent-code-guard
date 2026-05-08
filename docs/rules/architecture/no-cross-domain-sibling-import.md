@@ -152,6 +152,4 @@ introduce a ports layer than scatter suppressions.
 ## Rationale
 
 Domain boundaries are encoded in folder structure precisely so they're
-visible at review time. Direct sibling imports erase that visibility. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full domain-boundary treatment.
+visible at review time. Direct sibling imports erase that visibility.

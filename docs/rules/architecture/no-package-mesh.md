@@ -120,6 +120,4 @@ catch accidental mesh, not punish deliberate dense packages.
 
 Mesh-shaped packages compound debt — every new feature adds edges, every
 edge adds reading complexity. The rule's job is to catch the transition
-point before the graph becomes impossible to refactor. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full package-graph treatment.
+point before the graph becomes impossible to refactor.

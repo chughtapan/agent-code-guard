@@ -97,6 +97,4 @@ or invert with dependency injection.
 ## Rationale
 
 The whole point of an `internal/` folder is hiding implementation. A cycle
-between root and internal proves the hiding has failed. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full layering treatment.
+between root and internal proves the hiding has failed.

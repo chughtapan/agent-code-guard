@@ -142,6 +142,4 @@ dependency, or redraw the layer boundaries.
 
 Dependency direction encodes design intent. Layered configurations make
 that intent first-class: you declare the layers, the linter enforces the
-direction. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full layering treatment.
+direction.

@@ -104,6 +104,4 @@ to break.
 
 ## Rationale
 
-Cycles are the most direct violation of dependency direction. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full Boundary Ledger treatment of folder-level dependencies.
+Cycles are the most direct violation of dependency direction.

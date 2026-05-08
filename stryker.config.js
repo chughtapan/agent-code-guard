@@ -1,4 +1,3 @@
-/** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
   mutate: ['src/**/*.ts', '!src/**/*.test.ts'],
   testRunner: 'vitest',

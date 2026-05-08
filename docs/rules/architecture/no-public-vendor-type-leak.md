@@ -139,6 +139,4 @@ file-local.
 
 Public types are part of your package's promise to the world. Vendor-typed
 public surfaces lock consumers to your implementation choices and make
-adapter-pattern refactors into breaking changes. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full Boundary Ledger treatment.
+adapter-pattern refactors into breaking changes.

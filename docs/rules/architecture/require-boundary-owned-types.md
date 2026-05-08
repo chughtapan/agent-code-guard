@@ -106,6 +106,4 @@ intent.
 ## Rationale
 
 Naming is design. The names in your public types are your contract; they
-should be names you own and control. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full boundary-naming treatment.
+should be names you own and control.

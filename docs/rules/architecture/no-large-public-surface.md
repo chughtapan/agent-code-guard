@@ -130,6 +130,4 @@ wide-because-everything-is-public surface is not.
 ## Rationale
 
 Every public symbol is a promise to maintain backward compatibility. The
-fewer promises, the more design freedom you keep. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full public-surface treatment.
+fewer promises, the more design freedom you keep.

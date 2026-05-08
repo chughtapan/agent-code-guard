@@ -127,6 +127,4 @@ for future maintainers and shows up in config review.
 ## Rationale
 
 `package.json` exports are the most binding contract a package has — they're
-what `npm install` users hit before they read your README. See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full package-level boundary treatment.
+what `npm install` users hit before they read your README.

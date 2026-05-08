@@ -83,6 +83,3 @@ helper accidentally goes public.
 
 `export *` is the difference between "this is my contract" and "whatever I
 happen to have in this folder is my contract." The latter isn't a contract.
-See
-[`docs/architecture-boundary-ledger.md`](../../architecture-boundary-ledger.md)
-for the full curation treatment.
