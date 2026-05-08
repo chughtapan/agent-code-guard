@@ -15,7 +15,6 @@ const IO_LIKE_CALLS: ReadonlyArray<readonly [string | null, string]> = [
   ["fsSync", "readFileSync"],
   ["fs", "existsSync"],
   ["http", "get"],
-  ["request", null],
 ];
 
 function isSchemaSyncDecodeCall(node: TSESTree.CallExpression): string | null {

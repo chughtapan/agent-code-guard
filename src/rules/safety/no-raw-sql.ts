@@ -5,7 +5,7 @@ import { getFirst } from "../utils/ast-refinement/index.js";
 
 const SQL_KEYWORD_RE = /\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|WITH)\b/i;
 
-interface Options {
+export interface Options {
   readonly recommend?: string;
 }
 
