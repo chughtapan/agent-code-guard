@@ -26,6 +26,7 @@ export const recommendedSyntaxRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/effect-promise": "error",
   "agent-code-guard/effect-error-erasure": "error",
   "agent-code-guard/either-discriminant": "error",
+  "agent-code-guard/no-console-in-effect": "error",
   "agent-code-guard/manual-result": "error",
   "agent-code-guard/manual-option": "error",
   "agent-code-guard/manual-brand": "warn",
