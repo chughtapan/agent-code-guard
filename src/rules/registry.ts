@@ -33,6 +33,7 @@ export const recommendedSyntaxRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/runpromise-requires-scoped": "error",
   "agent-code-guard/fork-requires-lifecycle": "warn",
   "agent-code-guard/prefer-decode-effect-at-boundary": "warn",
+  "agent-code-guard/require-span-on-exported-effect": "warn",
   "agent-code-guard/manual-result": "error",
   "agent-code-guard/manual-option": "error",
   "agent-code-guard/manual-brand": "warn",
