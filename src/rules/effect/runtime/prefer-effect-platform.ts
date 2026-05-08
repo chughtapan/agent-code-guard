@@ -1,6 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
+import { createRule } from "../../../utils/create-rule.js";
 
 type Target = "fs" | "http" | "argv" | "fetch" | "sql" | "cli";
 

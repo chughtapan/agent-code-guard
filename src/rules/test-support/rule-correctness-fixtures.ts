@@ -129,7 +129,7 @@ export const SEEDS: readonly RuleSeed[] = [
   { ruleId: "agent-code-guard/prefer-effect-platform", seed: 'import { Effect } from "effect";\nexport const x = Effect.succeed(1);\nexport const args = process.argv.slice(2);', coFire: [] },
   { ruleId: "agent-code-guard/no-schema-type-cast", seed: "const u = value as Schema.Schema.Type<typeof UserSchema>;", coFire: [] },
   { ruleId: "agent-code-guard/fork-requires-lifecycle", seed: "function* run() { yield* Effect.fork(work); }", coFire: [] },
-  { ruleId: "agent-code-guard/prefer-decode-effect-at-boundary", seed: "const u = Schema.decodeUnknownSync(S)(JSON.parse(input));", coFire: [] },
+  { ruleId: "agent-code-guard/prefer-decode-effect-at-boundary", seed: "const u = Schema.decodeUnknownSync(S)(JSON.parse(input));", coFire: ["agent-code-guard/parse-into-schema-requires-effect"] },
   { ruleId: "agent-code-guard/require-span-on-exported-effect", seed: "export const program = Effect.gen(function* () { return yield* load; });", coFire: [] },
   { ruleId: "agent-code-guard/handler-requires-span", seed: "export const handle = Effect.gen(function* () { return yield* load; });", filename: "src/handlers/test.ts", coFire: ["agent-code-guard/require-span-on-exported-effect"] },
   { ruleId: "agent-code-guard/logger-config-at-boot", seed: "export const wrap = (p) => Logger.withMinimumLogLevel(level)(p);", coFire: [] },

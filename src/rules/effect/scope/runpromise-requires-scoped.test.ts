@@ -1,4 +1,4 @@
-import { createTypedRuleTester } from "../../utils/typed-rule-tester.js";
+import { createTypedRuleTester } from "../../../utils/typed-rule-tester.js";
 import rule from "./runpromise-requires-scoped.js";
 
 const ruleTester = createTypedRuleTester();

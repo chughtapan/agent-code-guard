@@ -1,6 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
+import { createRule } from "../../../utils/create-rule.js";
 
 const BOOT_FILE_PATTERNS = [
   /(^|[\\/])bin[\\/]/,
