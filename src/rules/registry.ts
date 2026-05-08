@@ -37,6 +37,7 @@ export const recommendedSyntaxRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/handler-requires-span": "warn",
   "agent-code-guard/logger-config-at-boot": "warn",
   "agent-code-guard/prefer-annotate-logs": "warn",
+  "agent-code-guard/annotate-without-span": "warn",
   "agent-code-guard/manual-result": "error",
   "agent-code-guard/manual-option": "error",
   "agent-code-guard/manual-brand": "warn",

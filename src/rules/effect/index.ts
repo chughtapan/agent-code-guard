@@ -1,3 +1,4 @@
+import annotateWithoutSpan from "./annotate-without-span.js";
 import effectErrorErasure from "./effect-error-erasure.js";
 import effectPromise from "./effect-promise.js";
 import eitherDiscriminant from "./either-discriminant.js";
@@ -16,6 +17,7 @@ import runpromiseRequiresScoped from "./runpromise-requires-scoped.js";
 import tagDiscriminant from "./tag-discriminant.js";
 
 export const effectRules = {
+  "annotate-without-span": annotateWithoutSpan,
   "effect-promise": effectPromise,
   "effect-error-erasure": effectErrorErasure,
   "either-discriminant": eitherDiscriminant,
