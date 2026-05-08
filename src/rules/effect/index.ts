@@ -3,6 +3,7 @@ import effectPromise from "./effect-promise.js";
 import eitherDiscriminant from "./either-discriminant.js";
 import forkRequiresLifecycle from "./fork-requires-lifecycle.js";
 import handlerRequiresSpan from "./handler-requires-span.js";
+import loggerConfigAtBoot from "./logger-config-at-boot.js";
 import noConsoleInEffect from "./no-console-in-effect.js";
 import noEffectErrorCoalescing from "./no-effect-error-coalescing.js";
 import noPromiseAllInEffect from "./no-promise-all-in-effect.js";
@@ -19,6 +20,7 @@ export const effectRules = {
   "either-discriminant": eitherDiscriminant,
   "fork-requires-lifecycle": forkRequiresLifecycle,
   "handler-requires-span": handlerRequiresSpan,
+  "logger-config-at-boot": loggerConfigAtBoot,
   "no-console-in-effect": noConsoleInEffect,
   "no-effect-error-coalescing": noEffectErrorCoalescing,
   "no-promise-all-in-effect": noPromiseAllInEffect,
