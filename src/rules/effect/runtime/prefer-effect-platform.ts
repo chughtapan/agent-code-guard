@@ -4,9 +4,7 @@ import { createRule } from "../../utils/create-rule.js";
 
 type Target = "fs" | "http" | "argv" | "fetch" | "sql" | "cli";
 
-export interface Options {
-  readonly disable?: readonly Target[];
-}
+type Options = { readonly disable?: readonly Target[] };
 
 const FS_MODULES = new Set(["fs", "node:fs", "fs/promises", "node:fs/promises"]);
 const HTTP_MODULES = new Set(["http", "node:http", "https", "node:https"]);

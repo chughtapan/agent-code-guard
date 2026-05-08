@@ -5,9 +5,7 @@ import { getFirst } from "../utils/ast-refinement/index.js";
 
 const SQL_KEYWORD_RE = /\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|WITH)\b/i;
 
-export interface Options {
-  readonly recommend?: string;
-}
+type Options = { readonly recommend?: string };
 
 function stringLooksLikeSql(value: string): boolean {
   return SQL_KEYWORD_RE.test(value);

@@ -1,6 +1,6 @@
 import { ESLintUtils, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { requireServices } from "./services.js";
-import { createTypedRuleTester } from "./rule-tester.js";
+import { createTypedRuleTester } from "./test-support/rule-tester.js";
 
 const createRule = ESLintUtils.RuleCreator(() => "https://example.test/smoke");
 

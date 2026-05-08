@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.0.10] - 2026-05-08
+
+### Fixed
+
+- **v0.0.9 was unusable for consumers.** The published `dist/` shipped
+  `rules/utils/typed-linter/rule-tester.js`, which imports
+  `@typescript-eslint/rule-tester` (a devDependency, not a runtime
+  dependency). Any consumer that ran ESLint with the plugin loaded
+  saw `ERR_MODULE_NOT_FOUND: Cannot find package
+  '@typescript-eslint/rule-tester'`.
+  Move `rule-tester.ts` into
+  `src/rules/utils/typed-linter/test-support/`, which is excluded
+  from the build. The barrel `typed-linter/index.ts` now exports
+  only `requireServices`. `createTypedRuleTester` stays available to
+  this plugin's own tests via the test-support path; consumers never
+  see it.
+- **Inline rule option types.** Replace the named `Options`
+  interfaces in `no-raw-sql` and `prefer-effect-platform` with type
+  aliases inlined into the `createRule` generic. tsc still emits a
+  clean `.d.ts` (no TS4023) and knip no longer flags an unused
+  exported interface.
+
 ## [0.0.9] - 2026-05-07
 
 ### Added — Effect runtime rules
