@@ -8,6 +8,7 @@ import noConsoleInEffect from "./no-console-in-effect.js";
 import noEffectErrorCoalescing from "./no-effect-error-coalescing.js";
 import noPromiseAllInEffect from "./no-promise-all-in-effect.js";
 import noSchemaTypeCast from "./no-schema-type-cast.js";
+import preferAnnotateLogs from "./prefer-annotate-logs.js";
 import preferDecodeEffectAtBoundary from "./prefer-decode-effect-at-boundary.js";
 import preferEffectPlatform from "./prefer-effect-platform.js";
 import requireSpanOnExportedEffect from "./require-span-on-exported-effect.js";
@@ -25,6 +26,7 @@ export const effectRules = {
   "no-effect-error-coalescing": noEffectErrorCoalescing,
   "no-promise-all-in-effect": noPromiseAllInEffect,
   "no-schema-type-cast": noSchemaTypeCast,
+  "prefer-annotate-logs": preferAnnotateLogs,
   "prefer-decode-effect-at-boundary": preferDecodeEffectAtBoundary,
   "prefer-effect-platform": preferEffectPlatform,
   "require-span-on-exported-effect": requireSpanOnExportedEffect,
