@@ -39,6 +39,7 @@ export const recommendedSyntaxRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/prefer-annotate-logs": "warn",
   "agent-code-guard/annotate-without-span": "warn",
   "agent-code-guard/prefer-config-redacted": "warn",
+  "agent-code-guard/effect-foreach-requires-concurrency": "warn",
   "agent-code-guard/manual-result": "error",
   "agent-code-guard/manual-option": "error",
   "agent-code-guard/manual-brand": "warn",

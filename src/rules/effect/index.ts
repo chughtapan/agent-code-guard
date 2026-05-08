@@ -1,5 +1,6 @@
 import annotateWithoutSpan from "./annotate-without-span.js";
 import effectErrorErasure from "./effect-error-erasure.js";
+import effectForeachRequiresConcurrency from "./effect-foreach-requires-concurrency.js";
 import effectPromise from "./effect-promise.js";
 import eitherDiscriminant from "./either-discriminant.js";
 import forkRequiresLifecycle from "./fork-requires-lifecycle.js";
@@ -19,6 +20,7 @@ import tagDiscriminant from "./tag-discriminant.js";
 
 export const effectRules = {
   "annotate-without-span": annotateWithoutSpan,
+  "effect-foreach-requires-concurrency": effectForeachRequiresConcurrency,
   "effect-promise": effectPromise,
   "effect-error-erasure": effectErrorErasure,
   "either-discriminant": eitherDiscriminant,
