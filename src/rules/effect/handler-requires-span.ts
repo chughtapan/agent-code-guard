@@ -13,33 +13,6 @@ function isHandlerFile(filename: string): boolean {
   return HANDLER_FILE_PATTERNS.some((pattern) => pattern.test(filename));
 }
 
-function isAstNode(value: unknown): value is TSESTree.Node {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "type" in value &&
-    typeof (value as { type: unknown }).type === "string"
-  );
-}
-
-function nodeContains(
-  root: TSESTree.Node,
-  predicate: (node: TSESTree.Node) => boolean,
-): boolean {
-  if (predicate(root)) return true;
-  for (const key of Object.keys(root) as ReadonlyArray<keyof TSESTree.Node>) {
-    if (key === "parent") continue;
-    const value = root[key];
-    if (value === null || value === undefined) continue;
-    if (Array.isArray(value)) {
-      for (const child of value) {
-        if (isAstNode(child) && nodeContains(child, predicate)) return true;
-      }
-    } else if (isAstNode(value) && nodeContains(value, predicate)) return true;
-  }
-  return false;
-}
-
 function isEffectGenCall(node: TSESTree.Node): node is TSESTree.CallExpression {
   if (node.type !== AST_NODE_TYPES.CallExpression) return false;
   const callee = node.callee;
@@ -51,45 +24,35 @@ function isEffectGenCall(node: TSESTree.Node): node is TSESTree.CallExpression {
   return callee.property.name === "gen";
 }
 
-function mentionsWithSpan(node: TSESTree.Node): boolean {
-  if (node.type === AST_NODE_TYPES.Identifier && node.name === "withSpan") return true;
-  if (
-    node.type === AST_NODE_TYPES.MemberExpression &&
-    !node.computed &&
-    node.property.type === AST_NODE_TYPES.Identifier &&
-    node.property.name === "withSpan"
-  ) {
-    return true;
-  }
-  return false;
-}
-
-function findEnclosingPipeOrCall(node: TSESTree.Node): TSESTree.Node {
+function topOfPipeChain(node: TSESTree.Node): TSESTree.Node {
   let current: TSESTree.Node = node;
-  while (current.parent !== undefined) {
-    const parent = current.parent;
-    if (
-      parent.type === AST_NODE_TYPES.CallExpression &&
-      parent.callee.type === AST_NODE_TYPES.MemberExpression &&
-      !parent.callee.computed &&
-      parent.callee.property.type === AST_NODE_TYPES.Identifier &&
-      parent.callee.property.name === "pipe"
-    ) {
-      current = parent;
-      continue;
-    }
-    if (
-      parent.type === AST_NODE_TYPES.MemberExpression &&
-      !parent.computed &&
-      parent.property.type === AST_NODE_TYPES.Identifier &&
-      parent.property.name === "pipe"
-    ) {
-      current = parent;
-      continue;
-    }
-    break;
+  while (
+    current.parent !== null &&
+    current.parent !== undefined &&
+    isPipeMemberContext(current.parent)
+  ) {
+    current = current.parent;
   }
   return current;
+}
+
+function isPipeMember(node: TSESTree.MemberExpression): boolean {
+  if (node.computed) return false;
+  if (node.property.type !== AST_NODE_TYPES.Identifier) return false;
+  return node.property.name === "pipe";
+}
+
+function isPipeCall(node: TSESTree.CallExpression): boolean {
+  return (
+    node.callee.type === AST_NODE_TYPES.MemberExpression &&
+    isPipeMember(node.callee)
+  );
+}
+
+function isPipeMemberContext(parent: TSESTree.Node): boolean {
+  if (parent.type === AST_NODE_TYPES.MemberExpression) return isPipeMember(parent);
+  if (parent.type === AST_NODE_TYPES.CallExpression) return isPipeCall(parent);
+  return false;
 }
 
 export default createRule({
@@ -111,11 +74,13 @@ export default createRule({
   defaultOptions: [],
   create(context) {
     if (!isHandlerFile(context.filename)) return {};
+    const sourceCode = context.sourceCode;
     return {
       CallExpression(node) {
         if (!isEffectGenCall(node)) return;
-        const scope = findEnclosingPipeOrCall(node);
-        if (nodeContains(scope, mentionsWithSpan)) return;
+        const scope = topOfPipeChain(node);
+        const text = sourceCode.getText(scope);
+        if (text.includes("withSpan")) return;
         context.report({ node, messageId: "handlerMissingSpan" });
       },
     };

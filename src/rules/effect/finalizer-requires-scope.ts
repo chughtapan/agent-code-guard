@@ -12,21 +12,17 @@ function isScopeFinalizerCall(node: TSESTree.CallExpression): boolean {
   return callee.property.name === "addFinalizer";
 }
 
+const SCOPE_FRAME_NAMES = new Set(["scoped", "scopedDiscard"]);
+
+function isScopeFrameMember(node: TSESTree.MemberExpression): boolean {
+  if (node.computed) return false;
+  if (node.property.type !== AST_NODE_TYPES.Identifier) return false;
+  return SCOPE_FRAME_NAMES.has(node.property.name);
+}
+
 function mentionsScopeFrame(node: TSESTree.Node): boolean {
-  if (
-    node.type === AST_NODE_TYPES.MemberExpression &&
-    !node.computed &&
-    node.property.type === AST_NODE_TYPES.Identifier &&
-    (node.property.name === "scoped" || node.property.name === "scopedDiscard")
-  ) {
-    return true;
-  }
-  if (
-    node.type === AST_NODE_TYPES.Identifier &&
-    (node.name === "scoped" || node.name === "scopedDiscard")
-  ) {
-    return true;
-  }
+  if (node.type === AST_NODE_TYPES.MemberExpression) return isScopeFrameMember(node);
+  if (node.type === AST_NODE_TYPES.Identifier) return SCOPE_FRAME_NAMES.has(node.name);
   return false;
 }
 

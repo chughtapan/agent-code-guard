@@ -33,32 +33,37 @@ function isJsonParseCall(node: TSESTree.Node): boolean {
   return callee.property.name === "parse";
 }
 
+const EFFECT_TRY_METHODS = new Set(["try", "tryPromise"]);
+
+function isEffectTryCall(call: TSESTree.CallExpression): boolean {
+  const callee = call.callee;
+  if (callee.type !== AST_NODE_TYPES.MemberExpression) return false;
+  if (callee.computed) return false;
+  if (callee.object.type !== AST_NODE_TYPES.Identifier) return false;
+  if (callee.object.name !== "Effect") return false;
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) return false;
+  return EFFECT_TRY_METHODS.has(callee.property.name);
+}
+
+function isFunctionLike(node: TSESTree.Node): boolean {
+  return (
+    node.type === AST_NODE_TYPES.ArrowFunctionExpression ||
+    node.type === AST_NODE_TYPES.FunctionExpression
+  );
+}
+
+function isThunkOfEffectTry(fn: TSESTree.Node): boolean {
+  if (!isFunctionLike(fn)) return false;
+  const parent = fn.parent;
+  if (parent === null || parent === undefined) return false;
+  if (parent.type !== AST_NODE_TYPES.CallExpression) return false;
+  return isEffectTryCall(parent);
+}
+
 function isInsideEffectTryThunk(node: TSESTree.Node): boolean {
   let current: TSESTree.Node | null | undefined = node.parent;
   while (current !== null && current !== undefined) {
-    if (
-      current.type === AST_NODE_TYPES.ArrowFunctionExpression ||
-      current.type === AST_NODE_TYPES.FunctionExpression
-    ) {
-      const parent = current.parent;
-      if (
-        parent !== null &&
-        parent !== undefined &&
-        parent.type === AST_NODE_TYPES.CallExpression
-      ) {
-        const callee = parent.callee;
-        if (
-          callee.type === AST_NODE_TYPES.MemberExpression &&
-          !callee.computed &&
-          callee.object.type === AST_NODE_TYPES.Identifier &&
-          callee.object.name === "Effect" &&
-          callee.property.type === AST_NODE_TYPES.Identifier &&
-          (callee.property.name === "try" || callee.property.name === "tryPromise")
-        ) {
-          return true;
-        }
-      }
-    }
+    if (isThunkOfEffectTry(current)) return true;
     current = current.parent;
   }
   return false;
@@ -86,16 +91,11 @@ export default createRule({
       CallExpression(node) {
         const decoder = isSchemaDecodeCall(node);
         if (decoder === null) return;
-        const parent = node.parent;
-        if (parent === undefined) return;
-        if (parent.type !== AST_NODE_TYPES.CallExpression) return;
-        if (parent.callee !== node) return;
-        const arg = parent.arguments[0];
-        if (arg === undefined || arg.type === AST_NODE_TYPES.SpreadElement) return;
-        if (!isJsonParseCall(arg)) return;
-        if (isInsideEffectTryThunk(parent)) return;
+        const apply = applyCallOnJsonParse(node);
+        if (apply === null) return;
+        if (isInsideEffectTryThunk(apply)) return;
         context.report({
-          node: parent,
+          node: apply,
           messageId: "parseNeedsEffectTry",
           data: { decoder },
         });
@@ -103,3 +103,17 @@ export default createRule({
     };
   },
 });
+
+function applyCallOnJsonParse(
+  decodeCall: TSESTree.CallExpression,
+): TSESTree.CallExpression | null {
+  const parent = decodeCall.parent;
+  if (parent === null || parent === undefined) return null;
+  if (parent.type !== AST_NODE_TYPES.CallExpression) return null;
+  if (parent.callee !== decodeCall) return null;
+  const arg = parent.arguments[0];
+  if (arg === undefined) return null;
+  if (arg.type === AST_NODE_TYPES.SpreadElement) return null;
+  if (!isJsonParseCall(arg)) return null;
+  return parent;
+}

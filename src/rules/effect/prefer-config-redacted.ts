@@ -2,8 +2,21 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 
-const SECRET_NAME_RE =
-  /(api[_-]?key|secret|token|password|passwd|credential|private[_-]?key|auth|client[_-]?secret|bearer|access[_-]?key)/i;
+const SECRET_NAME_TERMS = [
+  /api[_-]?key/i,
+  /secret/i,
+  /token/i,
+  /password/i,
+  /passwd/i,
+  /credential/i,
+  /private[_-]?key/i,
+  /bearer/i,
+  /access[_-]?key/i,
+];
+
+function looksLikeSecretName(name: string): boolean {
+  return SECRET_NAME_TERMS.some((pattern) => pattern.test(name));
+}
 
 function isConfigStringCall(node: TSESTree.CallExpression): boolean {
   if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return false;
@@ -45,7 +58,7 @@ export default createRule({
         if (first === undefined) return;
         const name = literalStringValue(first);
         if (name === null) return;
-        if (!SECRET_NAME_RE.test(name)) return;
+        if (!looksLikeSecretName(name)) return;
         context.report({
           node,
           messageId: "preferRedacted",
