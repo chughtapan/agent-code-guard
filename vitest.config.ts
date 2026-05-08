@@ -1,6 +1,7 @@
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  cacheDir: "node_modules/.cache/vite",
   test: {
     pool: "threads",
     poolOptions: {
@@ -11,8 +12,5 @@ export default defineConfig({
     },
     fileParallelism: true,
     isolate: true,
-    cache: {
-      dir: "node_modules/.cache/vitest",
-    },
   },
 });
