@@ -170,7 +170,7 @@ describe("property: manual brand constructors", () => {
 describe("property: example-only tests", () => {
   it("example-only scopes fire once they cross the example threshold", () => {
     fc.assert(
-      fc.property(testFunctionArb, fc.integer({ min: 2, max: 6 }), (testFn, count) => {
+      fc.property(testFunctionArb, fc.integer({ min: 4, max: 8 }), (testFn, count) => {
         const code = exampleTests(testFn, count).join("\n");
         const messages = lintTestFile(code, "agent-code-guard/no-example-only-tests");
         expect(messages).toHaveLength(1);

@@ -1,6 +1,7 @@
 import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
 import * as fc from "fast-check";
+import sonarjs from "eslint-plugin-sonarjs";
 import * as ts from "typescript";
 import plugin from "../../index.js";
 
@@ -58,6 +59,8 @@ export const safeSourceArb = fc
   .array(fc.oneof(literalDeclArb, typedDeclArb, plainFnArb), { minLength: 1, maxLength: 5 })
   .map((statements) => statements.join("\n"));
 
+const sonarjsEntry = sonarjs as NonNullable<Linter.Config["plugins"]>[string];
+
 export function baseConfig(rules: Linter.RulesRecord): Linter.Config {
   return {
     files: ["**/*.ts", "**/*.js"],
@@ -65,7 +68,7 @@ export function baseConfig(rules: Linter.RulesRecord): Linter.Config {
       parser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: { "agent-code-guard": pluginEntry },
+    plugins: { "agent-code-guard": pluginEntry, sonarjs: sonarjsEntry },
     rules,
   };
 }
@@ -119,7 +122,7 @@ export const SEEDS: readonly RuleSeed[] = [
   { ruleId: "agent-code-guard/effect-promise", seed: "const run = () => Effect.promise(() => fetch('/x'));", coFire: [] },
   { ruleId: "agent-code-guard/effect-error-erasure", seed: "const fail = () => Effect.fail(new Error('boom'));", coFire: [] },
   { ruleId: "agent-code-guard/either-discriminant", seed: "if (Either.isLeft(result)) return result.left;", coFire: [] },
-  { ruleId: "agent-code-guard/manual-tagged-error", seed: "class RunError extends Error { readonly _tag = 'RunError' as const; }", coFire: [] },
+  { ruleId: "agent-code-guard/manual-tagged-error", seed: "class RunError extends Error { readonly _tag = 'RunError' as const; }", coFire: ["sonarjs/class-name"] },
   { ruleId: "agent-code-guard/no-conditional-chaining", seed: "function loadUser(id?: string) { return fetchUser(id); }", coFire: [] },
   { ruleId: "agent-code-guard/no-effect-error-coalescing", seed: "const run = program.pipe(Effect.mapError(() => new LoadError()));", coFire: [] },
   { ruleId: "agent-code-guard/no-exported-brand-constructor", seed: "export const UserId = Brand.nominal<UserId>();", coFire: [] },
@@ -140,12 +143,11 @@ export const SEEDS: readonly RuleSeed[] = [
   { ruleId: "agent-code-guard/record-cast", seed: "const r = {} as Record<string, unknown>;", coFire: [] },
   { ruleId: "agent-code-guard/no-raw-sql", seed: "db.query('SELECT * FROM users');", coFire: [] },
   { ruleId: "agent-code-guard/no-manual-enum-cast", seed: "const s = x as 'active' | 'inactive';", coFire: [] },
-  { ruleId: "agent-code-guard/no-hardcoded-secrets", seed: "const apiKey = 'sk_live_abc123xyz0987654321';", coFire: [] },
   { ruleId: "agent-code-guard/no-raw-throw-new-error", seed: "throw new Error('boom');", coFire: [] },
   { ruleId: "agent-code-guard/no-test-skip-only", seed: "it.skip('wip', () => {});", coFire: [], filename: "src/auth.test.ts" },
   {
     ruleId: "agent-code-guard/no-example-only-tests",
-    seed: "it('a', () => {}); it('b', () => {});",
+    seed: "it('a', () => {}); it('b', () => {}); it('c', () => {}); it('d', () => {});",
     coFire: [],
     filename: "src/auth.test.ts",
   },
@@ -155,7 +157,7 @@ export const SEEDS: readonly RuleSeed[] = [
     coFire: [],
     filename: "jest.config.js",
   },
-  { ruleId: "agent-code-guard/no-hardcoded-assertion-literals", seed: 'expect(result).toBe("processed");', coFire: [], filename: "src/foo.test.ts" },
+  { ruleId: "agent-code-guard/no-hardcoded-assertion-literals", seed: 'expect(result).toBe("processed");', coFire: ["sonarjs/no-empty-test-file"], filename: "src/foo.test.ts" },
   { ruleId: "agent-code-guard/tag-discriminant", seed: "if (err._tag === 'WebhookTimeoutError') return;", coFire: [] },
 ];
 
@@ -195,7 +197,6 @@ const IDENTS_BY_SEED: Record<string, string> = {
   "agent-code-guard/record-cast": "r",
   "agent-code-guard/no-raw-sql": "db",
   "agent-code-guard/no-manual-enum-cast": "s",
-  "agent-code-guard/no-hardcoded-secrets": "apiKey",
   "agent-code-guard/no-raw-throw-new-error": "",
   "agent-code-guard/no-test-skip-only": "",
   "agent-code-guard/no-example-only-tests": "",

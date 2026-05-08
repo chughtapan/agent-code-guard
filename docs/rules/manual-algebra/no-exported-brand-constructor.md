@@ -4,13 +4,19 @@
 `Brand.nominal(...)`, Effect `Schema.*`, Zod `z.*`, and TypeBox `Type.*`
 values.
 
-**Why:** exported constructors become part of the public contract. They
-let consumers construct domain values directly instead of going through a
-package-owned parser, decoder, or factory that can enforce invariants.
-Keep constructors local; export derived types and boundary functions.
+**Why:** the module that owns the schema should also own the codec. If
+you `export const X = Schema.Struct(...)`, every consumer now has to
+call `Schema.decodeUnknownSync(X)(input)` themselves — the codec choice
+(parse vs decode, sync vs async, error formatting) leaks across the
+boundary, and you can't change it without breaking consumers. Keep
+schemas local. Export `parseFoo` / `encodeFoo` / a derived type instead.
 
-This rule warns because some packages intentionally expose schema objects
-while migrating to a narrower API.
+This stance is intentional. The rule is **not** trying to flag every
+Effect Schema or Zod usage; it flags exports that hand the *raw schema*
+to consumers. Internal `const X = Schema.Struct(...)` plus
+`export function parseFoo(input: unknown): Foo { ... }` is the
+preferred shape. The rule warns (not errors) so packages migrating to
+a narrower API can do it incrementally.
 
 ## Before (flagged)
 

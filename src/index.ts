@@ -43,6 +43,11 @@ interface Plugin {
 }
 
 const sonarRecommendedConfig = sonarjs.configs.recommended;
+const sonarRecommendedRules = Object.fromEntries(
+  Object.entries(sonarRecommendedConfig.rules ?? {}).filter(
+    (entry): entry is [string, TSESLint.Linter.RuleEntry] => entry[1] !== undefined,
+  ),
+);
 
 const strictComplexityRuleEntries: Record<string, TSESLint.Linter.RuleEntry> = {
   complexity: ["error", { max: 8 }],
@@ -74,17 +79,16 @@ const plugin: Plugin = {
   rules,
   configs: {
     recommended: {
-      plugins: { "agent-code-guard": null! },
+      plugins: {
+        "agent-code-guard": null!,
+        sonarjs,
+      },
       rules: {
+        ...sonarRecommendedRules,
         ...recommendedSyntaxRuleEntries,
-
-        // Architecture rules: clear bugs (cycles, exposed internals, uncurated
-        // public boundaries) at error; judgment calls (heuristic thresholds,
-        // layered/domain assumptions) at warn. The full set is also available
-        // standalone via configs.architecture (all warn-level) for incremental
-        // adoption.
         ...recommendedArchitectureRuleEntries,
       },
+      settings: sonarRecommendedConfig.settings,
     },
     strict: {
       plugins: {
@@ -92,12 +96,12 @@ const plugin: Plugin = {
         sonarjs,
       },
       rules: {
-        ...sonarRecommendedConfig.rules,
+        ...sonarRecommendedRules,
         ...recommendedSyntaxRuleEntries,
         ...recommendedArchitectureRuleEntries,
         ...strictComplexityRuleEntries,
-      } as Record<string, TSESLint.Linter.RuleEntry>,
-      settings: sonarRecommendedConfig.settings as Record<string, unknown> | undefined,
+      },
+      settings: sonarRecommendedConfig.settings,
     },
     integrationTests: {
       plugins: { "agent-code-guard": null! },

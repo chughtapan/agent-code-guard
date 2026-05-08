@@ -10,8 +10,7 @@ type Options = {
 type MessageId = "invalidPackageJson" | "missingScript" | "missingKnip";
 
 const DEFAULT_SCRIPT_NAMES = ["lint"] as const;
-const KNIP_COMMAND_PATTERN = /\b(?:agent-code-guard-knip|knip)\b/;
-const reportedPackageJsonPaths = new Set<string>();
+const KNIP_COMMAND_PATTERN = /(?:^|[\s;&|])(?:agent-code-guard-)?knip(?:$|[\s;&|])/;
 
 interface PackageScripts {
   readonly scripts?: Record<string, unknown>;
@@ -131,7 +130,6 @@ export default createRule<[Options], MessageId>({
     return {
       Program(node) {
         const packageJsonPath = packagePathFor(context, options);
-        if (reportedPackageJsonPaths.has(packageJsonPath)) return;
         if (!fs.existsSync(packageJsonPath)) return;
 
         const scriptNames = options.scriptNames ?? DEFAULT_SCRIPT_NAMES;
@@ -141,7 +139,6 @@ export default createRule<[Options], MessageId>({
           : checkPackageScripts(packageJson.packageJson, scriptNames);
         if (result._tag === "Configured") return;
 
-        reportedPackageJsonPaths.add(packageJsonPath);
         context.report({
           node,
           messageId: result.messageId,

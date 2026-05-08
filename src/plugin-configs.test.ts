@@ -23,9 +23,9 @@ it("bundles Knip behind a package-owned bin", () => {
 
   expect(packageJson.dependencies).toHaveProperty("knip");
   expect(packageJson.bin).toMatchObject({
-    knip: "./dist/knip.js",
     "agent-code-guard-knip": "./dist/knip.js",
   });
+  expect(packageJson.bin).not.toHaveProperty("knip");
 });
 
 it("Property: bundled third-party tooling has a package-owned integration surface", () => {

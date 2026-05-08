@@ -1,5 +1,6 @@
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
+import plugin from "../index.js";
 import {
   baseConfig,
   FIXABLE_RULE_IDS,
@@ -72,34 +73,12 @@ it("Property 7: no-unbounded-concurrency ignores bounded Effect fan-out", () => 
   );
 });
 
-it("Property 8: no-hardcoded-secrets keeps name-gated declaration detection", () => {
-  const ruleId = "agent-code-guard/no-hardcoded-secrets";
-  expect.hasAssertions();
-  fc.assert(
-    fc.property(fc.stringMatching(/^[A-Za-z0-9]{20}$/), (secretish) => {
-      for (const code of secretDeclarationSnippets(secretish)) {
-        expect(lintOne(code, ruleId)).not.toHaveLength(0);
-      }
-    }),
-    { numRuns: 40 },
+it("recommended preset wires sonarjs/no-hardcoded-secrets so secret-detection still ships", () => {
+  expect(plugin.configs.recommended.rules).toHaveProperty(
+    "sonarjs/no-hardcoded-secrets",
+    "error",
   );
-});
-
-it("Property 8b: no-hardcoded-secrets ignores placeholders and spaced values", () => {
-  const ruleId = "agent-code-guard/no-hardcoded-secrets";
-  const literalArb = fc.oneof(
-    fc.constantFrom('"your-api-key-goes-here"', '"your-token-goes-here-now"'),
-    fc.constantFrom('"not a secret because it has spaces"', '"safe words with spaces stay safe"'),
-  );
-  expect.hasAssertions();
-  fc.assert(
-    fc.property(literalArb, (literal) => {
-      for (const code of safeSecretPlaceholderSnippets(literal)) {
-        expectMessagesClean(code, ruleId);
-      }
-    }),
-    { numRuns: 20 },
-  );
+  expect(plugin.configs.recommended.plugins).toHaveProperty("sonarjs");
 });
 
 function assertFixerIdempotence(ruleId: string): void {
@@ -170,19 +149,3 @@ function stringLiteralArb(): fc.Arbitrary<string> {
   return fc.stringMatching(/^[a-z]{4,12}$/).map((value) => JSON.stringify(value));
 }
 
-function secretDeclarationSnippets(secretish: string): readonly string[] {
-  return [
-    `const apiKey = "${secretish}";`,
-    `const config = { "apiKey": "${secretish}" };`,
-    `apiKey = "${secretish}";`,
-    `client.apiKey = "${secretish}";`,
-  ];
-}
-
-function safeSecretPlaceholderSnippets(literal: string): readonly string[] {
-  return [
-    `const token = ${literal};`,
-    `const config = { "apiKey": ${literal} };`,
-    `client["apiKey"] = ${literal};`,
-  ];
-}

@@ -130,13 +130,20 @@ export {
   ARCHITECTURE_DIAGNOSTIC_RULE_IDS as architectureDiagnosticRuleIds,
 };
 
-function findNearestPackageRoot(fileName: string): string | null {
-  for (let directory = path.dirname(fileName); ; directory = path.dirname(directory)) {
-    if (fs.existsSync(path.join(directory, "package.json"))) return directory;
+const packageRootCache = new Map<string, string | null>();
 
-    const parent = path.dirname(directory);
-    if (parent === directory) return null;
-  }
+function findNearestPackageRoot(fileName: string): string | null {
+  const cached = packageRootCache.get(fileName);
+  if (cached !== undefined) return cached;
+  const result = walkUpForPackageRoot(path.dirname(fileName));
+  packageRootCache.set(fileName, result);
+  return result;
+}
+
+function walkUpForPackageRoot(directory: string): string | null {
+  if (fs.existsSync(path.join(directory, "package.json"))) return directory;
+  const parent = path.dirname(directory);
+  return parent === directory ? null : walkUpForPackageRoot(parent);
 }
 
 export const architectureRules = {

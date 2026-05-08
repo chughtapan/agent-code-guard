@@ -71,6 +71,8 @@ rules: {
 }
 ```
 
+**First-run onramp.** Because the plugin ships no policy defaults, turning on the architecture preset on a real repo will fire immediately on rules that depend on policy declarations: `no-cross-domain-sibling-import` flags every cross-folder import (until you declare `sharedFolderNames`), `folder-explicit-api-required` flags every folder consumed by 2+ files (until you declare `facadeFiles` or add `index.ts`), `no-internal-subpath-export` is dormant (until you declare `forbiddenSubpathSegments`). Start by listing the obvious shared folders (`utils`, `lib`, `common`) with reasons, then walk the diagnostics and either fix or extend the lists. Each per-rule doc shows recommended starter values.
+
 The analyzer emits package, file, folder, facade, mesh, and public-type boundary diagnostics from the same project graph; each policy has its own rule name and doc under [`docs/rules/architecture/`](docs/rules/architecture/).
 
 ### Async flow

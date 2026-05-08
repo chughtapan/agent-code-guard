@@ -95,7 +95,7 @@ export default createRule<Options, MessageIds>({
 
 function normalizeOptions(rawOptions: Options[number]): NormalizedOptions {
   return {
-    minExamplesBeforeWarning: rawOptions.minExamplesBeforeWarning ?? 2,
+    minExamplesBeforeWarning: rawOptions.minExamplesBeforeWarning ?? 4,
     testFunctionNames: new Set(rawOptions.testFunctionNames ?? ["it", "test"]),
     describeFunctionNames: new Set(rawOptions.describeFunctionNames ?? ["describe"]),
     propertyCallNames: new Set(rawOptions.propertyCallNames ?? [

@@ -1,5 +1,4 @@
 import asUnknownAs from "./as-unknown-as.js";
-import noHardcodedSecrets from "./no-hardcoded-secrets.js";
 import noProcessEnvAtRuntime from "./no-process-env-at-runtime.js";
 import noRawSql from "./no-raw-sql.js";
 import noRawThrowNewError from "./no-raw-throw-new-error.js";
@@ -10,6 +9,5 @@ export const safetyRules = {
   "no-process-env-at-runtime": noProcessEnvAtRuntime,
   "record-cast": recordCast,
   "no-raw-sql": noRawSql,
-  "no-hardcoded-secrets": noHardcodedSecrets,
   "no-raw-throw-new-error": noRawThrowNewError,
 } as const;

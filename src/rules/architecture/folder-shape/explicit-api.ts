@@ -144,9 +144,12 @@ function folderApiDiagnostic(
   };
 }
 
+const DOMINANT_FACADE_RATIO = 0.8;
+
 function hasDominantFacadeConsumers(evidence: FolderApiEvidence): boolean {
+  if (evidence.consumerFiles.size === 0) return false;
   const overlap = setIntersectionSize(evidence.consumerFiles, evidence.facadeConsumerFiles);
-  return overlap >= evidence.consumerFiles.size;
+  return overlap / evidence.consumerFiles.size >= DOMINANT_FACADE_RATIO;
 }
 
 function concreteFolderApiTarget(

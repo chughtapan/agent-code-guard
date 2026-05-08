@@ -40,7 +40,6 @@ export const recommendedSyntaxRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/record-cast": "error",
   "agent-code-guard/no-raw-sql": "error",
   "agent-code-guard/no-manual-enum-cast": "error",
-  "agent-code-guard/no-hardcoded-secrets": "error",
   "agent-code-guard/no-raw-throw-new-error": "error",
   "agent-code-guard/no-test-skip-only": "error",
   "agent-code-guard/no-coverage-threshold-gate": "warn",

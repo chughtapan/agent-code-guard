@@ -47,12 +47,6 @@ ruleTester.run("no-conditional-chaining", rule, {
         }
       `,
     },
-  ],
-  invalid: [
-    {
-      code: "function loadUser(id?: string) { return fetchUser(id); }",
-      errors: [{ messageId: "conditionalChaining", data: { name: "id" } }],
-    },
     {
       code: `
         function loadUser(id?: string) {
@@ -60,24 +54,6 @@ ruleTester.run("no-conditional-chaining", rule, {
           return fetchUser(id);
         }
       `,
-      errors: [{ messageId: "conditionalChaining", data: { name: "id" } }],
-    },
-    {
-      code: "const loadUser = (id: string | undefined) => fetchUser(id);",
-      errors: [{ messageId: "conditionalChaining", data: { name: "id" } }],
-    },
-    {
-      code: `
-        const loadUser = (id: string | undefined) => {
-          const resolvedId = id ?? "anonymous";
-          return fetchUser(resolvedId);
-        };
-      `,
-      errors: [{ messageId: "conditionalChaining", data: { name: "id" } }],
-    },
-    {
-      code: "function loadUser(id: string | null) { return service.fetch(id); }",
-      errors: [{ messageId: "conditionalChaining", data: { name: "id" } }],
     },
     {
       code: `
@@ -86,6 +62,27 @@ ruleTester.run("no-conditional-chaining", rule, {
           return fetchUser(id);
         }
       `,
+    },
+    {
+      code: `
+        const loadUser = (id: string | undefined) => {
+          const resolvedId = id ?? "anonymous";
+          return fetchUser(resolvedId);
+        };
+      `,
+    },
+  ],
+  invalid: [
+    {
+      code: "function loadUser(id?: string) { return fetchUser(id); }",
+      errors: [{ messageId: "conditionalChaining", data: { name: "id" } }],
+    },
+    {
+      code: "const loadUser = (id: string | undefined) => fetchUser(id);",
+      errors: [{ messageId: "conditionalChaining", data: { name: "id" } }],
+    },
+    {
+      code: "function loadUser(id: string | null) { return service.fetch(id); }",
       errors: [{ messageId: "conditionalChaining", data: { name: "id" } }],
     },
     {
