@@ -4,6 +4,8 @@ import eitherDiscriminant from "./either-discriminant.js";
 import noConsoleInEffect from "./no-console-in-effect.js";
 import noEffectErrorCoalescing from "./no-effect-error-coalescing.js";
 import noPromiseAllInEffect from "./no-promise-all-in-effect.js";
+import noSchemaTypeCast from "./no-schema-type-cast.js";
+import preferEffectPlatform from "./prefer-effect-platform.js";
 import tagDiscriminant from "./tag-discriminant.js";
 
 export const effectRules = {
@@ -13,5 +15,7 @@ export const effectRules = {
   "no-console-in-effect": noConsoleInEffect,
   "no-effect-error-coalescing": noEffectErrorCoalescing,
   "no-promise-all-in-effect": noPromiseAllInEffect,
+  "no-schema-type-cast": noSchemaTypeCast,
+  "prefer-effect-platform": preferEffectPlatform,
   "tag-discriminant": tagDiscriminant,
 } as const;

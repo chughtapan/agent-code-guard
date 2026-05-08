@@ -28,6 +28,8 @@ export const recommendedSyntaxRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/either-discriminant": "error",
   "agent-code-guard/no-console-in-effect": "error",
   "agent-code-guard/no-promise-all-in-effect": "error",
+  "agent-code-guard/prefer-effect-platform": "error",
+  "agent-code-guard/no-schema-type-cast": "error",
   "agent-code-guard/manual-result": "error",
   "agent-code-guard/manual-option": "error",
   "agent-code-guard/manual-brand": "warn",
