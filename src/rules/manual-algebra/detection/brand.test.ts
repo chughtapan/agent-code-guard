@@ -1,8 +1,8 @@
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
-import { findManualBrandMatch } from "./manual-algebra-detection.js";
-import { findManualBrandConstructorMatch } from "./manual-algebra-brand-helper.js";
-import { parseSubject } from "./test-support/manual-algebra-detection-fixtures.js";
+import { findManualBrandMatch } from "./index.js";
+import { findManualBrandConstructorMatch } from "./brand-helper.js";
+import { parseSubject } from "./test-support/fixtures.js";
 
 const brandNameArb = fc.stringMatching(/^[A-Z][a-zA-Z]{2,8}$/);
 const brandPrefixArb = fc.constantFrom("", "as", "make", "to");

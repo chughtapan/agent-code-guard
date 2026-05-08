@@ -15,7 +15,7 @@ import {
   ARCHITECTURE_DIAGNOSTIC_RULE_IDS,
   type ArchitectureRuleId,
 } from "./rule-ids.js";
-import { createRule } from "../../utils/create-rule.js";
+import { createRule } from "../utils/create-rule.js";
 
 type RuleEntry = TSESLint.Linter.RuleEntry;
 type Options = [ArchitectureOptionsInput?];
@@ -252,6 +252,16 @@ export const architectureRules = {
     ["shared-kernel-cohesion"],
     "Flag shared kernels whose exported symbols are consumed by mostly disjoint modules.",
   ),
+  "no-trivial-sink-file": createArchitectureDiagnosticRule(
+    "no-trivial-sink-file",
+    ["no-trivial-sink-file"],
+    "Flag tiny files with exactly one consumer (and a non-barrel surface). Inline at the call site.",
+  ),
+  "no-fat-orchestrator": createArchitectureDiagnosticRule(
+    "no-fat-orchestrator",
+    ["no-fat-orchestrator"],
+    "Flag non-entry-point files with high fan-out, low fan-in, and a substantive body.",
+  ),
   "architecture-directive-parse-error": createArchitectureDiagnosticRule(
     "architecture-directive-parse-error",
     ["architecture-directive-parse-error"],
@@ -259,52 +269,7 @@ export const architectureRules = {
   ),
 } as const;
 
-export const recommendedArchitectureRuleEntries: Record<string, RuleEntry> = {
-  "agent-code-guard/no-folder-cycle": "error",
-  "agent-code-guard/no-root-internal-cycle": "error",
-  "agent-code-guard/no-internal-subpath-export": "error",
-  "agent-code-guard/no-public-test-helper-leak": "error",
-  "agent-code-guard/no-export-star-boundary": "error",
-  "agent-code-guard/no-implementation-file-public-entry": "error",
-  "agent-code-guard/no-public-vendor-type-leak": "error",
-  "agent-code-guard/no-public-infra-type-leak": "warn",
-  "agent-code-guard/no-inventory-barrel": "warn",
-  "agent-code-guard/no-large-public-surface": "warn",
-  "agent-code-guard/no-upward-layer-import": "warn",
-  "agent-code-guard/no-cross-domain-sibling-import": "warn",
-  "agent-code-guard/no-package-mesh": "warn",
-  "agent-code-guard/no-large-folder": "warn",
-  "agent-code-guard/folder-readme-required": "warn",
-  "agent-code-guard/no-distant-folder-import": "warn",
-  "agent-code-guard/require-curated-public-facade": "warn",
-  "agent-code-guard/require-boundary-owned-types": "warn",
-  "agent-code-guard/folder-explicit-api-required": "warn",
-  "agent-code-guard/file-implicit-boundary-module": "warn",
-  "agent-code-guard/shared-kernel-cohesion": "warn",
-  "agent-code-guard/architecture-directive-parse-error": "error",
-};
-
-export const architecturePresetRuleEntries: Record<string, RuleEntry> = {
-  "agent-code-guard/no-inventory-barrel": "warn",
-  "agent-code-guard/no-internal-subpath-export": "warn",
-  "agent-code-guard/no-public-vendor-type-leak": "warn",
-  "agent-code-guard/no-export-star-boundary": "warn",
-  "agent-code-guard/no-folder-cycle": "warn",
-  "agent-code-guard/no-root-internal-cycle": "warn",
-  "agent-code-guard/no-large-public-surface": "warn",
-  "agent-code-guard/no-cross-domain-sibling-import": "warn",
-  "agent-code-guard/no-upward-layer-import": "warn",
-  "agent-code-guard/no-public-test-helper-leak": "warn",
-  "agent-code-guard/no-implementation-file-public-entry": "warn",
-  "agent-code-guard/no-public-infra-type-leak": "warn",
-  "agent-code-guard/no-package-mesh": "warn",
-  "agent-code-guard/no-large-folder": "warn",
-  "agent-code-guard/folder-readme-required": "warn",
-  "agent-code-guard/no-distant-folder-import": "warn",
-  "agent-code-guard/require-curated-public-facade": "warn",
-  "agent-code-guard/require-boundary-owned-types": "warn",
-  "agent-code-guard/folder-explicit-api-required": "warn",
-  "agent-code-guard/file-implicit-boundary-module": "warn",
-  "agent-code-guard/shared-kernel-cohesion": "warn",
-  "agent-code-guard/architecture-directive-parse-error": "error",
-};
+export {
+  architecturePresetRuleEntries,
+  recommendedArchitectureRuleEntries,
+} from "./plugin-presets.js";

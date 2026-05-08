@@ -1,5 +1,5 @@
-import { createRule } from "../../utils/create-rule.js";
-import { getStaticMemberExpression } from "../../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
+import { getStaticMemberExpression } from "../utils/ast-refinement/index.js";
 
 const MOCK_METHODS = new Set(["mock", "hoisted", "spyOn"]);
 

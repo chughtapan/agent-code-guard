@@ -1,5 +1,59 @@
 # Changelog
 
+## [0.0.9] - 2026-05-07
+
+### Added — Effect runtime rules
+
+- **`no-console-in-effect`** (error) — flags `console.log/error/warn/info/debug/trace` calls in files that import from `"effect"` or `"@effect/*"`. Use `Effect.log` / `Effect.logDebug` / `Effect.logError` instead. CLI roots (`cli/`, `bin/`, `cli.ts`) auto-excluded.
+- **`no-promise-all-in-effect`** (error) — flags `Promise.all` / `allSettled` / `race` / `any` in files that import Effect. Use `Effect.all` / `Effect.forEach` with explicit concurrency.
+- **`prefer-effect-platform`** (error) — single rule with options table. In Effect files, flags raw `fs` / `node:fs` / `http` / `node:http` imports, `process.argv`, bare `fetch()`, raw SQL drivers (`pg`, `mysql2`, `kysely`, `drizzle-orm`, `better-sqlite3`), and CLI libs (`yargs`, `commander`). Per-target opt-out via `{ disable: ["fs", "http", "argv", "fetch", "sql", "cli"] }`.
+- **`effect-foreach-requires-concurrency`** (warn) — flags `Effect.forEach` calls without an explicit `concurrency` option. Default sequential is rarely the right answer for I/O work and the silent default obscures the policy.
+
+### Added — Effect logging & observability rules
+
+- **`require-span-on-exported-effect`** (warn) — flags exported `Effect.gen`-bearing values whose subtree never references `withSpan`. Trace boundaries belong on exported Effect surfaces.
+- **`handler-requires-span`** (warn) — flags `Effect.gen` bodies in handler/route files (under `handlers/`, `routes/`, or named `*-handler.*` / `*.route.*`) without `withSpan`.
+- **`annotate-without-span`** (warn) — flags `Effect.annotateCurrentSpan` calls in files with no `withSpan` reference. Without an enclosing span the annotation silently no-ops.
+- **`logger-config-at-boot`** (warn) — flags `Logger.withMinimumLogLevel` / `withConsoleLog` / `withConsoleError` calls outside boot files (entry points, bootstrap, `*.config.*`). Logger config is process-wide.
+- **`prefer-annotate-logs`** (warn) — flags `Effect.log*` calls whose second argument is an inline object literal. Use `Effect.annotateLogs({...})` once on the surrounding Effect.
+
+### Added — Effect scope & resource rules
+
+- **`runpromise-requires-scoped`** (error, **typed**) — flags `Effect.runPromise` / `runPromiseExit` / `runSync` / `runSyncExit` whose input Effect's `R` parameter contains `Scope`. Catches "ran but never released." First typed rule in the plugin; gracefully skips files without `parserOptions.project`.
+- **`fork-requires-lifecycle`** (warn) — flags `Effect.fork(...)` whose Fiber is structurally discarded (statement context, unassigned `yield*`, unassigned `await`). Suggest capturing the Fiber, or using `Effect.forkScoped` / `Effect.forkDaemon`.
+- **`acquire-release-requires-scope`** (warn) — flags `Effect.acquireRelease` / `acquireUseRelease` in files with no `Effect.scoped` / `Layer.scoped` reference. The Scope requirement never gets satisfied.
+- **`finalizer-requires-scope`** (warn) — flags `Scope.addFinalizer` calls in files with no scoped frame. Without a Scope, the finalizer never runs.
+
+### Added — Effect schema rules
+
+- **`no-schema-type-cast`** (error) — flags bare casts to `Schema.Schema.Type<typeof S>`, `Schema.Schema.Encoded`, `Schema.Type`, `Schema.Encoded`. Decode through the schema instead of asserting.
+- **`prefer-decode-effect-at-boundary`** (warn) — flags `Schema.decodeUnknownSync` / `decodeSync` / `decodeUnknownEither` over `JSON.parse(...)` or `fs.read*` / `fetch` results. Use the Effect-returning decoder so failures stay typed.
+- **`parse-into-schema-requires-effect`** (warn) — flags `Schema.decode*(JSON.parse(x))` chains outside an `Effect.try` thunk. `JSON.parse` can throw outside the Effect channel even when the decoder doesn't.
+
+### Added — Effect config rule
+
+- **`prefer-config-redacted`** (warn) — flags `Config.string("name")` calls where `name` matches the secret regex (`api_key`, `secret`, `token`, `password`, `credential`, `private_key`, `bearer`, `access_key`). Use `Config.redacted` so the value renders as `<redacted>` in logs / `JSON.stringify` / stack traces.
+
+### Added — safety rule
+
+- **`no-env-nonnull-assert`** (error) — flags non-null assertions on `process.env.X` reads (`process.env.PORT!`). The bang silences TypeScript without validating the value at runtime; validate or default the read at the boundary instead. Pairs with `no-process-env-at-runtime`.
+
+### Added — architecture rules
+
+- **`no-trivial-sink-file`** (warn) — flags non-test, non-index, non-public files with exactly **one consumer** and a trivial surface (≤2 exports, ≤5 top-level statements) whose sole consumer **uses** the symbols (not just re-exports them). Inline at the call site. Exception: barrel re-export consumers — those count as the public API, not as the sole consumer.
+- **`no-fat-orchestrator`** (warn) — flags non-entry-point files with fan-out ≥ 15, fan-in ≤ 1, and ≥ 20 top-level statements. Entry points (index/main/cli, public surface, files under `cli/`/`bin/`, `*.config.*`) are exempt. Calibrated against ESLint's `lib/linter/linter.js` (27 imports, 36 top-level statements).
+
+### Added — typed-linter infrastructure
+
+- **`tsconfig.test.json`** + `src/utils/parser-services.ts` (`requireServices(context)`) + `src/utils/typed-rule-tester.ts` (`createTypedRuleTester()`) + `src/utils/test-support/typed-fixture.ts`. Enables type-aware rules that gracefully skip when `parserOptions.project` is not set, so consumers without typed-linter setup are not broken.
+- **`SourceModule.topLevelStatementCount`** field added to the architecture analyzer's project graph (excludes import declarations). Powers `no-trivial-sink-file` and `no-fat-orchestrator`.
+
+### Changed
+
+- **`no-raw-sql`** message is now tool-neutral. Default reads `Raw SQL in .query(); use a typed SQL boundary` (was: "use a query builder (e.g. Kysely)"). New `{ recommend?: string }` option lets consumers name a tool: `["error", { recommend: "@effect/sql" }]` produces `Raw SQL in .query(); use @effect/sql or another typed SQL boundary`. Doc reframed to list Kysely, Drizzle, and `@effect/sql` as examples of typed SQL boundaries, not as "the" recommendation.
+- **Architecture rule registry split.** Recommended/preset entries moved from `plugin-rules.ts` to `plugin-presets.ts` to keep both files under the SonarJS max-lines floor.
+- **`src/rules/effect/` split into sub-families.** The 17 new Effect rules grouped into `effect/observability/` (6), `effect/scope/` (4), `effect/schema/` (3), `effect/runtime/` (4); the original 5 (effect-error-erasure, effect-promise, either-discriminant, no-effect-error-coalescing, tag-discriminant) stay at the top level. Rule IDs and the public plugin entrypoint are unchanged. Doc layout is unchanged (`docs/rules/effect/` stays flat).
+
 ## [0.0.8] - 2026-05-07
 
 ### Added — syntax rules

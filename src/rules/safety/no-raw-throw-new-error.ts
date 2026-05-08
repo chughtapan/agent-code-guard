@@ -1,7 +1,7 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
-import { isTestFile } from "../../utils/is-test-file.js";
-import { getEnclosingFunctionName } from "../../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
+import { isTestFile } from "../utils/is-test-file.js";
+import { getEnclosingFunctionName } from "../utils/ast-refinement/index.js";
 
 const ERROR_CTORS = new Set(["Error", "TypeError", "RangeError"]);
 

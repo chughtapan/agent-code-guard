@@ -24,6 +24,8 @@ export const ARCHITECTURE_DIAGNOSTIC_RULE_IDS = [
   "folder-explicit-api-required",
   "file-implicit-boundary-module",
   "shared-kernel-cohesion",
+  "no-trivial-sink-file",
+  "no-fat-orchestrator",
 ] as const;
 
 export type ArchitectureDiagnosticRuleId =

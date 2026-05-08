@@ -1,7 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
-import { getStaticStringKey } from "../../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
+import { getStaticStringKey } from "../utils/ast-refinement/index.js";
 
 function resolveLiteralStringValue(node: { type: string; value?: unknown } | null): string | null {
   return node?.type === AST_NODE_TYPES.Literal && typeof node.value === "string"

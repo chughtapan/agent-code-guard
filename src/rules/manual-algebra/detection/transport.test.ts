@@ -6,8 +6,8 @@ import {
   findManualResultMatch,
   isTaggedErrorCollision,
   isTransportDataShape,
-} from "./manual-algebra-detection.js";
-import { parseSubject } from "./test-support/manual-algebra-detection-fixtures.js";
+} from "./index.js";
+import { parseSubject } from "./test-support/fixtures.js";
 
 const typeNameArb = fc.stringMatching(/^[A-Z][a-zA-Z]{2,8}$/);
 const transportSuffixArb = fc.constantFrom("Response", "Payload", "State", "Config");

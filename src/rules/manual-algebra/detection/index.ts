@@ -6,7 +6,7 @@ import {
   normalize,
   type Surface,
   surfaceFromNode,
-} from "./manual-algebra-surface.js";
+} from "./surface.js";
 
 type ManualAlgebraKind = "result" | "option" | "brand";
 

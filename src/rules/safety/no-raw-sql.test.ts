@@ -64,5 +64,17 @@ ruleTester.run("no-raw-sql", rule, {
       code: "db.query(SQL`INSERT INTO logs VALUES ($1)`);",
       errors: [{ messageId: "rawSql" }],
     },
+    // recommend option uses the rawSqlWith messageId with the configured tool
+    {
+      code: "db.query('SELECT * FROM users');",
+      options: [{ recommend: "@effect/sql" }],
+      errors: [{ messageId: "rawSqlWith", data: { tool: "@effect/sql" } }],
+    },
+    // empty recommend string falls back to default messageId
+    {
+      code: "db.query('SELECT * FROM users');",
+      options: [{ recommend: "" }],
+      errors: [{ messageId: "rawSql" }],
+    },
   ],
 });

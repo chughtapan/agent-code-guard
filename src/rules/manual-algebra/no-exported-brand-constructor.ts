@@ -1,7 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
-import { getStaticMemberExpression } from "../../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
+import { getStaticMemberExpression } from "../utils/ast-refinement/index.js";
 
 type ConstructorKind = "brand" | "schema";
 

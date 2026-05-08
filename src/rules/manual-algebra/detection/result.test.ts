@@ -1,7 +1,7 @@
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
-import { findManualResultMatch } from "./manual-algebra-detection.js";
-import { parseSubject } from "./test-support/manual-algebra-detection-fixtures.js";
+import { findManualResultMatch } from "./index.js";
+import { parseSubject } from "./test-support/fixtures.js";
 
 const EXTENDED_RESULT_CASES = [
   ["error", "const error = <E>(error: E) => ({ ok: false as const, error });"],

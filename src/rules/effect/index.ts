@@ -1,13 +1,15 @@
-import effectErrorErasure from "./effect-error-erasure.js";
-import effectPromise from "./effect-promise.js";
-import eitherDiscriminant from "./either-discriminant.js";
-import noEffectErrorCoalescing from "./no-effect-error-coalescing.js";
-import tagDiscriminant from "./tag-discriminant.js";
+import { discriminantsRules } from "./discriminants/index.js";
+import { errorRules } from "./error/index.js";
+import { observabilityRules } from "./observability/index.js";
+import { runtimeRules } from "./runtime/index.js";
+import { schemaRules } from "./schema/index.js";
+import { scopeRules } from "./scope/index.js";
 
 export const effectRules = {
-  "effect-promise": effectPromise,
-  "effect-error-erasure": effectErrorErasure,
-  "either-discriminant": eitherDiscriminant,
-  "no-effect-error-coalescing": noEffectErrorCoalescing,
-  "tag-discriminant": tagDiscriminant,
+  ...discriminantsRules,
+  ...errorRules,
+  ...observabilityRules,
+  ...runtimeRules,
+  ...schemaRules,
+  ...scopeRules,
 } as const;

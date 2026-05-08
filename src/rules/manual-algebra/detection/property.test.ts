@@ -5,9 +5,9 @@ import {
   findManualResultMatch,
   isTaggedErrorCollision,
   isTransportDataShape,
-} from "./manual-algebra-detection.js";
-import { findManualBrandConstructorMatch } from "./manual-algebra-brand-helper.js";
-import { parseSubject } from "./test-support/manual-algebra-detection-fixtures.js";
+} from "./index.js";
+import { findManualBrandConstructorMatch } from "./brand-helper.js";
+import { parseSubject } from "./test-support/fixtures.js";
 
 const typeNameArb = fc.stringMatching(/^[A-Z][a-zA-Z]{2,8}$/);
 const suffixArb = fc.constantFrom("Response", "Payload", "State", "Config");
