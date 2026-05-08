@@ -1,13 +1,16 @@
 # Changelog
 
-## [Unreleased]
+## [0.0.8] - 2026-05-07
 
 ### Added — syntax rules
 
-- **`no-conditional-chaining`** (warn) — flags functions that accept optional
-  or nullable parameters outside explicit parser/normalizer boundaries.
-  Optional input belongs at the boundary; the rest of the call graph should
-  receive a concrete value.
+- **`no-conditional-chaining`** (warn) — flags functions that forward an
+  optional or nullable parameter to another call without a prior
+  early-return guard, default coalesce, or local shadow. Resolve the
+  uncertainty at the boundary; let the rest of the call graph receive a
+  concrete value. Functions named like parser/normalizer boundaries
+  (`parse*`, `decode*`, `normalize*`, `resolve*`, `read*`, `from*`) are
+  exempt.
 - **`no-effect-error-coalescing`** (warn) — flags `Effect.mapError` /
   `catchAll` / `catchAllCause` callbacks that collapse typed error variants
   into one broad wrapper. Preserve the typed error union or handle each tag
@@ -25,7 +28,9 @@
   (parser, decoder, `Brand.nominal`, `Schema.brand`).
 - **`require-knip-in-lint`** (error) — flags `package.json` default lint
   scripts that omit Knip. Dead-code detection only works when it stays in
-  the routine path. The plugin re-exposes a bundled `knip` bin.
+  the routine path. The plugin re-exposes a bundled
+  `agent-code-guard-knip` bin so downstream repos can put Knip in default
+  lint scripts without a direct install.
 
 ### Added — architecture rules
 
@@ -49,6 +54,15 @@
 
 ### Changed
 
+- **The `recommended` preset now folds in the SonarJS recommended
+  set.** Every consumer of `recommended` gets the full SonarJS floor
+  (bug catches: `no-identical-conditions`, `no-empty-collection`,
+  `no-extra-arguments`, `no-useless-catch`; security:
+  `no-hardcoded-secrets`, `no-hardcoded-passwords`, `no-hardcoded-ip`,
+  `code-eval`, `sql-queries`; regex correctness: `no-invalid-regexp`,
+  `slow-regex`, `no-misleading-character-class`, ~50 more) plus the
+  agent-code-guard rules. `strict` is now `recommended` plus the strict
+  complexity budgets. SonarJS is a runtime dependency.
 - **Source layout: rules grouped by family.** `src/rules/<rule>.ts` is now
   `src/rules/<family>/<rule>.ts` under `async-flow/`, `effect/`,
   `manual-algebra/`, `safety/`, `testing/`, and `tooling/`. The architecture
@@ -59,12 +73,24 @@
   from `docs/rules/<rule>.md` to `docs/rules/<family>/<rule>.md`.
   Architecture docs already lived under `docs/rules/architecture/` and stay
   there.
+- Architecture analyzer fixes: 5s TTL on the report cache so long-lived
+  ESLint LSP processes don't show stale warnings until restart;
+  per-file memoization for nearest-package-root walks; relaxed the
+  100% facade-consumer requirement in `folder-explicit-api-required`
+  to 80%.
 
 ### Removed
 
+- **`agent-code-guard/no-hardcoded-secrets`** — removed. Replaced by
+  `sonarjs/no-hardcoded-secrets` (S6418), which has a larger maintained
+  pattern set covering AWS, GCP, Azure, JWT, and generic high-entropy
+  strings. The rule is in the `recommended` preset.
 - **`docs/architecture-boundary-ledger.md`** — the design doctrine doc was
   retired. The per-rule docs name the design principle each diagnostic
   enforces; the ledger had become redundant narrative.
+- The unscoped `knip` bin alias was dropped from `package.json` to
+  avoid colliding with downstream Knip direct installs in
+  `node_modules/.bin/`. `agent-code-guard-knip` remains.
 
 ## [0.0.7] - 2026-05-07
 

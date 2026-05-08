@@ -11,7 +11,7 @@ pnpm add -D eslint-plugin-agent-code-guard
 
 Your coding agent is miscalibrated. It was trained on human-written TypeScript — decades of it — written under one constraint that does not apply to it: typing was expensive for humans. That is why its training corpus is saturated with `throw new Error("bad")`, `as Record<string, unknown>`, `try { ... } catch {}`, `Promise<T>` return types, `process.env.FOO!`, raw SQL strings, and `vi.mock` inside integration tests. Those were the compromises humans made when keyboard time was scarce. An agent does not pay the scarcity; it inherits the patterns anyway.
 
-This plugin is the floor. Fifty-plus rules under the `recommended` preset, a bundled `strict` preset that adds SonarJS plus tight complexity budgets, and an `integrationTests` preset that forbids mocks in the files that are supposed to be integration tests.
+This plugin is the floor. The `recommended` preset bundles the agent-code-guard rules with the full SonarJS recommended set so the standard floor catches both AI miscalibration patterns and the broader bug-and-security floor SonarJS already covers (hardcoded secrets, redundant conditions, unused collections, ReDoS-prone regex, eval, etc.). The `strict` preset adds tight complexity budgets on top. An `integrationTests` preset forbids mocks in files that are supposed to be integration tests.
 
 ## Architecture guard
 
@@ -116,7 +116,6 @@ The analyzer emits package, file, folder, facade, mesh, and public-type boundary
 | [`record-cast`](docs/rules/safety/record-cast.md) | `as Record<string, unknown>` and similar unsafe casts |
 | [`no-process-env-at-runtime`](docs/rules/safety/no-process-env-at-runtime.md) | Runtime `process.env` access instead of reading config once at the boundary |
 | [`no-raw-sql`](docs/rules/safety/no-raw-sql.md) | Raw SQL strings that bypass the typed query builder |
-| [`no-hardcoded-secrets`](docs/rules/safety/no-hardcoded-secrets.md) | AWS/GCP/Azure keys, API tokens, passwords — see doc for patterns and entropy thresholds |
 | [`no-raw-throw-new-error`](docs/rules/safety/no-raw-throw-new-error.md) | `throw new Error(...)` outside tests — return a tagged error instead |
 
 ### Testing
