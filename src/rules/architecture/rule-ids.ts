@@ -16,8 +16,14 @@ export const ARCHITECTURE_DIAGNOSTIC_RULE_IDS = [
   "no-implementation-file-public-entry",
   "no-public-infra-type-leak",
   "no-package-mesh",
+  "no-large-folder",
+  "folder-readme-required",
+  "no-distant-folder-import",
   "require-curated-public-facade",
   "require-boundary-owned-types",
+  "folder-explicit-api-required",
+  "file-implicit-boundary-module",
+  "shared-kernel-cohesion",
 ] as const;
 
 export type ArchitectureDiagnosticRuleId =

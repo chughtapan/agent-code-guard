@@ -5,6 +5,10 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "agent-code-guard-knip": "./dist/knip.js",
+    "knip": "./dist/knip.js"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -20,7 +24,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "pnpm clean && tsc",
-    "lint": "eslint .",
+    "lint": "eslint . && knip",
     "test": "vitest run",
     "mutation": "stryker run",
     "prepublishOnly": "pnpm build && pnpm test"
@@ -46,7 +50,9 @@
   },
   "dependencies": {
     "@typescript-eslint/utils": "^8.0.0",
-    "effect": "^3.21.1"
+    "effect": "^3.21.1",
+    "eslint-plugin-sonarjs": "^4.0.3",
+    "knip": "^6.12.1"
   },
   "peerDependencies": {
     "eslint": ">=9",
@@ -60,7 +66,6 @@
     "@typescript-eslint/parser": "^8.0.0",
     "@typescript-eslint/rule-tester": "^8.0.0",
     "eslint": "^9.0.0",
-    "eslint-plugin-agent-code-guard": "^0.0.2",
     "fast-check": "^4.7.0",
     "typescript": "^5.4.0",
     "vitest": "^2.0.0"

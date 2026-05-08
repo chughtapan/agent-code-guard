@@ -1,153 +1,20 @@
 import { createRequire } from "node:module";
 import type { TSESLint } from "@typescript-eslint/utils";
-import asyncKeyword from "./rules/async-keyword.js";
-import asUnknownAs from "./rules/as-unknown-as.js";
-import bareCatch from "./rules/bare-catch.js";
-import effectErrorErasure from "./rules/effect-error-erasure.js";
-import effectPromise from "./rules/effect-promise.js";
-import eitherDiscriminant from "./rules/either-discriminant.js";
-import manualTaggedError from "./rules/manual-tagged-error.js";
-import manualBrand from "./rules/manual-brand.js";
-import manualOption from "./rules/manual-option.js";
-import manualResult from "./rules/manual-result.js";
-import noUnboundedConcurrency from "./rules/no-unbounded-concurrency.js";
-import noCoverageThresholdGate from "./rules/no-coverage-threshold-gate.js";
-import noHardcodedSecrets from "./rules/no-hardcoded-secrets.js";
-import noManualEnumCast from "./rules/no-manual-enum-cast.js";
-import noProcessEnvAtRuntime from "./rules/no-process-env-at-runtime.js";
-import noRawThrowNewError from "./rules/no-raw-throw-new-error.js";
-import noTestSkipOnly from "./rules/no-test-skip-only.js";
-import noVitestMocks from "./rules/no-vitest-mocks.js";
-import noHardcodedAssertionLiterals from "./rules/no-hardcoded-assertion-literals.js";
-import noRawSql from "./rules/no-raw-sql.js";
-import promiseType from "./rules/promise-type.js";
-import recordCast from "./rules/record-cast.js";
-import tagDiscriminant from "./rules/tag-discriminant.js";
-import thenChain from "./rules/then-chain.js";
-import { createArchitectureDiagnosticRule } from "./rules/architecture/diagnostic-rule.js";
-
-const noInventoryBarrel = createArchitectureDiagnosticRule(
-  "no-inventory-barrel",
-  ["no-inventory-barrel"],
-  "Flag index files that export most sibling modules instead of a curated abstraction.",
-);
-const noInternalSubpathExport = createArchitectureDiagnosticRule(
-  "no-internal-subpath-export",
-  ["no-internal-subpath-export"],
-  "Flag package exports that expose internal, source, utility, helper, or wildcard paths.",
-);
-const noPublicVendorTypeLeak = createArchitectureDiagnosticRule(
-  "no-public-vendor-type-leak",
-  ["no-public-vendor-type-leak"],
-  "Flag public API types that mention dependency-owned vendor types.",
-);
-const noExportStarBoundary = createArchitectureDiagnosticRule(
-  "no-export-star-boundary",
-  ["no-export-star-boundary"],
-  "Flag public or index boundaries that use export-star declarations.",
-);
-const noFolderCycle = createArchitectureDiagnosticRule(
-  "no-folder-cycle",
-  ["no-folder-cycle"],
-  "Flag strongly connected folder dependency components.",
-);
-const noRootInternalCycle = createArchitectureDiagnosticRule(
-  "no-root-internal-cycle",
-  ["no-root-internal-cycle"],
-  "Flag root/public files and internal files that depend on each other.",
-);
-const noLargePublicSurface = createArchitectureDiagnosticRule(
-  "no-large-public-surface",
-  ["no-large-public-surface"],
-  "Flag public entry files with too many exported symbols or local reexports.",
-);
-const noCrossDomainSiblingImport = createArchitectureDiagnosticRule(
-  "no-cross-domain-sibling-import",
-  ["no-cross-domain-sibling-import"],
-  "Flag direct imports between sibling feature folders.",
-);
-const noUpwardLayerImport = createArchitectureDiagnosticRule(
-  "no-upward-layer-import",
-  ["no-upward-layer-import"],
-  "Flag lower-level files importing parent or root facades.",
-);
-const noPublicTestHelperLeak = createArchitectureDiagnosticRule(
-  "no-public-test-helper-leak",
-  ["no-public-test-helper-leak"],
-  "Flag test helper surfaces exposed as public package API.",
-);
-const noImplementationFilePublicEntry = createArchitectureDiagnosticRule(
-  "no-implementation-file-public-entry",
-  ["no-implementation-file-public-entry"],
-  "Flag public package subpaths named after concrete implementation files.",
-);
-const noPublicInfraTypeLeak = createArchitectureDiagnosticRule(
-  "no-public-infra-type-leak",
-  ["no-public-infra-type-leak"],
-  "Flag public API types that expose infrastructure libraries.",
-);
-const noPackageMesh = createArchitectureDiagnosticRule(
-  "no-package-mesh",
-  ["no-package-mesh"],
-  "Flag dense cyclic package folder graphs.",
-);
-const requireCuratedPublicFacade = createArchitectureDiagnosticRule(
-  "require-curated-public-facade",
-  ["require-curated-public-facade"],
-  "Require public facades to curate semantic contracts instead of filesystem inventory.",
-);
-const requireBoundaryOwnedTypes = createArchitectureDiagnosticRule(
-  "require-boundary-owned-types",
-  ["require-boundary-owned-types"],
-  "Require public boundary types to use package-owned names instead of imported vendor names.",
-);
-const architectureDirectiveParseError = createArchitectureDiagnosticRule(
-  "architecture-directive-parse-error",
-  ["architecture-directive-parse-error"],
-  "Surface malformed @agent-code-guard/architecture-exception directives so they cannot silently fail to suppress.",
-);
+import sonarjs from "eslint-plugin-sonarjs";
+import {
+  architecturePresetRuleEntries,
+  architectureRules,
+  recommendedArchitectureRuleEntries,
+} from "./rules/architecture/plugin-rules.js";
+import {
+  integrationTestRuleEntries,
+  recommendedSyntaxRuleEntries,
+  syntaxRules,
+} from "./rules/registry.js";
 
 const rules = {
-  "async-keyword": asyncKeyword,
-  "as-unknown-as": asUnknownAs,
-  "promise-type": promiseType,
-  "then-chain": thenChain,
-  "bare-catch": bareCatch,
-  "effect-promise": effectPromise,
-  "effect-error-erasure": effectErrorErasure,
-  "either-discriminant": eitherDiscriminant,
-  "manual-result": manualResult,
-  "manual-option": manualOption,
-  "manual-brand": manualBrand,
-  "manual-tagged-error": manualTaggedError,
-  "no-unbounded-concurrency": noUnboundedConcurrency,
-  "no-process-env-at-runtime": noProcessEnvAtRuntime,
-  "record-cast": recordCast,
-  "no-raw-sql": noRawSql,
-  "no-manual-enum-cast": noManualEnumCast,
-  "no-vitest-mocks": noVitestMocks,
-  "no-hardcoded-secrets": noHardcodedSecrets,
-  "no-raw-throw-new-error": noRawThrowNewError,
-  "no-test-skip-only": noTestSkipOnly,
-  "no-coverage-threshold-gate": noCoverageThresholdGate,
-  "no-hardcoded-assertion-literals": noHardcodedAssertionLiterals,
-  "tag-discriminant": tagDiscriminant,
-  "no-inventory-barrel": noInventoryBarrel,
-  "no-internal-subpath-export": noInternalSubpathExport,
-  "no-public-vendor-type-leak": noPublicVendorTypeLeak,
-  "no-export-star-boundary": noExportStarBoundary,
-  "no-folder-cycle": noFolderCycle,
-  "no-root-internal-cycle": noRootInternalCycle,
-  "no-large-public-surface": noLargePublicSurface,
-  "no-cross-domain-sibling-import": noCrossDomainSiblingImport,
-  "no-upward-layer-import": noUpwardLayerImport,
-  "no-public-test-helper-leak": noPublicTestHelperLeak,
-  "no-implementation-file-public-entry": noImplementationFilePublicEntry,
-  "no-public-infra-type-leak": noPublicInfraTypeLeak,
-  "no-package-mesh": noPackageMesh,
-  "require-curated-public-facade": requireCuratedPublicFacade,
-  "require-boundary-owned-types": requireBoundaryOwnedTypes,
-  "architecture-directive-parse-error": architectureDirectiveParseError,
+  ...syntaxRules,
+  ...architectureRules,
 } as const;
 
 const require = createRequire(import.meta.url);
@@ -159,8 +26,9 @@ const meta = {
 };
 
 interface PluginConfig {
-  plugins: { "agent-code-guard": Plugin };
+  plugins: Record<string, unknown>;
   rules: Record<string, TSESLint.Linter.RuleEntry>;
+  settings?: Record<string, unknown>;
 }
 
 interface Plugin {
@@ -168,10 +36,38 @@ interface Plugin {
   rules: typeof rules;
   configs: {
     recommended: PluginConfig;
+    strict: PluginConfig;
     integrationTests: PluginConfig;
     architecture: PluginConfig;
   };
 }
+
+const sonarRecommendedConfig = sonarjs.configs.recommended;
+
+const strictComplexityRuleEntries: Record<string, TSESLint.Linter.RuleEntry> = {
+  complexity: ["error", { max: 8 }],
+  "max-classes-per-file": ["error", 1],
+  "max-depth": ["error", 3],
+  "max-lines": ["error", { max: 300, skipBlankLines: true, skipComments: true }],
+  "max-lines-per-function": [
+    "error",
+    { max: 50, skipBlankLines: true, skipComments: true, IIFEs: true },
+  ],
+  "max-nested-callbacks": ["error", 3],
+  "max-params": ["error", 4],
+  "max-statements": ["error", 30],
+  "max-statements-per-line": ["error", { max: 1 }],
+  "no-nested-ternary": "error",
+  "sonarjs/cognitive-complexity": ["error", 8],
+  "sonarjs/cyclomatic-complexity": ["error", { threshold: 8 }],
+  "sonarjs/expression-complexity": ["error", { max: 3 }],
+  "sonarjs/max-lines": ["error", { maximum: 300 }],
+  "sonarjs/max-lines-per-function": ["error", { maximum: 50 }],
+  "sonarjs/nested-control-flow": ["error", { maximumNestingLevel: 3 }],
+  "sonarjs/no-function-declaration-in-block": "error",
+  "sonarjs/no-nested-switch": "error",
+  "sonarjs/too-many-break-or-continue-in-loop": "error",
+};
 
 const plugin: Plugin = {
   meta,
@@ -180,84 +76,42 @@ const plugin: Plugin = {
     recommended: {
       plugins: { "agent-code-guard": null! },
       rules: {
-        "agent-code-guard/async-keyword": "error",
-        "agent-code-guard/as-unknown-as": "error",
-        "agent-code-guard/promise-type": "error",
-        "agent-code-guard/then-chain": "error",
-        "agent-code-guard/bare-catch": "error",
-        "agent-code-guard/effect-promise": "error",
-        "agent-code-guard/effect-error-erasure": "error",
-        "agent-code-guard/either-discriminant": "error",
-        "agent-code-guard/manual-result": "error",
-        "agent-code-guard/manual-option": "error",
-        "agent-code-guard/manual-brand": "warn",
-        "agent-code-guard/manual-tagged-error": "error",
-        "agent-code-guard/no-unbounded-concurrency": "error",
-        "agent-code-guard/no-process-env-at-runtime": "error",
-        "agent-code-guard/record-cast": "error",
-        "agent-code-guard/no-raw-sql": "error",
-        "agent-code-guard/no-manual-enum-cast": "error",
-        "agent-code-guard/no-hardcoded-secrets": "error",
-        "agent-code-guard/no-raw-throw-new-error": "error",
-        "agent-code-guard/no-test-skip-only": "error",
-        "agent-code-guard/no-coverage-threshold-gate": "warn",
-        "agent-code-guard/no-hardcoded-assertion-literals": "warn",
-        "agent-code-guard/tag-discriminant": "error",
+        ...recommendedSyntaxRuleEntries,
 
         // Architecture rules: clear bugs (cycles, exposed internals, uncurated
         // public boundaries) at error; judgment calls (heuristic thresholds,
         // layered/domain assumptions) at warn. The full set is also available
         // standalone via configs.architecture (all warn-level) for incremental
         // adoption.
-        "agent-code-guard/no-folder-cycle": "error",
-        "agent-code-guard/no-root-internal-cycle": "error",
-        "agent-code-guard/no-internal-subpath-export": "error",
-        "agent-code-guard/no-public-test-helper-leak": "error",
-        "agent-code-guard/no-export-star-boundary": "error",
-        "agent-code-guard/no-implementation-file-public-entry": "error",
-        "agent-code-guard/no-public-vendor-type-leak": "error",
-        "agent-code-guard/no-public-infra-type-leak": "warn",
-        "agent-code-guard/no-inventory-barrel": "warn",
-        "agent-code-guard/no-large-public-surface": "warn",
-        "agent-code-guard/no-upward-layer-import": "warn",
-        "agent-code-guard/no-cross-domain-sibling-import": "warn",
-        "agent-code-guard/no-package-mesh": "warn",
-        "agent-code-guard/require-curated-public-facade": "warn",
-        "agent-code-guard/require-boundary-owned-types": "warn",
-        "agent-code-guard/architecture-directive-parse-error": "error",
+        ...recommendedArchitectureRuleEntries,
       },
+    },
+    strict: {
+      plugins: {
+        "agent-code-guard": null!,
+        sonarjs,
+      },
+      rules: {
+        ...sonarRecommendedConfig.rules,
+        ...recommendedSyntaxRuleEntries,
+        ...recommendedArchitectureRuleEntries,
+        ...strictComplexityRuleEntries,
+      } as Record<string, TSESLint.Linter.RuleEntry>,
+      settings: sonarRecommendedConfig.settings as Record<string, unknown> | undefined,
     },
     integrationTests: {
       plugins: { "agent-code-guard": null! },
-      rules: {
-        "agent-code-guard/no-vitest-mocks": "error",
-      },
+      rules: integrationTestRuleEntries,
     },
     architecture: {
       plugins: { "agent-code-guard": null! },
-      rules: {
-        "agent-code-guard/no-inventory-barrel": "warn",
-        "agent-code-guard/no-internal-subpath-export": "warn",
-        "agent-code-guard/no-public-vendor-type-leak": "warn",
-        "agent-code-guard/no-export-star-boundary": "warn",
-        "agent-code-guard/no-folder-cycle": "warn",
-        "agent-code-guard/no-root-internal-cycle": "warn",
-        "agent-code-guard/no-large-public-surface": "warn",
-        "agent-code-guard/no-cross-domain-sibling-import": "warn",
-        "agent-code-guard/no-upward-layer-import": "warn",
-        "agent-code-guard/no-public-test-helper-leak": "warn",
-        "agent-code-guard/no-implementation-file-public-entry": "warn",
-        "agent-code-guard/no-public-infra-type-leak": "warn",
-        "agent-code-guard/no-package-mesh": "warn",
-        "agent-code-guard/require-curated-public-facade": "warn",
-        "agent-code-guard/require-boundary-owned-types": "warn",
-        "agent-code-guard/architecture-directive-parse-error": "error",
-      },
+      rules: architecturePresetRuleEntries,
     },
   },
 };
 
 plugin.configs.recommended.plugins["agent-code-guard"] = plugin;
+plugin.configs.strict.plugins["agent-code-guard"] = plugin;
 plugin.configs.integrationTests.plugins["agent-code-guard"] = plugin;
 plugin.configs.architecture.plugins["agent-code-guard"] = plugin;
 

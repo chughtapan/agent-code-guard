@@ -2,6 +2,7 @@ import guard from "eslint-plugin-agent-code-guard";
 import tsParser from "@typescript-eslint/parser";
 
 const ARCHITECTURE_OPTIONS = {
+  tsconfigPath: "tsconfig.lint.json",
   publicTypePackages: [
     {
       package: "@typescript-eslint/utils",
@@ -15,12 +16,22 @@ const ARCHITECTURE_OPTIONS = {
       reason: "shared helpers (create-rule, AST refinement) used by every individual rule",
     },
   ],
+  facadeFiles: [
+    {
+      file: "rules/registry.ts",
+      reason: "central plugin rule registry consumed by the public plugin entrypoint",
+    },
+    {
+      file: "rules/architecture/plugin-rules.ts",
+      reason: "architecture ESLint rule registry and preset surface",
+    },
+  ],
 };
 
 const ARCHITECTURE_RULE_IDS = Object.keys(guard.configs.architecture.rules);
 
 const recommendedRules = {
-  ...guard.configs.recommended.rules,
+  ...guard.configs.strict.rules,
   ...Object.fromEntries(
     ARCHITECTURE_RULE_IDS.map((id) => [
       id,
@@ -33,27 +44,36 @@ export default [
   // Block 1: plugin source.
   {
     files: ["src/**/*.ts"],
-    ignores: ["**/*.test.ts", "**/*.spec.ts", "dist/**", "node_modules/**"],
+    ignores: [
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      "**/test-support/**",
+      "dist/**",
+      "node_modules/**",
+    ],
     languageOptions: {
       parser: tsParser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: {
-      "agent-code-guard": guard,
-    },
+    plugins: guard.configs.strict.plugins,
+    settings: guard.configs.strict.settings,
     rules: recommendedRules,
   },
 
   // Block 2: unit tests.
   {
-    files: ["tests/**/*.ts", "**/*.test.ts", "**/*.spec.ts"],
+    files: [
+      "tests/**/*.ts",
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      "**/test-support/**/*.ts",
+    ],
     languageOptions: {
       parser: tsParser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: {
-      "agent-code-guard": guard,
-    },
+    plugins: guard.configs.strict.plugins,
+    settings: guard.configs.strict.settings,
     rules: {
       ...recommendedRules,
       "agent-code-guard/async-keyword": "off",
