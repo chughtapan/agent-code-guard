@@ -1,5 +1,5 @@
-import { createRule } from "../../utils/create-rule.js";
-import { isNamedMemberCall } from "../../utils/ast-refinement/index.js";
+import { createRule } from "../../../utils/create-rule.js";
+import { isNamedMemberCall } from "../../../utils/ast-refinement/index.js";
 
 export default createRule({
   name: "effect-promise",
