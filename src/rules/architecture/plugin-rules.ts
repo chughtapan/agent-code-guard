@@ -252,6 +252,16 @@ export const architectureRules = {
     ["shared-kernel-cohesion"],
     "Flag shared kernels whose exported symbols are consumed by mostly disjoint modules.",
   ),
+  "no-trivial-sink-file": createArchitectureDiagnosticRule(
+    "no-trivial-sink-file",
+    ["no-trivial-sink-file"],
+    "Flag tiny files with exactly one consumer (and a non-barrel surface). Inline at the call site.",
+  ),
+  "no-fat-orchestrator": createArchitectureDiagnosticRule(
+    "no-fat-orchestrator",
+    ["no-fat-orchestrator"],
+    "Flag non-entry-point files with high fan-out, low fan-in, and a substantive body.",
+  ),
   "architecture-directive-parse-error": createArchitectureDiagnosticRule(
     "architecture-directive-parse-error",
     ["architecture-directive-parse-error"],
@@ -281,6 +291,8 @@ export const recommendedArchitectureRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/folder-explicit-api-required": "warn",
   "agent-code-guard/file-implicit-boundary-module": "warn",
   "agent-code-guard/shared-kernel-cohesion": "warn",
+  "agent-code-guard/no-trivial-sink-file": "warn",
+  "agent-code-guard/no-fat-orchestrator": "warn",
   "agent-code-guard/architecture-directive-parse-error": "error",
 };
 
@@ -306,5 +318,7 @@ export const architecturePresetRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/folder-explicit-api-required": "warn",
   "agent-code-guard/file-implicit-boundary-module": "warn",
   "agent-code-guard/shared-kernel-cohesion": "warn",
+  "agent-code-guard/no-trivial-sink-file": "warn",
+  "agent-code-guard/no-fat-orchestrator": "warn",
   "agent-code-guard/architecture-directive-parse-error": "error",
 };

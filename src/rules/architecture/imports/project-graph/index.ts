@@ -144,7 +144,16 @@ function sourceModuleFromSourceFile(
     exportedSymbolCount: countExportedSymbols(sourceFile),
     localReexportCount: edges.localEdges.filter((edge) => edge.kind === "reexport").length,
     starExportCount: sourceFile.statements.filter(isStarExportDeclaration).length,
+    topLevelStatementCount: countNonImportTopLevelStatements(sourceFile),
   };
+}
+
+function countNonImportTopLevelStatements(sourceFile: ts.SourceFile): number {
+  return sourceFile.statements.reduce((count, statement) => {
+    if (ts.isImportDeclaration(statement)) return count;
+    if (ts.isImportEqualsDeclaration(statement)) return count;
+    return count + 1;
+  }, 0);
 }
 
 function consumersByTargetFile(

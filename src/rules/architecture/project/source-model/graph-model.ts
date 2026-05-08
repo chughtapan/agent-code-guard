@@ -30,6 +30,7 @@ export interface SourceModule {
   readonly exportedSymbolCount: number;
   readonly localReexportCount: number;
   readonly starExportCount: number;
+  readonly topLevelStatementCount: number;
 }
 
 export interface ExportConsumer {
