@@ -31,6 +31,7 @@ export const recommendedSyntaxRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/prefer-effect-platform": "error",
   "agent-code-guard/no-schema-type-cast": "error",
   "agent-code-guard/runpromise-requires-scoped": "error",
+  "agent-code-guard/fork-requires-lifecycle": "warn",
   "agent-code-guard/manual-result": "error",
   "agent-code-guard/manual-option": "error",
   "agent-code-guard/manual-brand": "warn",

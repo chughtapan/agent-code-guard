@@ -1,6 +1,7 @@
 import effectErrorErasure from "./effect-error-erasure.js";
 import effectPromise from "./effect-promise.js";
 import eitherDiscriminant from "./either-discriminant.js";
+import forkRequiresLifecycle from "./fork-requires-lifecycle.js";
 import noConsoleInEffect from "./no-console-in-effect.js";
 import noEffectErrorCoalescing from "./no-effect-error-coalescing.js";
 import noPromiseAllInEffect from "./no-promise-all-in-effect.js";
@@ -13,6 +14,7 @@ export const effectRules = {
   "effect-promise": effectPromise,
   "effect-error-erasure": effectErrorErasure,
   "either-discriminant": eitherDiscriminant,
+  "fork-requires-lifecycle": forkRequiresLifecycle,
   "no-console-in-effect": noConsoleInEffect,
   "no-effect-error-coalescing": noEffectErrorCoalescing,
   "no-promise-all-in-effect": noPromiseAllInEffect,
