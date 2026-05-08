@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.0.11] - 2026-05-08
+
+### Removed
+
+- **`sonarjs/max-lines` no longer in `recommended` or `strict`.** It was
+  a near-duplicate of ESLint's built-in `max-lines`, which already runs
+  in both presets and supports `skipBlankLines` / `skipComments`.
+  Two rules reporting the same finding with slightly different line
+  counts is noise. Consumers who want the SonarJS variant can re-enable
+  it explicitly. The other SonarJS complexity rules
+  (`sonarjs/cognitive-complexity`, `sonarjs/cyclomatic-complexity`,
+  `sonarjs/max-lines-per-function`) stay — they each measure something
+  the ESLint built-ins don't, or count it differently enough to be
+  worth keeping.
+
 ## [0.0.10] - 2026-05-08
 
 ### Fixed

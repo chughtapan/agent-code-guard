@@ -43,9 +43,16 @@ interface Plugin {
 }
 
 const sonarRecommendedConfig = sonarjs.configs.recommended;
+const SONAR_RULES_DROPPED_FROM_RECOMMENDED = new Set([
+  // Duplicates ESLint's built-in `max-lines` rule. Consumers get cleaner
+  // skip-blanks/skip-comments semantics from the built-in; keeping both
+  // double-reports the same finding with slightly different counts.
+  "sonarjs/max-lines",
+]);
 const sonarRecommendedRules = Object.fromEntries(
   Object.entries(sonarRecommendedConfig.rules ?? {}).filter(
-    (entry): entry is [string, TSESLint.Linter.RuleEntry] => entry[1] !== undefined,
+    (entry): entry is [string, TSESLint.Linter.RuleEntry] =>
+      entry[1] !== undefined && !SONAR_RULES_DROPPED_FROM_RECOMMENDED.has(entry[0]),
   ),
 );
 
@@ -66,7 +73,6 @@ const strictComplexityRuleEntries: Record<string, TSESLint.Linter.RuleEntry> = {
   "sonarjs/cognitive-complexity": ["error", 8],
   "sonarjs/cyclomatic-complexity": ["error", { threshold: 8 }],
   "sonarjs/expression-complexity": ["error", { max: 3 }],
-  "sonarjs/max-lines": ["error", { maximum: 300 }],
   "sonarjs/max-lines-per-function": ["error", { maximum: 50 }],
   "sonarjs/nested-control-flow": ["error", { maximumNestingLevel: 3 }],
   "sonarjs/no-function-declaration-in-block": "error",
