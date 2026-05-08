@@ -1,11 +1,11 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
+import { createRule } from "../utils/create-rule.js";
 import {
   getStaticMemberExpression,
   getStaticStringKey,
   resolveStringLiteralValue,
-} from "../../utils/ast-refinement/index.js";
+} from "../utils/ast-refinement/index.js";
 
 const CONCURRENCY_METHODS = new Set(["all", "forEach", "validateAll"]);
 

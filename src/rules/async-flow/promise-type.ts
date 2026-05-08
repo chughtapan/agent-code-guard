@@ -1,7 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
-import { isFunctionReturnTypeReference } from "../../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
+import { isFunctionReturnTypeReference } from "../utils/ast-refinement/index.js";
 
 function isPromiseTypeReference(node: TSESTree.Node): boolean {
   return (

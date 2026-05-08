@@ -1,7 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../../utils/create-rule.js";
-import { requireServices } from "../../../utils/parser-services.js";
+import { createRule } from "../../utils/create-rule.js";
+import { requireServices } from "../../utils/typed-linter/index.js";
 
 const SCOPED_RUNNERS = new Set(["runPromise", "runPromiseExit", "runSync", "runSyncExit"]);
 

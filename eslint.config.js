@@ -25,6 +25,14 @@ const ARCHITECTURE_OPTIONS = {
       file: "rules/architecture/plugin-rules.ts",
       reason: "architecture ESLint rule registry and preset surface",
     },
+    {
+      file: "rules/utils/create-rule.ts",
+      reason: "ESLint rule factory imported by every rule file; deliberate flat facade so each rule reads as a single createRule call",
+    },
+    {
+      file: "rules/utils/is-test-file.ts",
+      reason: "small path-shaped predicate used by testing/safety rules to gate against test files; not worth wrapping in a folder",
+    },
   ],
 };
 

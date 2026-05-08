@@ -5,8 +5,8 @@ import {
   findManualOptionMatch,
   findManualResultMatch,
   isTaggedErrorCollision,
-} from "./manual-algebra-detection.js";
-import { parseSubject } from "./test-support/manual-algebra-detection-fixtures.js";
+} from "./index.js";
+import { parseSubject } from "./test-support/fixtures.js";
 
 const optionHelperArb = fc.constantFrom("some", "none", "present", "absent");
 

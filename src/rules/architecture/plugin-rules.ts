@@ -15,7 +15,7 @@ import {
   ARCHITECTURE_DIAGNOSTIC_RULE_IDS,
   type ArchitectureRuleId,
 } from "./rule-ids.js";
-import { createRule } from "../../utils/create-rule.js";
+import { createRule } from "../utils/create-rule.js";
 
 type RuleEntry = TSESLint.Linter.RuleEntry;
 type Options = [ArchitectureOptionsInput?];

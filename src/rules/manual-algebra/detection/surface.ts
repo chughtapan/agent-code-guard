@@ -1,6 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { getStaticStringKey, resolveStringLiteralValue } from "./ast-refinement/index.js";
+import { getStaticStringKey, resolveStringLiteralValue } from "../../utils/ast-refinement/index.js";
 
 type SurfaceKind = "type" | "interface" | "class" | "object" | "function";
 

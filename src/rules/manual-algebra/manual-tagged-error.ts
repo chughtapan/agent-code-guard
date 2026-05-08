@@ -1,13 +1,13 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
+import { createRule } from "../utils/create-rule.js";
 import {
   getParent,
   getStaticMemberPropertyName,
   getStaticStringKey,
   resolveStringLiteralValue,
   isNamedMemberCall,
-} from "../../utils/ast-refinement/index.js";
+} from "../utils/ast-refinement/index.js";
 
 const ERROR_NAME_RE = /(Error|Failure|Failed|Exception)$/;
 

@@ -1,9 +1,9 @@
-import { createTypedRuleTester } from "../../../utils/typed-rule-tester.js";
+import { createTypedRuleTester } from "../../utils/typed-linter/index.js";
 import rule from "./runpromise-requires-scoped.js";
 
 const ruleTester = createTypedRuleTester();
 
-const filename = "src/utils/test-support/typed-fixture.ts";
+const filename = "src/rules/utils/typed-linter/test-support/fixture.ts";
 
 ruleTester.run("runpromise-requires-scoped", rule, {
   valid: [

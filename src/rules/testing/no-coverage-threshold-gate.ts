@@ -1,6 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
-import { getParent, getStaticStringKey } from "../../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
+import { getParent, getStaticStringKey } from "../utils/ast-refinement/index.js";
 
 // Matches `jest.config.ts`, `vitest.config.unit.ts`, `jest.config.integration.cjs`,
 // plus `package.json`. Users can lint package.json if they wire a JSON parser

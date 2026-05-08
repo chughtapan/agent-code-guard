@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { createRule } from "../../utils/create-rule.js";
+import { createRule } from "../utils/create-rule.js";
 
 type Options = {
   readonly packageJsonPath?: string;

@@ -1,5 +1,5 @@
-import { createRule } from "../../utils/create-rule.js";
-import { findManualResultMatch } from "../../utils/manual-algebra-detection.js";
+import { createRule } from "../utils/create-rule.js";
+import { findManualResultMatch } from "./detection/index.js";
 
 const VARIABLE_SURFACE_SELECTOR =
   "VariableDeclarator[init.type='ObjectExpression'], " +

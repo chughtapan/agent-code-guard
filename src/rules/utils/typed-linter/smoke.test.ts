@@ -1,6 +1,6 @@
 import { ESLintUtils, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { requireServices } from "./parser-services.js";
-import { createTypedRuleTester } from "./typed-rule-tester.js";
+import { requireServices } from "./services.js";
+import { createTypedRuleTester } from "./rule-tester.js";
 
 const createRule = ESLintUtils.RuleCreator(() => "https://example.test/smoke");
 
@@ -42,13 +42,13 @@ ruleTester.run("_typed-linter-smoke", probeRule, {
   valid: [
     {
       code: "const x = 42;",
-      filename: "src/utils/test-support/typed-fixture.ts",
+      filename: "src/rules/utils/typed-linter/test-support/fixture.ts",
     },
   ],
   invalid: [
     {
       code: "const x: string = 'hello';",
-      filename: "src/utils/test-support/typed-fixture.ts",
+      filename: "src/rules/utils/typed-linter/test-support/fixture.ts",
       errors: [{ messageId: "stringType" }],
     },
   ],

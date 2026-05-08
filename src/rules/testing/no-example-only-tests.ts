@@ -1,8 +1,8 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
-import { isTestFile } from "../../utils/is-test-file.js";
-import { getStaticMemberPropertyName } from "../../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
+import { isTestFile } from "../utils/is-test-file.js";
+import { getStaticMemberPropertyName } from "../utils/ast-refinement/index.js";
 
 type MessageIds = "exampleOnly";
 type Options = [{

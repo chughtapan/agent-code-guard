@@ -1,11 +1,11 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../../utils/create-rule.js";
+import { createRule } from "../../utils/create-rule.js";
 import {
   getStaticMemberPropertyName,
   resolveStringLiteralValue,
   getTagAccess,
-} from "../../../utils/ast-refinement/index.js";
+} from "../../utils/ast-refinement/index.js";
 
 const ERROR_NAME_RE = /^(err|error)$|(?:Error|Failure|Failed|Exception)$/;
 const EQUALITY_OPERATORS = new Set(["==", "===", "!=", "!=="]);
