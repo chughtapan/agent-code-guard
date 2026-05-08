@@ -230,14 +230,14 @@ export default [
 ];
 ```
 
-Peer dependencies: `eslint` ≥ 9, `typescript` ≥ 5. SonarJS is a dependency of this package, so users of `guard.configs.strict` do not install `eslint-plugin-sonarjs` separately. Knip is also bundled and re-exposed as the `knip` bin, so downstream repos can put `knip` or `pnpm knip` in their scripts without installing Knip directly.
+Peer dependencies: `eslint` ≥ 9, `typescript` ≥ 5. SonarJS is a runtime dependency of this package, so users of `guard.configs.recommended` (and `strict`) do not install `eslint-plugin-sonarjs` separately. Knip is also bundled and exposed as the `agent-code-guard-knip` bin, so downstream repos can put `agent-code-guard-knip` (or plain `knip` if they have it installed directly) in their lint scripts and the `require-knip-in-lint` rule will accept either.
 
 ## Presets
 
 The import alias (e.g., `guard` in the example above) is your choice; adjust the `<import>.configs.*` path accordingly. Access presets via your import identifier:
 
-- `<import>.configs.recommended.rules` — application source. All rules except `no-vitest-mocks` (the AI-pattern floor plus the architecture rules at curated severity; includes the always-on `architecture-directive-parse-error`).
-- `<import>.configs.strict` — flat-config fragment with `plugins`, `settings`, and `rules`. It includes SonarJS recommended rules, `recommended`, and strict complexity budgets (`complexity`, `max-depth`, `max-lines`, `max-lines-per-function`, `max-statements`, cognitive complexity, nested control flow, and related limits).
+- `<import>.configs.recommended` — application source. Flat-config fragment with `plugins`, `settings`, and `rules`. Bundles the agent-code-guard rules with the full SonarJS recommended set (~270 SonarJS rules covering bug catches, security, regex correctness) and the architecture rules at curated severity, plus the always-on `architecture-directive-parse-error`. Excludes `no-vitest-mocks` (lives in the integration-tests preset).
+- `<import>.configs.strict` — flat-config fragment with `plugins`, `settings`, and `rules`. `recommended` plus strict complexity budgets (`complexity`, `max-depth`, `max-lines`, `max-lines-per-function`, `max-statements`, cognitive complexity, nested control flow, and related limits).
 - `<import>.configs.architecture.rules` — the architecture diagnostics at warn level plus `architecture-directive-parse-error` at error. Use this when stepping up to the architecture checks for the first time, before flipping CI red.
 - `<import>.configs.integrationTests.rules` — integration-test glob only. Enforces `no-vitest-mocks` so integration tests actually hit real dependencies.
 

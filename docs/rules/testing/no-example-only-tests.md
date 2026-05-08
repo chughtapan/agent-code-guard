@@ -17,10 +17,12 @@ Mark those explicitly with a directive instead of disabling globally.
 it("accepts alice", () => {});
 it("accepts bob", () => {});
 it("accepts carol", () => {});
+it("accepts dave", () => {});
 ```
 
-The suite proves three names are accepted. It does not prove the
-function accepts what its contract says it accepts.
+The suite proves four names are accepted. It does not prove the
+function accepts what its contract says it accepts. Default threshold:
+4 examples without a property test triggers the warning.
 
 ## After (preferred)
 
