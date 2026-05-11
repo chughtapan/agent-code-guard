@@ -117,6 +117,7 @@ The analyzer emits package, file, folder, facade, mesh, and public-type boundary
 | [`no-process-env-at-runtime`](docs/rules/safety/no-process-env-at-runtime.md) | Runtime `process.env` access instead of reading config once at the boundary |
 | [`no-raw-sql`](docs/rules/safety/no-raw-sql.md) | Raw SQL strings that bypass the typed query builder |
 | [`no-raw-throw-new-error`](docs/rules/safety/no-raw-throw-new-error.md) | `throw new Error(...)` outside tests — return a tagged error instead |
+| [`max-non-trivial-classes-per-file`](docs/rules/safety/max-non-trivial-classes-per-file.md) | More than one logic-bearing class per file; empty tag classes (`Data.TaggedError`, `Context.Tag`, …) are exempt |
 
 ### Testing
 
@@ -133,6 +134,23 @@ The analyzer emits package, file, folder, facade, mesh, and public-type boundary
 | Rule | Catches |
 |---|---|
 | [`require-knip-in-lint`](docs/rules/tooling/require-knip-in-lint.md) | `package.json` default quality scripts that omit Knip |
+
+### Documentation
+
+JSDoc lint comes from bundled [`eslint-plugin-jsdoc`](https://github.com/gajus/eslint-plugin-jsdoc); consumers do not install it separately. `recommended` and `strict` turn on the logical and contents rule sets — these validate JSDoc *content* (`check-types`, `no-undefined-types`, `valid-types`, `informative-docs`, etc.) and only fire if JSDoc is present and broken. `strict` additionally enables the stylistic rules.
+
+A separate `documentation` preset enforces that JSDoc must exist on every exported declaration — every interface, type alias, enum, function, class, and exported `const` needs a doc comment, with `@param`, `@property`, and `@returns` all filled in. Because forcing JSDoc on every internal helper is noise, this preset is meant to be scoped to your folder barrels:
+
+```js
+{
+  files: ["src/**/index.ts", "src/index.ts"],
+  plugins: guard.configs.documentation.plugins,
+  rules: guard.configs.documentation.rules,
+}
+```
+
+That keeps the public boundary fully documented while leaving file-internal code free to skip JSDoc.
+
 
 ### Architecture
 
@@ -230,7 +248,7 @@ export default [
 ];
 ```
 
-Peer dependencies: `eslint` ≥ 9, `typescript` ≥ 5. SonarJS is a runtime dependency of this package, so users of `guard.configs.recommended` (and `strict`) do not install `eslint-plugin-sonarjs` separately. Knip is also bundled and exposed as the `agent-code-guard-knip` bin, so downstream repos can put `agent-code-guard-knip` (or plain `knip` if they have it installed directly) in their lint scripts and the `require-knip-in-lint` rule will accept either.
+Peer dependencies: `eslint` ≥ 9, `typescript` ≥ 5. SonarJS and `eslint-plugin-jsdoc` are runtime dependencies of this package, so users of `guard.configs.recommended` / `strict` / `documentation` do not install them separately. Knip is also bundled and exposed as the `agent-code-guard-knip` bin, so downstream repos can put `agent-code-guard-knip` (or plain `knip` if they have it installed directly) in their lint scripts and the `require-knip-in-lint` rule will accept either.
 
 ## Presets
 
@@ -240,6 +258,7 @@ The import alias (e.g., `guard` in the example above) is your choice; adjust the
 - `<import>.configs.strict` — flat-config fragment with `plugins`, `settings`, and `rules`. `recommended` plus strict complexity budgets (`complexity`, `max-depth`, `max-lines`, `max-lines-per-function`, `max-statements`, cognitive complexity, nested control flow, and related limits).
 - `<import>.configs.architecture.rules` — the architecture diagnostics at warn level plus `architecture-directive-parse-error` at error. Use this when stepping up to the architecture checks for the first time, before flipping CI red.
 - `<import>.configs.integrationTests.rules` — integration-test glob only. Enforces `no-vitest-mocks` so integration tests actually hit real dependencies.
+- `<import>.configs.documentation` — barrel files only. Flat-config fragment with `plugins` and `rules`. Enforces `jsdoc/require-jsdoc` plus the full `require-*` family (param descriptions, property descriptions, returns) on every exported declaration. Apply to `**/index.ts`.
 
 ## Disabling a rule
 

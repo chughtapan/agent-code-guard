@@ -1,3 +1,9 @@
+/**
+ * @file Source-model barrel. Re-exports the source-fact predicates,
+ * module classification helpers, and graph-model types used by the
+ * import-graph construction and downstream analysis passes.
+ */
+
 export {
   exportedDeclarationName,
   hasExportModifier,

@@ -1,5 +1,81 @@
 # Changelog
 
+## [0.0.13] - 2026-05-11
+
+### Changed
+
+- **`agent-code-guard/prefer-effect-platform` no longer treats every
+  `effect` import as evidence of an Effect program.** The "is this an
+  Effect file?" heuristic now distinguishes pure utility namespaces
+  (`Match`, `Brand`, `Data`, `Option`, `Either`, `Schema`, `Cause`,
+  `Exit`, `Chunk`, `HashMap`, `Array`, `Function`, `pipe`, `flow`, …)
+  from runtime-bearing namespaces (`Effect`, `Stream`, `Fiber`,
+  `Layer`, `Scope`, `Runtime`, `Schedule`, `Cache`, `Pool`, `Queue`,
+  `Hub`, `Channel`, `Deferred`, `Ref`, `Metric`, `Tracer`, `Logger`,
+  …). A file that only imports pure utilities from `effect` is no
+  longer pushed toward `@effect/platform`. Namespace imports
+  (`import * as`) and any `@effect/*` import remain conservative
+  triggers.
+- **`agent-code-guard/tag-discriminant` now flags every manual `_tag`
+  comparison**, not just `_tag` checks on error-named receivers. Any
+  `value._tag === "Foo"` / `!== "Foo"` / `switch (value._tag) { case "Foo" }`
+  fires. Message updated to point users at `Effect.catchTag(...)` /
+  `catchTags(...)` for tagged errors and `Match.tag(...)` /
+  `Match.discriminator('_tag')` for tagged unions.
+- **`agent-code-guard/manual-brand` message now recommends a refined
+  brand first** — `Schema.<Primitive>.pipe(Schema.refine(predicate)).pipe(Schema.brand(...))`
+  — so the brand witnesses a checked invariant rather than just naming
+  the type. `Brand.nominal` stays in the doc as the fallback for opaque
+  IDs whose validity is decided elsewhere (e.g., database keys).
+
+### Removed
+
+- **`sonarjs/todo-tag` and `sonarjs/fixme-tag` dropped from `recommended`
+  and `strict`.** Inline `TODO:` / `FIXME:` markers are how agents and
+  humans flag known-incomplete work next to the code that needs it.
+  SonarJS treats every such marker as an error, which is noise for an
+  agent-targeted plugin where the markers are the calibration signal we
+  want preserved.
+
+### Added
+
+- **JSDoc lint integration.** Bundles
+  [`eslint-plugin-jsdoc`](https://github.com/gajus/eslint-plugin-jsdoc)
+  so consumers don't install it separately. `recommended` and `strict`
+  pick up the logical and contents rule sets — these validate JSDoc
+  content (`check-types`, `no-undefined-types`, `valid-types`,
+  `informative-docs`, etc.) but never demand JSDoc exists, so they
+  add zero noise on undocumented code. `strict` additionally enables
+  the stylistic JSDoc rules.
+- **`documentation` preset for barrel exports.** New standalone preset
+  (mirrors the `architecture` / `integrationTests` pattern) that turns
+  on `jsdoc/require-jsdoc` and the full `require-*` family
+  (`require-param`, `require-param-description`, `require-property`,
+  `require-property-description`, `require-returns`, etc.) plus
+  `require-file-overview`, `require-description-complete-sentence`,
+  `match-description`, `check-indentation`, `no-blank-blocks`, and the
+  stylistic rules. Configured with `publicOnly: true` and scoped to
+  top-level exported declarations. Apply it to your barrel files
+  (typically `**/index.ts`) so every exported declaration must carry
+  full JSDoc with documented parameters, properties, and return values
+  — without forcing internal helpers to also be documented. Param /
+  returns *type* tags stay off because TypeScript already provides the
+  types.
+
+## [0.0.12] - 2026-05-09
+
+### Added
+
+- **`agent-code-guard/max-non-trivial-classes-per-file`** — replacement
+  for ESLint's built-in `max-classes-per-file`. Counts only classes
+  with non-empty bodies, so Effect's tag-class patterns
+  (`Data.TaggedError`, `Schema.Class`, `Context.Tag`, `Effect.Service`,
+  …) are exempt by construction. Co-located error groups in
+  `errors.ts` and tag groups in `tags.ts` are no longer flagged. Any
+  class with methods, fields, or constructor logic still counts.
+  Default `max: 1`. Strict preset uses the new rule and drops the
+  built-in `max-classes-per-file: 1`.
+
 ## [0.0.11] - 2026-05-08
 
 ### Removed

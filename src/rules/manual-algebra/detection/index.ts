@@ -1,3 +1,10 @@
+/**
+ * @file Manual-algebra detection. Surface-analysis predicates that
+ * decide whether an object, class, or factory function reimplements a
+ * `Result` / `Option` / `Brand` algebra by hand instead of using
+ * Effect's `Either`, `Option`, or `Brand.nominal`.
+ */
+
 import type { TSESTree } from "@typescript-eslint/utils";
 import {
   hasKeyPair,
@@ -10,10 +17,18 @@ import {
 
 type ManualAlgebraKind = "result" | "option" | "brand";
 
+/**
+ * One manual-algebra detection. Reported to the rule consumer so it can
+ * emit the appropriate diagnostic.
+ */
 export interface ManualAlgebraMatch {
+  /** Algebra kind that was detected on the surface. */
   readonly kind: ManualAlgebraKind;
+  /** Display name of the detected construct (or `(anonymous)`). */
   readonly displayName: string;
+  /** Rule message id corresponding to this kind. */
   readonly messageId: "manualResult" | "manualOption" | "manualBrand";
+  /** AST node to attach the diagnostic to. */
   readonly node: TSESTree.Node;
 }
 
@@ -284,16 +299,35 @@ function isExcludedSurface(surface: Surface): boolean {
   return isTransportDataSurface(surface) || isTaggedErrorSurface(surface);
 }
 
+/**
+ * Whether `node` looks like a transport-data shape (request, response,
+ * DTO, etc.) that should not be flagged as a manual algebra.
+ * @param node The AST node to inspect.
+ * @returns `true` when the surface matches the transport-data
+ * exclusion.
+ */
 export function isTransportDataShape(node: TSESTree.Node): boolean {
   const surface = surfaceFromNode(node);
   return surface === null ? false : isTransportDataSurface(surface);
 }
 
+/**
+ * Whether `node` is a tagged-error-shaped construct (so it should not
+ * be confused with a manual Result/Option algebra).
+ * @param node The AST node to inspect.
+ * @returns `true` when the surface looks like a tagged error.
+ */
 export function isTaggedErrorCollision(node: TSESTree.Node): boolean {
   const surface = surfaceFromNode(node);
   return surface === null ? false : isTaggedErrorSurface(surface);
 }
 
+/**
+ * Try to match `node` as a hand-rolled `Result` / `Either` algebra.
+ * @param node The AST node to inspect.
+ * @returns A match record describing the detection, or `null` when no
+ * manual Result-shaped construct was found.
+ */
 export function findManualResultMatch(
   node: TSESTree.Node,
 ): ManualAlgebraMatch | null {
@@ -305,6 +339,12 @@ export function findManualResultMatch(
   return match(surface, "result", "manualResult");
 }
 
+/**
+ * Try to match `node` as a hand-rolled `Option` / `Maybe` algebra.
+ * @param node The AST node to inspect.
+ * @returns A match record describing the detection, or `null` when no
+ * manual Option-shaped construct was found.
+ */
 export function findManualOptionMatch(
   node: TSESTree.Node,
 ): ManualAlgebraMatch | null {
@@ -316,6 +356,13 @@ export function findManualOptionMatch(
   return match(surface, "option", "manualOption");
 }
 
+/**
+ * Try to match `node` as a hand-rolled nominal brand (intersection
+ * with `{ readonly __brand: ... }` and friends).
+ * @param node The AST node to inspect.
+ * @returns A match record describing the detection, or `null` when no
+ * brand marker was found.
+ */
 export function findManualBrandMatch(
   node: TSESTree.Node,
 ): ManualAlgebraMatch | null {

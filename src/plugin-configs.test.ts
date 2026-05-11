@@ -18,6 +18,44 @@ it("strict preset bundles SonarJS and strict complexity rules", () => {
   });
 });
 
+it("recommended preset bundles JSDoc content/logical rules without demanding JSDoc exists", () => {
+  const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
+
+  expect(packageJson.dependencies).toHaveProperty("eslint-plugin-jsdoc");
+  expect(plugin.configs.recommended.plugins).toHaveProperty("jsdoc");
+  expect(plugin.configs.recommended.rules).toHaveProperty("jsdoc/check-types", "error");
+  expect(plugin.configs.recommended.rules).toHaveProperty("jsdoc/no-undefined-types", "error");
+  expect(plugin.configs.recommended.rules).not.toHaveProperty("jsdoc/require-jsdoc");
+  expect(plugin.configs.recommended.rules).not.toHaveProperty("jsdoc/require-param");
+});
+
+it("documentation preset enforces full, strict JSDoc on barrel exports", () => {
+  const config = plugin.configs.documentation;
+
+  expect(config.plugins).toHaveProperty("jsdoc");
+  expect(config.rules).toHaveProperty("jsdoc/require-param", "error");
+  expect(config.rules).toHaveProperty("jsdoc/require-param-description", "error");
+  expect(config.rules).toHaveProperty("jsdoc/require-property", "error");
+  expect(config.rules).toHaveProperty("jsdoc/require-property-description", "error");
+  expect(config.rules).toHaveProperty("jsdoc/require-returns", "error");
+  expect(config.rules).toHaveProperty("jsdoc/require-file-overview", "error");
+  expect(config.rules).toHaveProperty("jsdoc/require-description-complete-sentence", "error");
+  expect(config.rules).toHaveProperty("jsdoc/match-description", "error");
+  expect(config.rules).toHaveProperty("jsdoc/check-indentation", "error");
+  expect(config.rules).toHaveProperty("jsdoc/no-blank-blocks", "error");
+  expect(config.rules).toHaveProperty("jsdoc/require-param-type", "off");
+  expect(config.rules).toHaveProperty("jsdoc/require-returns-type", "off");
+
+  const entry = config.rules["jsdoc/require-jsdoc"];
+  expect(Array.isArray(entry)).toBe(true);
+  if (!Array.isArray(entry)) return;
+  const [severity, options] = entry;
+  expect(severity).toBe("error");
+  expect(options).toMatchObject({ publicOnly: { ancestorsOnly: true, esm: true } });
+  const contexts = (options as { contexts: readonly string[] }).contexts;
+  expect(contexts.some((c) => c.includes("ExportNamedDeclaration"))).toBe(true);
+});
+
 it("bundles Knip behind a package-owned bin", () => {
   const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 

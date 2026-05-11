@@ -1,6 +1,20 @@
+/**
+ * @file Package-exports flattening. Walks the `package.json` exports
+ * tree (subpath maps + conditional maps) into a flat list of
+ * public-path / target-path pairs the architecture rules consume.
+ */
+
 import type { PackageExportEntry, PackageJson } from "../diagnostics/index.js";
 import { isJsonObject } from "../package-json.js";
 
+/**
+ * Flatten a `package.json` into the list of public path / target path
+ * entries it exposes. Reads `exports` when present and falls back to
+ * `main` / `types` otherwise.
+ * @param packageJson Parsed `package.json` contents.
+ * @returns Public-path-to-target-path entries; empty when no exports
+ * are declared.
+ */
 export function collectPackageExportEntries(
   packageJson: PackageJson,
 ): readonly PackageExportEntry[] {
@@ -14,6 +28,16 @@ export function collectPackageExportEntries(
   return entries;
 }
 
+/**
+ * Recursively walk a node-exports value (string, array, or conditional
+ * map) and emit one entry per target path. Subpath maps (`"./foo": ...`)
+ * descend into their values; condition maps (`"import": ...`,
+ * `"types": ...`) flatten through.
+ * @param value Raw value at this position in the exports tree.
+ * @param publicPath The public path key accumulated from parent
+ * subpath entries (root call typically passes `"."`).
+ * @returns Flattened public-path-to-target-path entries.
+ */
 export function collectExportsValue(
   value: unknown,
   publicPath: string,
