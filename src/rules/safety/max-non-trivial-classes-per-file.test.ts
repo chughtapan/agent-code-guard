@@ -33,6 +33,37 @@ ruleTester.run("max-non-trivial-classes-per-file", rule, {
       `,
     },
     {
+      filename: "/repo/src/tag-with-body.ts",
+      // Tag classes with methods or static fields are still tag classes —
+      // the factory is what matters, not whether the body is empty.
+      code: `
+        class FooError extends Data.TaggedError("FooError")<{ cause: string }> {
+          override toString() { return this._tag + ": " + this.cause; }
+        }
+        class BarError extends Data.TaggedError("BarError")<{ cause: string }> {
+          static layer = "layer-placeholder";
+        }
+      `,
+    },
+    {
+      filename: "/repo/src/effect-service.ts",
+      code: `
+        class UserService extends Effect.Service<UserService>()("UserService", {
+          succeed: { run: () => null },
+        }) {}
+        class DbService extends Effect.Service<DbService>()("DbService", {
+          succeed: { run: () => null },
+        }) {}
+      `,
+    },
+    {
+      filename: "/repo/src/schema-classes.ts",
+      code: `
+        class User extends Schema.Class<User>("User")({ id: Schema.String, name: Schema.String }) {}
+        class Address extends Schema.Class<Address>("Address")({ street: Schema.String }) {}
+      `,
+    },
+    {
       filename: "/repo/src/mixed.ts",
       code: `
         class FooError extends Data.TaggedError("FooError")<{}> {}
@@ -70,6 +101,35 @@ ruleTester.run("max-non-trivial-classes-per-file", rule, {
         class C { run() { return 3; } }
       `,
       errors: [{ messageId: "tooMany" }, { messageId: "tooMany" }],
+    },
+    {
+      filename: "/repo/src/empty-markers.ts",
+      // Empty bodies are no longer free — only tag-factory subclasses are.
+      // Two empty marker classes with no Effect superclass still count.
+      code: `
+        class Marker1 {}
+        class Marker2 {}
+      `,
+      errors: [{ messageId: "tooMany" }],
+    },
+    {
+      filename: "/repo/src/decorated-empty.ts",
+      // A decorated empty class carries behavior through the decorator and
+      // is NOT an Effect tag class — should count.
+      code: `
+        @Injectable() class A {}
+        @Injectable() class B {}
+      `,
+      errors: [{ messageId: "tooMany" }],
+    },
+    {
+      filename: "/repo/src/non-effect-superclass.ts",
+      // Extending a non-Effect base is not tag-factory exempt.
+      code: `
+        class A extends BaseService {}
+        class B extends BaseService {}
+      `,
+      errors: [{ messageId: "tooMany" }],
     },
   ],
 });

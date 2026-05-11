@@ -24,7 +24,10 @@ it("recommended preset bundles JSDoc content/logical rules without demanding JSD
   expect(packageJson.dependencies).toHaveProperty("eslint-plugin-jsdoc");
   expect(plugin.configs.recommended.plugins).toHaveProperty("jsdoc");
   expect(plugin.configs.recommended.rules).toHaveProperty("jsdoc/check-types", "error");
-  expect(plugin.configs.recommended.rules).toHaveProperty("jsdoc/no-undefined-types", "error");
+  expect(plugin.configs.recommended.rules).toHaveProperty("jsdoc/no-types", "error");
+  // TypeScript handles type-name resolution; we drop no-undefined-types to
+  // avoid double-diagnostics with no-types on `@param {T}` lines.
+  expect(plugin.configs.recommended.rules).toHaveProperty("jsdoc/no-undefined-types", "off");
   expect(plugin.configs.recommended.rules).not.toHaveProperty("jsdoc/require-jsdoc");
   expect(plugin.configs.recommended.rules).not.toHaveProperty("jsdoc/require-param");
 });

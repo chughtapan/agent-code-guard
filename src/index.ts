@@ -92,6 +92,9 @@ const jsdocRequireRuleForBarrelExports: TSESLint.Linter.RuleEntry = [
 const jsdocRecommendedRuleEntries: Record<string, TSESLint.Linter.RuleEntry> = {
   ...pickEnabled(jsdocLogicalRules),
   ...pickEnabled(jsdocContentsRules),
+  // TypeScript handles type-name resolution; pairing this with no-types: error
+  // would emit two diagnostics on every `@param {T}` line.
+  "jsdoc/no-undefined-types": "off",
 };
 
 const jsdocStrictRuleEntries: Record<string, TSESLint.Linter.RuleEntry> = {
