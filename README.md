@@ -93,7 +93,7 @@ The analyzer emits package, file, folder, facade, mesh, and public-type boundary
 | [`effect-promise`](docs/rules/effect/effect-promise.md) | `Effect.promise(...)` calls that turn rejections into defects |
 | [`effect-error-erasure`](docs/rules/effect/effect-error-erasure.md) | `Effect.fail(new Error(...))` and similar generic error wrapping inside the Effect channel |
 | [`either-discriminant`](docs/rules/effect/either-discriminant.md) | `Either.isLeft(...)`, `Either.isRight(...)`, and `_tag === "Left" / "Right"` |
-| [`tag-discriminant`](docs/rules/effect/tag-discriminant.md) | Manual `_tag` checks on tagged errors instead of `Effect.catchTag(...)` |
+| [`tag-discriminant`](docs/rules/effect/tag-discriminant.md) | Manual `_tag` checks on Effect-flavored tagged unions (`Effect`, `Either`, `Option`, `Cause`, `Exit`, `Data.TaggedError`, …); type-aware, needs `parserOptions.project` |
 | [`no-effect-error-coalescing`](docs/rules/effect/no-effect-error-coalescing.md) | `Effect.mapError` / `catchAll` wrappers that collapse typed error variants into one broad error (warn) |
 
 ### Manual algebra
@@ -117,7 +117,7 @@ The analyzer emits package, file, folder, facade, mesh, and public-type boundary
 | [`no-process-env-at-runtime`](docs/rules/safety/no-process-env-at-runtime.md) | Runtime `process.env` access instead of reading config once at the boundary |
 | [`no-raw-sql`](docs/rules/safety/no-raw-sql.md) | Raw SQL strings that bypass the typed query builder |
 | [`no-raw-throw-new-error`](docs/rules/safety/no-raw-throw-new-error.md) | `throw new Error(...)` outside tests — return a tagged error instead |
-| [`max-non-trivial-classes-per-file`](docs/rules/safety/max-non-trivial-classes-per-file.md) | More than one logic-bearing class per file; empty tag classes (`Data.TaggedError`, `Context.Tag`, …) are exempt |
+| [`max-non-trivial-classes-per-file`](docs/rules/safety/max-non-trivial-classes-per-file.md) | More than one logic-bearing class per file; classes that extend a configured tag-class factory (default: `Data.TaggedError`, `Context.Tag`, `Effect.Service`, …) are exempt regardless of body |
 
 ### Testing
 
@@ -137,7 +137,7 @@ The analyzer emits package, file, folder, facade, mesh, and public-type boundary
 
 ### Documentation
 
-JSDoc lint comes from bundled [`eslint-plugin-jsdoc`](https://github.com/gajus/eslint-plugin-jsdoc); consumers do not install it separately. `recommended` and `strict` turn on the logical and contents rule sets — these validate JSDoc *content* (`check-types`, `no-undefined-types`, `valid-types`, `informative-docs`, etc.) and only fire if JSDoc is present and broken. `strict` additionally enables the stylistic rules.
+JSDoc lint comes from bundled [`eslint-plugin-jsdoc`](https://github.com/gajus/eslint-plugin-jsdoc); consumers do not install it separately. `recommended` and `strict` turn on the logical and contents rule sets — these validate JSDoc *content* (`check-types`, `valid-types`, `no-types`, `informative-docs`, etc.) and only fire if JSDoc is present and broken. `strict` additionally enables the stylistic rules. `jsdoc/no-undefined-types` is dropped because TypeScript resolves type names; pairing it with `no-types: error` would emit duplicate diagnostics on every `@param {T}` line.
 
 A separate `documentation` preset enforces that JSDoc must exist on every exported declaration — every interface, type alias, enum, function, class, and exported `const` needs a doc comment, with `@param`, `@property`, and `@returns` all filled in. Because forcing JSDoc on every internal helper is noise, this preset is meant to be scoped to your folder barrels:
 
@@ -327,6 +327,10 @@ Stryker (with the vitest runner and typescript checker) mutates every source fil
 Mutation testing is a **required CI gate**. Every PR runs `pnpm mutation`; dropping below the break threshold fails the check. If you weaken a test, Stryker catches it before the lint rule ships.
 
 Runs are incremental on PR and a full sweep runs nightly. Stryker persists state to `.stryker-tmp/incremental.json`, cached in CI across runs and refreshed in this repo when a release-quality mutation pass lands. Expected wall-clock varies with changed files and cache warmth: a small incremental rerun is usually a few minutes, while broad architecture changes can take **90-120 minutes** on a laptop. The 2026-05-07 whole-project incremental run landed at **85.01%** mutation score.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 ## License
 

@@ -13,8 +13,11 @@
   The body doesn't change the exemption — a tag class with `override
   toString()` or `static layer = ...` is still a tag class. Co-located
   error groups in `errors.ts` and tag groups in `tags.ts` stop
-  fighting the limit. Default `max: 1`. Strict preset uses the new
-  rule and drops the built-in `max-classes-per-file: 1`.
+  fighting the limit. Default `max: 1`. The exemption list is
+  configurable via the `factories: string[]` option, so you can
+  register custom tag-class factories from other frameworks (e.g.
+  `["Data.TaggedError", "MyLib.TaggedThing"]`). Strict preset uses
+  the new rule and drops the built-in `max-classes-per-file: 1`.
 - **JSDoc lint integration.** Bundles
   [`eslint-plugin-jsdoc`](https://github.com/gajus/eslint-plugin-jsdoc)
   so consumers don't install it separately. `recommended` and `strict`
