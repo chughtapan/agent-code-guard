@@ -1,3 +1,8 @@
+// @agent-code-guard/architecture-exception: no-trivial-sink-file
+// reason: production-only graph projection kept as a focused helper —
+// inlining its 30 lines into folder-graph.ts pushes that file over the
+// 300-line budget enforced by max-lines.
+
 import type { FolderEdge, ProjectArchitectureGraph } from "./project-graph/index.js";
 
 export interface ProductionFolderGraph {

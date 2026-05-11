@@ -6,7 +6,7 @@ import {
   resolveStringLiteralValue,
   getTagAccess,
 } from "../../utils/ast-refinement/index.js";
-import { EFFECT_TAGGED_TYPE_PATTERN } from "../../utils/effect-namespaces.js";
+import { EFFECT_TAGGED_TYPE_PATTERN } from "../effect-namespaces.js";
 
 const EQUALITY_OPERATORS = new Set(["==", "===", "!=", "!=="]);
 

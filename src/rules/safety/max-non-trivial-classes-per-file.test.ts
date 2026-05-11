@@ -82,6 +82,17 @@ ruleTester.run("max-non-trivial-classes-per-file", rule, {
       `,
       options: [{ max: 2 }],
     },
+    {
+      filename: "/repo/src/custom-factories.ts",
+      // User-configured factories from a non-Effect framework — all three
+      // classes extend a configured factory, so they're exempt.
+      code: `
+        class A extends MyLib.TaggedThing("A")<{}> {}
+        class B extends MyLib.TaggedThing("B")<{}> {}
+        class C extends MyLib.TaggedThing("C")<{}> {}
+      `,
+      options: [{ factories: ["MyLib.TaggedThing"] }],
+    },
   ],
   invalid: [
     {
@@ -129,6 +140,18 @@ ruleTester.run("max-non-trivial-classes-per-file", rule, {
         class A extends BaseService {}
         class B extends BaseService {}
       `,
+      errors: [{ messageId: "tooMany" }],
+    },
+    {
+      filename: "/repo/src/custom-factories-override.ts",
+      // Configuring `factories` overrides the default — Effect's
+      // Data.TaggedError is no longer exempt when the user supplies a
+      // smaller list.
+      code: `
+        class FooError extends Data.TaggedError("FooError")<{}> {}
+        class BarError extends Data.TaggedError("BarError")<{}> {}
+      `,
+      options: [{ factories: ["MyLib.OnlyThis"] }],
       errors: [{ messageId: "tooMany" }],
     },
   ],

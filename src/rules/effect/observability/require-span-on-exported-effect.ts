@@ -29,6 +29,13 @@ function exportName(node: TSESTree.ExportNamedDeclaration): string | null {
   return null;
 }
 
+interface PendingExport {
+  readonly node: TSESTree.Node;
+  readonly name: string;
+  hasEffectGen: boolean;
+  hasWithSpan: boolean;
+}
+
 export default createRule({
   name: "require-span-on-exported-effect",
   meta: {
@@ -47,19 +54,41 @@ export default createRule({
   },
   defaultOptions: [],
   create(context) {
-    const sourceCode = context.sourceCode;
+    let pending: PendingExport | null = null;
+
     return {
       ExportNamedDeclaration(node) {
         const name = exportName(node);
         if (name === null) return;
         if (node.declaration === null || node.declaration === undefined) return;
-        const text = sourceCode.getText(node.declaration);
-        if (!text.includes("Effect.gen")) return;
-        if (text.includes("withSpan")) return;
+        pending = { node: node.declaration, name, hasEffectGen: false, hasWithSpan: false };
+      },
+      "ExportNamedDeclaration MemberExpression"(node: TSESTree.MemberExpression) {
+        if (pending === null) return;
+        if (node.computed) return;
+        if (node.property.type !== AST_NODE_TYPES.Identifier) return;
+        if (node.property.name === "withSpan") {
+          pending.hasWithSpan = true;
+          return;
+        }
+        if (
+          node.property.name === "gen" &&
+          node.object.type === AST_NODE_TYPES.Identifier &&
+          node.object.name === "Effect"
+        ) {
+          pending.hasEffectGen = true;
+        }
+      },
+      "ExportNamedDeclaration:exit"() {
+        if (pending === null) return;
+        const facts = pending;
+        pending = null;
+        if (!facts.hasEffectGen) return;
+        if (facts.hasWithSpan) return;
         context.report({
-          node: node.declaration,
+          node: facts.node,
           messageId: "missingSpan",
-          data: { name },
+          data: { name: facts.name },
         });
       },
     };

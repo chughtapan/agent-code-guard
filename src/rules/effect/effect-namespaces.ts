@@ -1,28 +1,9 @@
 /**
- * @file Shared knowledge about the `effect` package's surface. Three rules
- * key off this data: max-non-trivial-classes-per-file (factories),
- * prefer-effect-platform (pure namespaces), and tag-discriminant
- * (tagged-type names).
+ * @file Shared knowledge about the `effect` package's namespace surface.
+ * Used by the prefer-effect-platform and tag-discriminant rules to
+ * distinguish Effect-runtime imports and Effect-flavored types from
+ * unrelated user code.
  */
-
-/**
- * Effect tag-class factory call sites — `Namespace.Function` paths whose
- * call result is `extends`-able to produce a tag class.
- */
-export const EFFECT_TAG_CLASS_FACTORIES: ReadonlySet<string> = new Set([
-  "Data.TaggedError",
-  "Data.TaggedClass",
-  "Data.Class",
-  "Data.Error",
-  "Schema.Class",
-  "Schema.TaggedClass",
-  "Schema.TaggedError",
-  "Schema.TaggedRequest",
-  "Context.Tag",
-  "Context.Reference",
-  "Effect.Service",
-  "Effect.Tag",
-]);
 
 /**
  * Top-level namespaces from the `effect` package that don't pull in an
