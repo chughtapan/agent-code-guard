@@ -89,14 +89,6 @@ ruleTester.run("prefer-effect-platform", rule, {
         fs.readFileSync("a");
       `,
     },
-    // Schema is treated as pure; effectful Schema APIs require Effect too
-    {
-      code: `
-        import { Schema } from "effect";
-        import fs from "node:fs";
-        fs.readFileSync("a");
-      `,
-    },
   ],
   invalid: [
     // Raw fs in Effect file
@@ -212,6 +204,16 @@ ruleTester.run("prefer-effect-platform", rule, {
     {
       code: `
         import * as E from "effect";
+        import fs from "node:fs";
+        fs.readFileSync("a");
+      `,
+      errors: [{ messageId: "rawFs", data: { module: "node:fs" } }],
+    },
+    // Schema treated as effectful: Schema.decodeUnknown returns Effect, so a
+    // file using Schema for parsing + raw fs IS an Effect program with raw I/O.
+    {
+      code: `
+        import { Schema } from "effect";
         import fs from "node:fs";
         fs.readFileSync("a");
       `,

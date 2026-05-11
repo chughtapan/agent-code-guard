@@ -181,7 +181,6 @@ export const SEEDS: readonly RuleSeed[] = [
     filename: "jest.config.js",
   },
   { ruleId: "agent-code-guard/no-hardcoded-assertion-literals", seed: 'expect(result).toBe("processed");', coFire: ["sonarjs/no-empty-test-file"], filename: "src/foo.test.ts" },
-  { ruleId: "agent-code-guard/tag-discriminant", seed: "if (err._tag === 'WebhookTimeoutError') return;", coFire: [] },
 ];
 
 export const FIXABLE_RULE_IDS = Object.entries(plugin.rules)
@@ -242,5 +241,4 @@ const IDENTS_BY_SEED: Record<string, string> = {
   "agent-code-guard/no-example-only-tests": "",
   "agent-code-guard/no-coverage-threshold-gate": "",
   "agent-code-guard/no-hardcoded-assertion-literals": "result",
-  "agent-code-guard/tag-discriminant": "",
 };

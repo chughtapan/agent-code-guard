@@ -1,5 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
+import * as ts from "typescript";
 import { createRule } from "../../utils/create-rule.js";
+import { requireServices } from "../../utils/typed-linter/index.js";
 import {
   resolveStringLiteralValue,
   getTagAccess,
@@ -7,12 +9,16 @@ import {
 
 const EQUALITY_OPERATORS = new Set(["==", "===", "!=", "!=="]);
 
+const EFFECT_TAGGED_TYPE_PATTERN =
+  /\b(?:Effect|Either|Option|Exit|Cause|Fiber|Stream|TaggedError|TaggedClass|TaggedEnum|ParseResult|Chunk\.NonEmpty|Equal\.Equal)\b/;
+
 function resolveStringLiteral(node: TSESTree.Node | null): string | null {
   return resolveStringLiteralValue(node);
 }
 
 interface TagComparison {
   readonly tagAccess: TSESTree.Node;
+  readonly receiver: TSESTree.Node;
   readonly comparedValue: TSESTree.Node;
 }
 
@@ -21,18 +27,28 @@ function tagComparison(node: TSESTree.BinaryExpression): TagComparison | null {
   const leftTag = getTagAccess(node.left);
   const rightTag = getTagAccess(node.right);
   if (leftTag !== null && rightTag === null) {
-    return { tagAccess: leftTag, comparedValue: node.right };
+    return { tagAccess: leftTag, receiver: leftTag.object, comparedValue: node.right };
   }
   if (rightTag !== null && leftTag === null) {
-    return { tagAccess: rightTag, comparedValue: node.left };
+    return { tagAccess: rightTag, receiver: rightTag.object, comparedValue: node.left };
   }
   return null;
 }
 
-function isReportableTagComparison(node: TSESTree.BinaryExpression): boolean {
+function reportableTagComparison(node: TSESTree.BinaryExpression): TagComparison | null {
   const comparison = tagComparison(node);
-  if (comparison === null) return false;
-  return resolveStringLiteral(comparison.comparedValue) !== null;
+  if (comparison === null) return null;
+  if (resolveStringLiteral(comparison.comparedValue) === null) return null;
+  return comparison;
+}
+
+function typeMentionsEffectTagged(type: ts.Type, checker: ts.TypeChecker): boolean {
+  const typeString = checker.typeToString(type);
+  if (EFFECT_TAGGED_TYPE_PATTERN.test(typeString)) return true;
+  if (type.isUnion()) {
+    return type.types.some((member) => typeMentionsEffectTagged(member, checker));
+  }
+  return false;
 }
 
 export default createRule({
@@ -41,11 +57,11 @@ export default createRule({
     type: "problem",
     docs: {
       description:
-        "Flag any manual `_tag` discriminant check. Use Effect.catchTag(...) / catchTags(...) for tagged errors and Match.tag(...) / Match.discriminator('_tag') for tagged unions.",
+        "Flag manual `_tag` discriminant checks on Effect tagged unions. Use Effect.catchTag(...) / catchTags(...) for tagged errors and Match.tag(...) / Match.discriminator('_tag') for tagged unions.",
     },
     messages: {
       tagDiscriminant:
-        "Manual `_tag` discriminant — use Effect.catchTag(...) / catchTags(...) for errors, or Match.tag(...) / Match.discriminator('_tag') for tagged unions.",
+        "Manual `_tag` discriminant on an Effect tagged union — use Effect.catchTag(...) / catchTags(...) for errors, or Match.tag(...) / Match.discriminator('_tag') for tagged unions.",
     },
     schema: [],
     fixable: undefined,
@@ -53,13 +69,27 @@ export default createRule({
   },
   defaultOptions: [],
   create(context) {
+    const maybeServices = requireServices(context);
+    if (maybeServices === null) return {};
+    const services = maybeServices;
+    const checker = services.program.getTypeChecker();
+
+    function receiverIsEffectTagged(receiver: TSESTree.Node): boolean {
+      const tsNode = services.esTreeNodeToTSNodeMap.get(receiver);
+      if (!tsNode) return false;
+      const type = checker.getTypeAtLocation(tsNode);
+      return typeMentionsEffectTagged(type, checker);
+    }
+
     function report(node: TSESTree.Node): void {
       context.report({ node, messageId: "tagDiscriminant" });
     }
 
     return {
       BinaryExpression(node) {
-        if (!isReportableTagComparison(node)) return;
+        const comparison = reportableTagComparison(node);
+        if (comparison === null) return;
+        if (!receiverIsEffectTagged(comparison.receiver)) return;
         report(node);
       },
       SwitchStatement(node) {
@@ -69,6 +99,7 @@ export default createRule({
           (caseNode) => resolveStringLiteral(caseNode.test) !== null,
         );
         if (!hasStringCase) return;
+        if (!receiverIsEffectTagged(discriminant.object)) return;
         report(node);
       },
     };

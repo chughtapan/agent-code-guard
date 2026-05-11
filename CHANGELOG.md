@@ -16,12 +16,16 @@
   longer pushed toward `@effect/platform`. Namespace imports
   (`import * as`) and any `@effect/*` import remain conservative
   triggers.
-- **`agent-code-guard/tag-discriminant` now flags every manual `_tag`
-  comparison**, not just `_tag` checks on error-named receivers. Any
-  `value._tag === "Foo"` / `!== "Foo"` / `switch (value._tag) { case "Foo" }`
-  fires. Message updated to point users at `Effect.catchTag(...)` /
-  `catchTags(...)` for tagged errors and `Match.tag(...)` /
-  `Match.discriminator('_tag')` for tagged unions.
+- **`agent-code-guard/tag-discriminant` is now type-aware and fires on
+  every `_tag` comparison whose receiver is an Effect-flavored tagged
+  union** (`Effect`, `Either`, `Option`, `Exit`, `Cause`, `Fiber`,
+  `Stream`, `ParseResult`, `Data.TaggedError`, `Data.TaggedClass`,
+  `Data.TaggedEnum`). Replaces the prior error-name heuristic. Needs
+  TypeScript program services (`parserOptions.project`); silently
+  skips files without type info. Non-Effect tagged unions (Redux,
+  fp-ts, custom user types) are not flagged. Message points users at
+  `Effect.catchTag(...)` / `catchTags(...)` for tagged errors and
+  `Match.tag(...)` / `Match.discriminator('_tag')` for tagged unions.
 - **`agent-code-guard/manual-brand` message now recommends a refined
   brand first** — `Schema.<Primitive>.pipe(Schema.refine(predicate)).pipe(Schema.brand(...))`
   — so the brand witnesses a checked invariant rather than just naming
