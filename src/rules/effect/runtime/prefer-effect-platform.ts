@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PURE_EFFECT_NAMESPACES } from "../../utils/effect-namespaces.js";
 
 type Target = "fs" | "http" | "argv" | "fetch" | "sql" | "cli";
 
@@ -20,52 +21,6 @@ const CLI_LIB_PATTERNS = [
   /^yargs(\/|$)/,
   /^commander(\/|$)/,
 ];
-
-// Pure data and utility namespaces in the `effect` package. Importing any of
-// these alone does not mean the file runs an Effect program — they are typed
-// data, FP combinators, or pattern-matching helpers. A file that only uses
-// these and otherwise reads via `node:fs` is not the target of this rule.
-const PURE_EFFECT_NAMESPACES = new Set([
-  "Array",
-  "BigDecimal",
-  "BigInt",
-  "Boolean",
-  "Brand",
-  "Cause",
-  "Chunk",
-  "Data",
-  "Duration",
-  "Either",
-  "Equal",
-  "Equivalence",
-  "Exit",
-  "FastCheck",
-  "Function",
-  "Hash",
-  "HashMap",
-  "HashSet",
-  "JSONSchema",
-  "List",
-  "Match",
-  "MutableHashMap",
-  "MutableHashSet",
-  "MutableList",
-  "MutableQueue",
-  "Number",
-  "Option",
-  "Order",
-  "Predicate",
-  "Record",
-  "RedBlackTree",
-  "SortedMap",
-  "SortedSet",
-  "String",
-  "Struct",
-  "Tuple",
-  "flow",
-  "identity",
-  "pipe",
-]);
 
 function isEffectRuntimeImport(node: TSESTree.ImportDeclaration): boolean {
   const source = node.source.value;

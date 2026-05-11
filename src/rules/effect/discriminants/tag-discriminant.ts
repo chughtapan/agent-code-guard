@@ -6,11 +6,9 @@ import {
   resolveStringLiteralValue,
   getTagAccess,
 } from "../../utils/ast-refinement/index.js";
+import { EFFECT_TAGGED_TYPE_PATTERN } from "../../utils/effect-namespaces.js";
 
 const EQUALITY_OPERATORS = new Set(["==", "===", "!=", "!=="]);
-
-const EFFECT_TAGGED_TYPE_PATTERN =
-  /\b(?:Effect|Either|Option|Exit|Cause|Fiber|Stream|TaggedError|TaggedClass|TaggedEnum|ParseResult|Chunk\.NonEmpty|Equal\.Equal)\b/;
 
 function resolveStringLiteral(node: TSESTree.Node | null): string | null {
   return resolveStringLiteralValue(node);

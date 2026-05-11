@@ -1,25 +1,11 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { EFFECT_TAG_CLASS_FACTORIES } from "../utils/effect-namespaces.js";
 
 type Options = readonly [{ readonly max?: number }?];
 
 const DEFAULT_MAX = 1;
-
-const TAG_CLASS_FACTORIES = new Set([
-  "Data.TaggedError",
-  "Data.TaggedClass",
-  "Data.Class",
-  "Data.Error",
-  "Schema.Class",
-  "Schema.TaggedClass",
-  "Schema.TaggedError",
-  "Schema.TaggedRequest",
-  "Context.Tag",
-  "Context.Reference",
-  "Effect.Service",
-  "Effect.Tag",
-]);
 
 function factoryMemberName(node: TSESTree.Expression): string | null {
   let current: TSESTree.Expression | TSESTree.Super = node;
@@ -38,7 +24,7 @@ function extendsTagClassFactory(
 ): boolean {
   if (node.superClass === null) return false;
   const factory = factoryMemberName(node.superClass);
-  return factory !== null && TAG_CLASS_FACTORIES.has(factory);
+  return factory !== null && EFFECT_TAG_CLASS_FACTORIES.has(factory);
 }
 
 export default createRule<Options, "tooMany">({
