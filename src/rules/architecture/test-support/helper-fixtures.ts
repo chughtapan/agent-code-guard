@@ -57,7 +57,7 @@ export {
 export {
   folderEdgeDensity,
   stronglyConnectedFolderComponents,
-} from "../imports/folder-graph.js";
+} from "../imports/folder-graph/index.js";
 export {
   buildProjectGraph,
   folderKeyForFile,

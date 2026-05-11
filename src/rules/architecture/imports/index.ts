@@ -15,4 +15,4 @@ export type {
 } from "../project/index.js";
 export {
   checkFolderGraph,
-} from "./folder-graph.js";
+} from "./folder-graph/index.js";
