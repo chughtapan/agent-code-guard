@@ -20,19 +20,8 @@ ruleTester.run("tag-discriminant", rule, {
       code: 'const out = Effect.catchTag("WebhookTimeoutError", () => Effect.void)(program);',
     },
     {
-      code: 'if (opt._tag === "None") return;',
-    },
-    {
-      code: 'if (event._tag === "message.sent") return;',
-    },
-    {
-      code: 'if (ctx["error"]._tag === "WebhookTimeoutError") return;',
-    },
-    {
+      // `_tag` is accessed via computed string — not a static `_tag` member.
       code: 'if (ctx.error["_tag"] === "WebhookTimeoutError") return;',
-    },
-    {
-      code: 'switch (result._tag) { case "Ready": return; default: return; }',
     },
     {
       code: 'const decorated = err._tag + "WebhookTimeoutError";',
@@ -96,6 +85,26 @@ ruleTester.run("tag-discriminant", rule, {
     },
     {
       code: 'switch (ctx?.error._tag) { case "WebhookTimeoutError": return; default: return; }',
+      errors: [{ messageId: "tagDiscriminant" }],
+    },
+    {
+      // Manual Option `_tag` check — Match.tag("Some") / Match.tag("None") instead.
+      code: 'if (opt._tag === "None") return;',
+      errors: [{ messageId: "tagDiscriminant" }],
+    },
+    {
+      // Manual tagged-union check — Match.discriminator("_tag") / Match.tag instead.
+      code: 'if (event._tag === "message.sent") return;',
+      errors: [{ messageId: "tagDiscriminant" }],
+    },
+    {
+      // Manual tagged-union switch — Match.value(...).pipe(Match.tag(...)).
+      code: 'switch (result._tag) { case "Ready": return; default: return; }',
+      errors: [{ messageId: "tagDiscriminant" }],
+    },
+    {
+      // Even when the parent is computed, the `_tag` access is static.
+      code: 'if (ctx["error"]._tag === "WebhookTimeoutError") return;',
       errors: [{ messageId: "tagDiscriminant" }],
     },
   ],

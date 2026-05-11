@@ -1,39 +1,11 @@
 import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import {
-  getStaticMemberPropertyName,
   resolveStringLiteralValue,
   getTagAccess,
 } from "../../utils/ast-refinement/index.js";
 
-const ERROR_NAME_RE = /^(err|error)$|(?:Error|Failure|Failed|Exception)$/;
 const EQUALITY_OPERATORS = new Set(["==", "===", "!=", "!=="]);
-
-function resolveErrorLikeName(name: string | null): boolean {
-  return typeof name === "string" && ERROR_NAME_RE.test(name);
-}
-
-function getExpressionName(node: TSESTree.Expression): string | null {
-  switch (node.type) {
-    case AST_NODE_TYPES.Identifier:
-      return node.name;
-    case AST_NODE_TYPES.MemberExpression:
-      return getStaticMemberPropertyName(node);
-    case AST_NODE_TYPES.ChainExpression:
-      return node.expression.type === AST_NODE_TYPES.MemberExpression
-        ? getExpressionName(node.expression)
-        : null;
-    default:
-      return null;
-  }
-}
-
-function tagAccessLooksErrorLike(node: TSESTree.Node): boolean {
-  const member = getTagAccess(node);
-  if (!member) return false;
-  return resolveErrorLikeName(getExpressionName(member.object));
-}
 
 function resolveStringLiteral(node: TSESTree.Node | null): string | null {
   return resolveStringLiteralValue(node);
@@ -60,8 +32,7 @@ function tagComparison(node: TSESTree.BinaryExpression): TagComparison | null {
 function isReportableTagComparison(node: TSESTree.BinaryExpression): boolean {
   const comparison = tagComparison(node);
   if (comparison === null) return false;
-  if (resolveStringLiteral(comparison.comparedValue) === null) return false;
-  return tagAccessLooksErrorLike(comparison.tagAccess);
+  return resolveStringLiteral(comparison.comparedValue) !== null;
 }
 
 export default createRule({
@@ -70,11 +41,11 @@ export default createRule({
     type: "problem",
     docs: {
       description:
-        "Flag manual `_tag` checks on tagged errors. Use `Effect.catchTag(...)` or `Effect.catchTags(...)` instead.",
+        "Flag any manual `_tag` discriminant check. Use Effect.catchTag(...) / catchTags(...) for tagged errors and Match.tag(...) / Match.discriminator('_tag') for tagged unions.",
     },
     messages: {
       tagDiscriminant:
-        "Manual `_tag` discriminant on a tagged error — use Effect.catchTag(...) / catchTags(...).",
+        "Manual `_tag` discriminant — use Effect.catchTag(...) / catchTags(...) for errors, or Match.tag(...) / Match.discriminator('_tag') for tagged unions.",
     },
     schema: [],
     fixable: undefined,
@@ -94,7 +65,6 @@ export default createRule({
       SwitchStatement(node) {
         const discriminant = getTagAccess(node.discriminant);
         if (discriminant === null) return;
-        if (!tagAccessLooksErrorLike(discriminant)) return;
         const hasStringCase = node.cases.some(
           (caseNode) => resolveStringLiteral(caseNode.test) !== null,
         );

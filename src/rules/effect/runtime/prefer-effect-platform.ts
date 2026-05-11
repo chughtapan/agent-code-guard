@@ -21,8 +21,69 @@ const CLI_LIB_PATTERNS = [
   /^commander(\/|$)/,
 ];
 
-function importsEffect(source: string): boolean {
-  return source === "effect" || source.startsWith("@effect/");
+// Pure data and utility namespaces in the `effect` package. Importing any of
+// these alone does not mean the file runs an Effect program — they are typed
+// data, FP combinators, or pattern-matching helpers. A file that only uses
+// these and otherwise reads via `node:fs` is not the target of this rule.
+const PURE_EFFECT_NAMESPACES = new Set([
+  "Array",
+  "BigDecimal",
+  "BigInt",
+  "Boolean",
+  "Brand",
+  "Cause",
+  "Chunk",
+  "Data",
+  "Duration",
+  "Either",
+  "Equal",
+  "Equivalence",
+  "Exit",
+  "FastCheck",
+  "Function",
+  "Hash",
+  "HashMap",
+  "HashSet",
+  "JSONSchema",
+  "List",
+  "Match",
+  "MutableHashMap",
+  "MutableHashSet",
+  "MutableList",
+  "MutableQueue",
+  "Number",
+  "Option",
+  "Order",
+  "ParseResult",
+  "Predicate",
+  "Record",
+  "RedBlackTree",
+  "Schema",
+  "SortedMap",
+  "SortedSet",
+  "String",
+  "Struct",
+  "Tuple",
+  "flow",
+  "identity",
+  "pipe",
+]);
+
+function isEffectRuntimeImport(node: TSESTree.ImportDeclaration): boolean {
+  const source = node.source.value;
+  if (typeof source !== "string") return false;
+  if (source.startsWith("@effect/")) return true;
+  if (source !== "effect") return false;
+  if (node.specifiers.length === 0) return true;
+  return node.specifiers.some(isEffectfulImportSpecifier);
+}
+
+function isEffectfulImportSpecifier(specifier: TSESTree.ImportClause): boolean {
+  if (specifier.type === AST_NODE_TYPES.ImportNamespaceSpecifier) return true;
+  if (specifier.type === AST_NODE_TYPES.ImportDefaultSpecifier) return true;
+  const imported = specifier.imported;
+  if (imported.type !== AST_NODE_TYPES.Identifier) return true;
+  return !PURE_EFFECT_NAMESPACES.has(imported.name);
 }
 
 function targetForImportSource(source: string): Target | null {
@@ -101,7 +162,7 @@ export default createRule<[Options], "rawFs" | "rawHttp" | "rawArgv" | "rawFetch
       ImportDeclaration(node) {
         const source = node.source.value;
         if (typeof source !== "string") return;
-        if (importsEffect(source)) {
+        if (isEffectRuntimeImport(node)) {
           foundEffectImport = true;
           return;
         }
