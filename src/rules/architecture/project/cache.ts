@@ -5,7 +5,8 @@ import { createProgram } from "./api/index.js";
 
 // Long-lived hosts (ESLint LSP, VS Code) reuse the cache across edits;
 // without a TTL, "fixed" diagnostics linger until the editor restarts.
-const REPORT_CACHE_TTL_MS = 5_000;
+// The TTL is configurable via the `cacheTtlMs` architecture option;
+// CI users can pass `Infinity` to disable invalidation entirely.
 
 interface CachedReport {
   readonly report: ArchitectureReport;
@@ -37,7 +38,7 @@ export function cachedProjectArchitecture(
   if (cached !== undefined && cached.expiresAt > now) return cached.report;
 
   const report = analyzeResolvedArchitecture(options, programProvider);
-  reportCache.set(cacheKey, { report, expiresAt: now + REPORT_CACHE_TTL_MS });
+  reportCache.set(cacheKey, { report, expiresAt: now + options.cacheTtlMs });
   return report;
 }
 
