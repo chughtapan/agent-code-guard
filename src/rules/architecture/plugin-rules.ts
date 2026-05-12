@@ -13,7 +13,6 @@ import {
   architectureOptionsJsonSchema,
   cachedProjectArchitecture,
   resolveArchitectureOptions,
-  type ArchitectureDiagnostic,
   type ArchitectureReport,
   type ArchitectureOptionsInput,
 } from "./project/api/index.js";
@@ -108,10 +107,12 @@ function architectureReportListener(
   allowedRuleIds: ReadonlySet<ArchitectureRuleId>,
   filename: string,
 ): TSESLint.RuleListener {
+  const fileDiagnostics = report.diagnosticsByFile.get(filename);
+  if (fileDiagnostics === undefined) return {};
   return {
     Program(node) {
-      for (const diagnostic of report.diagnostics) {
-        if (shouldReportDiagnostic(diagnostic, allowedRuleIds, filename)) {
+      for (const diagnostic of fileDiagnostics) {
+        if (allowedRuleIds.has(diagnostic.ruleId)) {
           context.report({
             node,
             messageId: "architectureViolation",
@@ -121,15 +122,6 @@ function architectureReportListener(
       }
     },
   };
-}
-
-function shouldReportDiagnostic(
-  diagnostic: ArchitectureDiagnostic,
-  allowedRuleIds: ReadonlySet<ArchitectureRuleId>,
-  filename: string,
-): boolean {
-  return allowedRuleIds.has(diagnostic.ruleId) &&
-    path.resolve(diagnostic.file) === filename;
 }
 
 export {

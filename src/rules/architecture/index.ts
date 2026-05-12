@@ -75,12 +75,23 @@ export function analyzeResolvedArchitecture(
     ...checkModuleShape(graph, options),
   ]);
 
-  return {
-    diagnostics: [
-      ...directiveAnalysis.directiveErrorDiagnostics,
-      ...filterSuppressedDiagnostics(allDiagnostics, directiveAnalysis),
-    ],
-  };
+  const diagnostics = [
+    ...directiveAnalysis.directiveErrorDiagnostics,
+    ...filterSuppressedDiagnostics(allDiagnostics, directiveAnalysis),
+  ];
+  return { diagnostics, diagnosticsByFile: indexByFile(diagnostics) };
+}
+
+function indexByFile(
+  diagnostics: readonly ArchitectureDiagnostic[],
+): ReadonlyMap<string, readonly ArchitectureDiagnostic[]> {
+  const byFile = new Map<string, ArchitectureDiagnostic[]>();
+  for (const diagnostic of diagnostics) {
+    const bucket = byFile.get(diagnostic.file);
+    if (bucket === undefined) byFile.set(diagnostic.file, [diagnostic]);
+    else bucket.push(diagnostic);
+  }
+  return byFile;
 }
 
 function resolvePublicVendorTypeLeaks(
