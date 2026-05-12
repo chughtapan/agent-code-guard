@@ -1,3 +1,10 @@
+/**
+ * @file Project-graph construction. Walks source files, builds
+ * `SourceModule` records with local and external edges, collapses to
+ * folder-level edges, computes export consumers, and assigns layer
+ * indices. Every downstream architecture check consumes this graph.
+ */
+
 import path from "node:path";
 import ts from "typescript";
 import { collectModuleEdges } from "../edges.js";
@@ -30,6 +37,21 @@ export type {
   SourceModule,
 } from "../../project/index.js";
 
+/**
+ * Build the canonical architecture graph for a TypeScript project:
+ * one `SourceModule` per source file, their local and external import
+ * edges, the folder-level edge collapse, the export-consumer index,
+ * and a folder-to-layer index keyed by the configured `layers`. Every
+ * downstream architecture check consumes this graph.
+ * @param sourceFiles Project source files (post-tsconfig include
+ * resolution).
+ * @param packageJson Parsed `package.json` used to identify public
+ * API files.
+ * @param options Resolved architecture options.
+ * @param reportFile File path used as the diagnostic target when a
+ * finding has no natural single file.
+ * @returns The fully-populated project architecture graph.
+ */
 export function buildProjectGraph(
   sourceFiles: readonly ts.SourceFile[],
   packageJson: PackageJson,
@@ -75,11 +97,16 @@ export function buildProjectGraph(
   };
 }
 
-// Returns the index of the layer the folder belongs to, or null if no layer
-// matches. Match rule: a folder belongs to a layer if any of the layer's
-// `folders` entries equals the folder OR is a path prefix of it (segment
-// boundary). Among matches, the longest entry wins (most-specific). Ties on
-// length resolve to the lower (earlier) layer index for predictability.
+/**
+ * Resolve which configured layer a folder belongs to. A folder matches
+ * a layer if any of the layer's `folders` entries equals the folder or
+ * is a segment-aligned path prefix of it. The most-specific (longest)
+ * entry wins; length ties resolve to the lower (earlier) layer index.
+ * @param folder Folder key (relative to `src/`; root is `.`).
+ * @param layers Ordered layer definitions from architecture options.
+ * @returns Zero-based layer index, or `null` when no layer matches or
+ * no layers are configured.
+ */
 export function layerIndexFor(
   folder: string,
   layers: ReadonlyArray<LayerDefinition>,
@@ -107,6 +134,14 @@ export function layerIndexFor(
   return bestLayer;
 }
 
+/**
+ * Canonical folder key for a source file: directory path relative to
+ * `src/` (when the file lives under `src/`) or relative to the project
+ * root (otherwise). The root folder is encoded as `.`.
+ * @param fileName Absolute or relative path to the source file.
+ * @param projectRoot Absolute path to the project root.
+ * @returns Folder key with forward-slash separators; `.` for root.
+ */
 export function folderKeyForFile(fileName: string, projectRoot: string): string {
   const sourceRoot = path.join(projectRoot, "src");
   const sourceRootWithSlash = withTrailingSeparator(sourceRoot);
@@ -116,6 +151,12 @@ export function folderKeyForFile(fileName: string, projectRoot: string): string 
   return relativeDirectory.length === 0 ? "." : normalizePath(relativeDirectory);
 }
 
+/**
+ * Top-level folder segment for a folder key — the first path
+ * component, used by layer-direction and shared-kernel checks.
+ * @param folder Folder key from `folderKeyForFile`.
+ * @returns The first segment of `folder`, or `.` for the root folder.
+ */
 export function topFolder(folder: string): string {
   return folder.split("/")[0] ?? ".";
 }

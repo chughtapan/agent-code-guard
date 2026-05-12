@@ -65,6 +65,30 @@ ruleTester.run("prefer-effect-platform", rule, {
       `,
       options: [{ disable: ["sql"] }],
     },
+    // Pure utility import (Match) only — no runtime, raw node:fs is fine
+    {
+      code: `
+        import { Match } from "effect";
+        import fs from "node:fs";
+        fs.readFileSync("a");
+      `,
+    },
+    // Multiple pure namespaces only — still pure
+    {
+      code: `
+        import { Brand, Data, Option } from "effect";
+        import fs from "node:fs";
+        fs.readFileSync("a");
+      `,
+    },
+    // Renamed pure import — still pure
+    {
+      code: `
+        import { Match as M } from "effect";
+        import fs from "node:fs";
+        fs.readFileSync("a");
+      `,
+    },
   ],
   invalid: [
     // Raw fs in Effect file
@@ -157,6 +181,43 @@ ruleTester.run("prefer-effect-platform", rule, {
         fs.readFileSync("a");
       `,
       errors: [{ messageId: "rawFs", data: { module: "fs" } }],
+    },
+    // Pure namespace + runtime namespace mixed — runtime wins, file is effectful
+    {
+      code: `
+        import { Match, Effect } from "effect";
+        import fs from "node:fs";
+        fs.readFileSync("a");
+      `,
+      errors: [{ messageId: "rawFs", data: { module: "node:fs" } }],
+    },
+    // Stream is effectful (managed fibers)
+    {
+      code: `
+        import { Stream } from "effect";
+        import fs from "node:fs";
+        fs.readFileSync("a");
+      `,
+      errors: [{ messageId: "rawFs", data: { module: "node:fs" } }],
+    },
+    // Namespace import — conservatively treated as effectful
+    {
+      code: `
+        import * as E from "effect";
+        import fs from "node:fs";
+        fs.readFileSync("a");
+      `,
+      errors: [{ messageId: "rawFs", data: { module: "node:fs" } }],
+    },
+    // Schema treated as effectful: Schema.decodeUnknown returns Effect, so a
+    // file using Schema for parsing + raw fs IS an Effect program with raw I/O.
+    {
+      code: `
+        import { Schema } from "effect";
+        import fs from "node:fs";
+        fs.readFileSync("a");
+      `,
+      errors: [{ messageId: "rawFs", data: { module: "node:fs" } }],
     },
   ],
 });

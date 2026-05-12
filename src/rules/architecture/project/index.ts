@@ -1,3 +1,9 @@
+/**
+ * @file Project barrel. Re-exports the source-model helpers, source
+ * paths, source files, and diagnostic / option types that downstream
+ * analysis passes consume.
+ */
+
 export {
   explicitFacadeModule,
   exportedDeclarationName,

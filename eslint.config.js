@@ -89,6 +89,25 @@ export default [
     },
   },
 
+  // Block 3: facade files — require full JSDoc on every public export.
+  // Mirrors ARCHITECTURE_OPTIONS.facadeFiles plus every `index.ts` barrel.
+  {
+    files: [
+      "src/**/index.ts",
+      "src/index.ts",
+      "src/rules/registry.ts",
+      "src/rules/architecture/plugin-rules.ts",
+      "src/rules/utils/create-rule.ts",
+      "src/rules/utils/is-test-file.ts",
+    ],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
+    },
+    plugins: guard.configs.documentation.plugins,
+    rules: guard.configs.documentation.rules,
+  },
+
   {
     ignores: [
       "dist/**",

@@ -1,3 +1,9 @@
+/**
+ * @file Architecture ESLint rule factory + registry. Each architecture
+ * diagnostic gets its own ESLint rule that runs the cached project
+ * analyzer once per program and forwards the filtered findings.
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import type { TSESLint } from "@typescript-eslint/utils";
@@ -146,6 +152,12 @@ function walkUpForPackageRoot(directory: string): string | null {
   return parent === directory ? null : walkUpForPackageRoot(parent);
 }
 
+/**
+ * Architecture rule map exposed to the plugin entry. Every entry is a
+ * created ESLint rule that filters the shared project report down to
+ * its own diagnostic ids and reports each finding against the source
+ * file the analyzer attached it to.
+ */
 export const architectureRules = {
   "no-inventory-barrel": createArchitectureDiagnosticRule(
     "no-inventory-barrel",

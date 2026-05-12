@@ -1,6 +1,7 @@
 import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
 import * as fc from "fast-check";
+import jsdoc from "eslint-plugin-jsdoc";
 import sonarjs from "eslint-plugin-sonarjs";
 import * as ts from "typescript";
 import plugin from "../../index.js";
@@ -60,6 +61,7 @@ export const safeSourceArb = fc
   .map((statements) => statements.join("\n"));
 
 const sonarjsEntry = sonarjs as NonNullable<Linter.Config["plugins"]>[string];
+const jsdocEntry = jsdoc as NonNullable<Linter.Config["plugins"]>[string];
 
 export function baseConfig(rules: Linter.RulesRecord): Linter.Config {
   return {
@@ -68,7 +70,11 @@ export function baseConfig(rules: Linter.RulesRecord): Linter.Config {
       parser,
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    plugins: { "agent-code-guard": pluginEntry, sonarjs: sonarjsEntry },
+    plugins: {
+      "agent-code-guard": pluginEntry,
+      sonarjs: sonarjsEntry,
+      jsdoc: jsdocEntry,
+    },
     rules,
   };
 }
@@ -175,7 +181,6 @@ export const SEEDS: readonly RuleSeed[] = [
     filename: "jest.config.js",
   },
   { ruleId: "agent-code-guard/no-hardcoded-assertion-literals", seed: 'expect(result).toBe("processed");', coFire: ["sonarjs/no-empty-test-file"], filename: "src/foo.test.ts" },
-  { ruleId: "agent-code-guard/tag-discriminant", seed: "if (err._tag === 'WebhookTimeoutError') return;", coFire: [] },
 ];
 
 export const FIXABLE_RULE_IDS = Object.entries(plugin.rules)
@@ -236,5 +241,4 @@ const IDENTS_BY_SEED: Record<string, string> = {
   "agent-code-guard/no-example-only-tests": "",
   "agent-code-guard/no-coverage-threshold-gate": "",
   "agent-code-guard/no-hardcoded-assertion-literals": "result",
-  "agent-code-guard/tag-discriminant": "",
 };

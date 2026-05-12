@@ -1,3 +1,10 @@
+/**
+ * @file Architecture rule entry point. Composes every analysis pass
+ * (package exports, inventory barrels, vendor type leaks, public
+ * surface, folder graph, folder/module shape) into the single project
+ * report consumed by the architecture ESLint rules.
+ */
+
 import path from "node:path";
 import { checkFolderShape } from "./folder-shape/index.js";
 import { checkInventoryBarrels } from "./exports/inventory-barrels.js";
@@ -37,8 +44,17 @@ interface DirectiveAnalysis {
   readonly attemptedSuppressions: ReadonlyMap<string, ReadonlySet<ArchitectureDiagnosticRuleId>>;
 }
 
-// Internal: assumes options have already been schema-decoded and path-resolved.
-// Used by the cache layer to avoid double decoding.
+/**
+ * Run every architecture analysis pass (package exports, inventory
+ * barrels, public vendor type leaks, public surface, folder graph,
+ * folder shape, module shape) against pre-resolved options and return
+ * the merged report with directive-based suppressions applied. Used by
+ * the cache layer so options are not re-decoded on every rule.
+ * @param options Pre-resolved architecture options (already
+ * schema-decoded and path-resolved).
+ * @returns The combined architecture report with deduplicated
+ * diagnostics, after directive suppressions are applied.
+ */
 export function analyzeResolvedArchitecture(
   options: ResolvedArchitectureOptions,
 ): ArchitectureReport {
@@ -146,10 +162,17 @@ function shouldKeepDiagnostic(
   return !directiveAnalysis.attemptedSuppressions.get(resolvedFile)?.has(ruleId);
 }
 
-// Public entry: takes raw user input, decodes via schema, resolves path
-// fields, then runs analysis. Used by tests and any caller who has not
-// already resolved options. The rule path uses cachedProjectArchitecture
-// instead so it doesn't re-resolve.
+/**
+ * Public entry: decode raw user options, resolve paths, and run the
+ * full architecture analysis. The rule path uses
+ * `cachedProjectArchitecture` instead so options are not re-resolved on
+ * every rule invocation; this entry is for tests and callers that have
+ * not pre-resolved options.
+ * @param options Raw architecture options object from user config
+ * (defaults to `{}`).
+ * @returns The combined architecture report with diagnostics and
+ * suppressions applied.
+ */
 export function analyzeProjectArchitecture(options: unknown = {}): ArchitectureReport {
   return analyzeResolvedArchitecture(resolveArchitectureOptions(options));
 }

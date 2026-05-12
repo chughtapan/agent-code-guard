@@ -13,11 +13,11 @@ export default createRule({
     type: "suggestion",
     docs: {
       description:
-        "Flag hand-rolled nominal brand surfaces. Prefer Effect Brand.nominal or an endorsed helper instead.",
+        "Flag hand-rolled brand surfaces. Prefer a refined brand (Schema.brand on top of a refinement predicate) so the type is a witness of a checked invariant, not just a nominal label.",
     },
     messages: {
       manualBrand:
-        "Manual brand surface {{name}} — prefer Effect Brand.nominal or an endorsed helper instead of hand-rolling branded aliases.",
+        "Manual brand surface {{name}} — prefer a refined brand: Schema.<Primitive>.pipe(Schema.refine(predicate)).pipe(Schema.brand(\"{{name}}\")). Fall back to Brand.nominal only for opaque IDs with no domain predicate.",
     },
     schema: [],
     fixable: undefined,

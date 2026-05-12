@@ -1,3 +1,9 @@
+/**
+ * @file Project-API barrel. Re-exports the architecture options
+ * schema, diagnostic types, project source-file collection, and rule
+ * helpers used by every architecture analysis pass.
+ */
+
 export {
   ArchitectureOptionsError,
   architectureOptionsJsonSchema,

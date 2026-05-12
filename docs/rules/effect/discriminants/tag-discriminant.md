@@ -1,8 +1,10 @@
 # `agent-code-guard/tag-discriminant`
 
-**What it flags:** manual `_tag` comparisons on tagged errors, such as `err._tag === "WebhookTimeoutError"`.
+**What it flags:** manual `_tag` comparisons and `switch (_tag)` statements where the receiver's type is an Effect-flavored tagged union — `Effect`, `Either`, `Option`, `Exit`, `Cause`, `Fiber`, `Stream`, `ParseResult`, `Data.TaggedError`, `Data.TaggedClass`, `Data.TaggedEnum`.
 
-**Why:** if the failure lives in the Effect error channel, recovery should happen in the Effect pipeline. `Effect.catchTag(...)` and `Effect.catchTags(...)` keep the dispatch declarative and preserve type flow. A manual `_tag` check pulls that logic back out into ad hoc control flow.
+**Why:** if the value lives in the Effect ecosystem, dispatch should use the Effect ecosystem's combinators. `Effect.catchTag(...)` / `Effect.catchTags(...)` for tagged errors; `Match.tag(...)` / `Match.discriminator('_tag')` for tagged unions. A manual `_tag` check pulls that logic back out into ad hoc control flow and breaks type narrowing through pipelines.
+
+**Type-aware.** This rule needs TypeScript program services to identify Effect-flavored types. Apply it to files covered by a `parserOptions.project` configuration — without type info, the rule silently skips. Non-Effect tagged unions (Redux Toolkit actions, fp-ts `Either`, custom user tagged unions) are not flagged.
 
 ## Before (flagged)
 

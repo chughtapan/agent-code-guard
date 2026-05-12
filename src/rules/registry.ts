@@ -1,3 +1,9 @@
+/**
+ * @file Central plugin rule registry. Aggregates every non-architecture
+ * rule family map (`syntaxRules`) and exposes the `recommended` and
+ * `integrationTests` rule severity entries used by the preset surface.
+ */
+
 import type { TSESLint } from "@typescript-eslint/utils";
 import { asyncFlowRules } from "./async-flow/index.js";
 import { effectRules } from "./effect/index.js";
@@ -8,6 +14,11 @@ import { toolingRules } from "./tooling/index.js";
 
 type RuleEntry = TSESLint.Linter.RuleEntry;
 
+/**
+ * Combined map of every syntax-level rule family (async-flow, effect,
+ * manual-algebra, safety, testing, tooling). The plugin entry merges
+ * this with the architecture rules to form `plugin.rules`.
+ */
 export const syntaxRules = {
   ...asyncFlowRules,
   ...effectRules,
@@ -17,6 +28,11 @@ export const syntaxRules = {
   ...toolingRules,
 } as const;
 
+/**
+ * Curated severity entries for every syntax-level rule in the
+ * `recommended` preset. Clear bugs run at `error`; heuristic /
+ * judgement-dependent rules run at `warn`.
+ */
 export const recommendedSyntaxRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/async-keyword": "error",
   "agent-code-guard/as-unknown-as": "error",
@@ -66,6 +82,10 @@ export const recommendedSyntaxRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/require-knip-in-lint": "error",
 };
 
+/**
+ * Severity entries for the `integrationTests` preset. Forbids mocks in
+ * files matched by the consumer's integration-test glob.
+ */
 export const integrationTestRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/no-vitest-mocks": "error",
 };
