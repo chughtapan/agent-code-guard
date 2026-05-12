@@ -59,6 +59,10 @@ it("normalizes options and clears the architecture cache without retaining stale
       projectRoot,
       minExportedSiblingModules: 1,
       maxExportedSiblingRatio: 0,
+      // Disable TTL — this test asserts cache holds until clear() is
+      // called, independent of wall-clock. Under parallel test load
+      // the 5s default can expire mid-test.
+      cacheTtlMs: Infinity,
     });
     const staleReport = cachedProjectArchitecture(options);
     expect(diagnosticsForRule(staleReport.diagnostics, "no-inventory-barrel")).toHaveLength(1);
