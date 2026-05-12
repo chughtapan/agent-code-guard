@@ -7,10 +7,11 @@ const REPO_ROOT = path.resolve(HERE, "..");
 const FIXTURES_ROOT = path.join(HERE, "fixtures");
 
 const SIZES = {
-  small: { files: 50, filesPerFolder: 10 },
-  medium: { files: 500, filesPerFolder: 15 },
-  large: { files: 1_500, filesPerFolder: 20 },
-  xlarge: { files: 5_000, filesPerFolder: 25 },
+  small: { files: 50, filesPerFolder: 10, projectService: false },
+  medium: { files: 500, filesPerFolder: 15, projectService: false },
+  large: { files: 1_500, filesPerFolder: 20, projectService: false },
+  "large-ps": { files: 1_500, filesPerFolder: 20, projectService: true },
+  xlarge: { files: 5_000, filesPerFolder: 25, projectService: false },
 } as const;
 
 type SizeName = keyof typeof SIZES;
@@ -167,6 +168,9 @@ function generateFixture(size: SizeName): string {
   );
 
   const pluginEntry = path.relative(fixtureDir, path.join(REPO_ROOT, "dist/index.js"));
+  const parserOptions = SIZES[size].projectService
+    ? `{ ecmaVersion: 2022, sourceType: "module", projectService: true, tsconfigRootDir: import.meta.dirname }`
+    : `{ ecmaVersion: 2022, sourceType: "module" }`;
   writeFile(
     path.join(fixtureDir, "eslint.config.js"),
     `import guard from "${pluginEntry}";
@@ -194,7 +198,7 @@ export default [
     files: ["src/**/*.ts"],
     languageOptions: {
       parser: tsParser,
-      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
+      parserOptions: ${parserOptions},
     },
     plugins: guard.configs.recommended.plugins,
     settings: guard.configs.recommended.settings,

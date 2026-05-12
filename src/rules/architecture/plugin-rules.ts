@@ -21,6 +21,7 @@ import {
   type ArchitectureRuleId,
 } from "./rule-ids.js";
 import { createRule } from "../utils/create-rule.js";
+import { requireServices } from "../utils/typed-linter/services.js";
 
 type RuleEntry = TSESLint.Linter.RuleEntry;
 type Options = [ArchitectureOptionsInput?];
@@ -60,9 +61,11 @@ function createArchitectureDiagnosticRule(
 
       try {
         const options = resolveArchitectureOptions(rawOptions, projectRoot);
+        const services = requireServices(context);
+        const programProvider = services !== null ? () => services.program : undefined;
         return architectureReportListener(
           context,
-          cachedProjectArchitecture(options),
+          cachedProjectArchitecture(options, programProvider),
           allowedRuleIds,
           filename,
         );
