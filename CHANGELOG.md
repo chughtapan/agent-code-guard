@@ -1,5 +1,60 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **LSP server** (`agent-code-guard-lsp` bin). Long-lived stdio LSP that
+  runs the same architecture analyzer as the ESLint plugin and publishes
+  diagnostics to editors. Distributed as a Claude Code plugin via
+  `.claude-plugin/plugin.json` (sideload with `claude --plugin .`).
+  V1 is save-time only — `didOpen` and `didSave` trigger analysis;
+  `didChange` updates the document store but defers re-analysis until
+  save. Effect-shaped end-to-end: handlers run inside `Effect.runFork`;
+  the `WorkspaceEngine` per workspace owns its `chokidar` watcher + cache
+  under an `Effect.Scope`. See [`docs/lsp.md`](docs/lsp.md).
+- **`agent-code-guard-init` bin.** Emits a copy-paste `eslint.config.js`
+  snippet with the recommended performance settings
+  (`cacheTtlMs: Infinity` in CI, `parserOptions.projectService: true`).
+- **Workspace-scoped cache lifecycle.** `WorkspaceCache` class replaces
+  the previous process-global `reportCache`. New
+  `getOrCreateWorkspaceCache(root)` + `clearWorkspaceCache(root)`
+  helpers let long-lived hosts (the LSP server) manage one workspace's
+  cache without disturbing others.
+
+### Changed
+
+- **Cache watermark** now includes `package.json` + tsconfig content +
+  analyzer version hashes. Edits to any of them invalidate the persisted
+  report, even when no `.ts` file changed. `CACHE_VERSION` bumped to 2;
+  v1 caches read as `null` on first load.
+- **Cache key** accepts an optional `programFingerprint` dimension so
+  in-memory `ts.Program` overlays (LSP unsaved buffers) don't collide
+  with the disk-backed report. ESLint callers don't supply a fingerprint
+  and continue to hit the unchanged disk path.
+
+### Performance
+
+- **Phase 0–5 benchmark stack.** New `bench/` directory measures lint
+  time on synthetic 50 / 500 / 1.5k / 5k-file projects plus this repo.
+  Baseline + `RESULTS.md` track per-phase deltas.
+- **Phase 1 — indexed diagnostics.** Architecture-rule listener loop
+  dropped from O(R·F·D) to O(R · sum_files(d_per_file)). Isolated
+  microbench shows **429×** speedup; macro lint stays within noise
+  (listener is ~10% of warm-time cost).
+- **Phase 2 — reuse `parserServices.program`.** When typescript-eslint
+  maintains a project program (`parserOptions.projectService: true`),
+  the analyzer reuses it instead of building a parallel one. **29% cold
+  / 37% warm** speedup on a 1.5k-file typed-parser config. Fixtures
+  without projectService fall back to `createProgram` unchanged.
+- **Phase 3 — configurable cache TTL.** `cacheTtlMs` option (default
+  5,000 ms). Set to `Infinity` for CI to disable in-run rebuilds.
+- **Phase 5 — persistent disk cache.** Full `ArchitectureReport`
+  persists to `node_modules/.cache/agent-code-guard/report.json` with
+  a content-hash watermark over source files. Subsequent `eslint` (or
+  LSP) invocations on an unchanged project skip the analyzer cold-build
+  (~3 s) and hit the disk cache instead.
+
 ## [0.0.13] - 2026-05-11
 
 ### Added
