@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "agent-code-guard",
+  "version": "0.1.0",
+  "description": "Long-lived architecture analyzer for TypeScript editors. Publishes diagnostics for cycles, large folders, public-API leaks, and other architecture findings via LSP.",
+  "author": {
+    "name": "Tapan Chugh",
+    "url": "https://github.com/chughtapan"
+  },
+  "homepage": "https://github.com/chughtapan/agent-code-guard#readme",
+  "repository": "https://github.com/chughtapan/agent-code-guard",
+  "license": "MIT",
+  "keywords": ["typescript", "architecture", "lsp", "linter"],
+  "lspServers": {
+    "agent-code-guard": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/server/index.js"],
+      "extensionToLanguage": {
+        ".ts": "typescript",
+        ".tsx": "typescriptreact",
+        ".mts": "typescript",
+        ".cts": "typescript"
+      }
+    }
+  }
+}

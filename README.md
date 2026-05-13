@@ -300,6 +300,21 @@ cd ~/.claude/skills/agent-code-guard && pnpm install
 
 **Alternatively**, invoke the `/safer:setup` skill to automate both steps on your behalf (wires floor → `eslint.config.js`, installs ceiling skill).
 
+## Claude Code LSP plugin
+
+This repo also ships as a Claude Code plugin that runs the same architecture analyzer as a long-lived **LSP server**. Editor users get sub-100 ms diagnostics on the file they're working in (cycles, large folders, public-API leaks, etc.) without ESLint's per-process startup cost on every save.
+
+```bash
+# Sideload from a local clone
+git clone https://github.com/chughtapan/agent-code-guard
+cd agent-code-guard && pnpm install && pnpm build
+claude --plugin .
+```
+
+Once installed, Claude Code starts `agent-code-guard-lsp` on the first TypeScript file you open. Diagnostics publish on `didOpen` and re-publish on `didSave`. The analyzer's disk cache (`node_modules/.cache/agent-code-guard/report.json`) shares state with the ESLint plugin so you don't pay the cold-build twice.
+
+The LSP plugin is **additive** — it doesn't replace the ESLint plugin. Use both if you want lint-time enforcement plus editor-time feedback.
+
 ## Development
 
 ```
