@@ -9,6 +9,8 @@
 import { Effect } from "effect";
 import {
   ProposedFeatures,
+  StreamMessageReader,
+  StreamMessageWriter,
   createConnection,
 } from "vscode-languageserver/node.js";
 import { makeLspServer } from "./lsp-server.js";
@@ -20,7 +22,14 @@ function reportFatal(error: unknown): void {
 }
 
 function main(): void {
-  const connection = createConnection(ProposedFeatures.all);
+  // Use explicit stream readers/writers on process stdio so the bin
+  // works under Claude Code's plugin runtime (which spawns us with
+  // no transport flags) and under direct invocation alike.
+  const connection = createConnection(
+    ProposedFeatures.all,
+    new StreamMessageReader(process.stdin),
+    new StreamMessageWriter(process.stdout),
+  );
   // Effect.scoped owns the workspace engines' watchers + caches; when
   // the parent process closes stdio Node exits and the scope's
   // finalizers run for cleanup.

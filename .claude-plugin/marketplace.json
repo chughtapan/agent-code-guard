@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "agent-code-guard",
+  "owner": {
+    "name": "Tapan Chugh",
+    "url": "https://github.com/chughtapan"
+  },
+  "plugins": [
+    {
+      "name": "agent-code-guard",
+      "source": "./",
+      "version": "0.1.0",
+      "description": "Long-lived architecture analyzer for TypeScript editors (LSP).",
+      "author": { "name": "Tapan Chugh" },
+      "homepage": "https://github.com/chughtapan/agent-code-guard",
+      "repository": "https://github.com/chughtapan/agent-code-guard",
+      "license": "MIT",
+      "keywords": ["typescript", "architecture", "lsp", "linter"]
+    }
+  ]
+}

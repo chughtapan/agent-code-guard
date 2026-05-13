@@ -16,7 +16,7 @@
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Effect, Scope, Stream } from "effect";
+import { Deferred, Effect, Scope, Stream } from "effect";
 import {
   type Connection,
   type InitializeParams,
@@ -34,6 +34,14 @@ interface ServerDeps {
   readonly connection: Connection;
   readonly docs: DocumentStore;
   readonly registry: WorkspaceRegistry;
+
+  /**
+   * Resolves after the workspaces named in `initialize.workspaceFolders`
+   * have been registered. Every text-document handler awaits this so
+   * a `didOpen` arriving before registration completes still publishes
+   * diagnostics once the engine exists.
+   */
+  readonly ready: Deferred.Deferred<void>;
 }
 
 const findEngineForUri = (
@@ -132,6 +140,7 @@ const handleDidOpen = (
 ): Effect.Effect<void> =>
   Effect.gen(function* () {
     yield* deps.docs.open(td);
+    yield* Deferred.await(deps.ready);
     const engine = yield* findEngineForUri(deps.registry, td.uri);
     if (engine === null) return;
     yield* publishForUris(deps, engine, [td.uri]);
@@ -142,6 +151,7 @@ const handleDidSave = (
   uri: string,
 ): Effect.Effect<void> =>
   Effect.gen(function* () {
+    yield* Deferred.await(deps.ready);
     const engine = yield* findEngineForUri(deps.registry, uri);
     if (engine === null) return;
     // Force-invalidate so the next lint sees the saved content, even
@@ -202,7 +212,8 @@ export const makeLspServer = (
   Effect.gen(function* () {
     const docs = yield* makeDocumentStore();
     const registry = yield* makeWorkspaceRegistry();
-    const deps: ServerDeps = { connection, docs, registry };
+    const ready = yield* Deferred.make<void>();
+    const deps: ServerDeps = { connection, docs, registry, ready };
 
     // Capture initialize params so we can register workspaces inside
     // the Effect runtime (so engines join the ambient scope).
@@ -220,12 +231,17 @@ export const makeLspServer = (
 
     // Poll for initialize to arrive, then register workspaces under
     // the ambient Scope so engines release on server shutdown.
-    yield* Effect.gen(function* () {
-      while (initParams === null) {
-        yield* Effect.sleep("50 millis");
-      }
-      yield* registerInitialWorkspaces(deps, initParams);
-    });
+    // Resolve `ready` once registration completes so handlers waiting
+    // on it can proceed.
+    yield* Effect.forkScoped(
+      Effect.gen(function* () {
+        while (initParams === null) {
+          yield* Effect.sleep("50 millis");
+        }
+        yield* registerInitialWorkspaces(deps, initParams);
+        yield* Deferred.succeed(ready, undefined);
+      }),
+    );
 
     yield* Effect.never;
   }).pipe(Effect.withSpan("makeLspServer"));

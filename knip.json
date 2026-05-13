@@ -4,7 +4,8 @@
     "src/**/*.test.ts",
     "src/**/test-support/**/*.ts",
     "bench/lint-one.ts",
-    "bench/listener-microbench.ts"
+    "bench/listener-microbench.ts",
+    "scripts/dogfood-lsp.ts"
   ],
   "ignore": [
     "bench/fixtures/**"
