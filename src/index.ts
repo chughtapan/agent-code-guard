@@ -1,19 +1,14 @@
 /**
  * @file Plugin entry point. Assembles every rule family, composes the
- * presets (`recommended`, `strict`, `documentation`, `integrationTests`,
- * `architecture`), and bundles `eslint-plugin-sonarjs` and
- * `eslint-plugin-jsdoc` so consumers do not install them separately.
+ * presets (`recommended`, `strict`, `documentation`, `integrationTests`),
+ * and bundles `eslint-plugin-sonarjs` and `eslint-plugin-jsdoc` so
+ * consumers do not install them separately.
  */
 
 import { createRequire } from "node:module";
 import type { TSESLint } from "@typescript-eslint/utils";
 import jsdoc from "eslint-plugin-jsdoc";
 import sonarjs from "eslint-plugin-sonarjs";
-import {
-  architecturePresetRuleEntries,
-  architectureRules,
-  recommendedArchitectureRuleEntries,
-} from "./rules/architecture/plugin-rules.js";
 import {
   integrationTestRuleEntries,
   recommendedSyntaxRuleEntries,
@@ -22,7 +17,6 @@ import {
 
 const rules = {
   ...syntaxRules,
-  ...architectureRules,
 } as const;
 
 const require = createRequire(import.meta.url);
@@ -46,7 +40,6 @@ interface Plugin {
     recommended: PluginConfig;
     strict: PluginConfig;
     integrationTests: PluginConfig;
-    architecture: PluginConfig;
     documentation: PluginConfig;
   };
 }
@@ -188,7 +181,6 @@ const plugin: Plugin = {
         ...sonarRecommendedRules,
         ...jsdocRecommendedRuleEntries,
         ...recommendedSyntaxRuleEntries,
-        ...recommendedArchitectureRuleEntries,
       },
       settings: sonarRecommendedConfig.settings,
     },
@@ -202,7 +194,6 @@ const plugin: Plugin = {
         ...sonarRecommendedRules,
         ...jsdocStrictRuleEntries,
         ...recommendedSyntaxRuleEntries,
-        ...recommendedArchitectureRuleEntries,
         ...strictComplexityRuleEntries,
       },
       settings: sonarRecommendedConfig.settings,
@@ -210,10 +201,6 @@ const plugin: Plugin = {
     integrationTests: {
       plugins: { "agent-code-guard": null! },
       rules: integrationTestRuleEntries,
-    },
-    architecture: {
-      plugins: { "agent-code-guard": null! },
-      rules: architecturePresetRuleEntries,
     },
     documentation: {
       plugins: { "agent-code-guard": null!, jsdoc },
@@ -225,7 +212,6 @@ const plugin: Plugin = {
 plugin.configs.recommended.plugins["agent-code-guard"] = plugin;
 plugin.configs.strict.plugins["agent-code-guard"] = plugin;
 plugin.configs.integrationTests.plugins["agent-code-guard"] = plugin;
-plugin.configs.architecture.plugins["agent-code-guard"] = plugin;
 plugin.configs.documentation.plugins["agent-code-guard"] = plugin;
 
 export default plugin;

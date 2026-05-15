@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import { Match } from "effect";
 import { createRule } from "../utils/create-rule.js";
 
 type Options = {
@@ -134,23 +133,18 @@ export default createRule<[Options], MessageId>({
         if (!fs.existsSync(packageJsonPath)) return;
 
         const scriptNames = options.scriptNames ?? DEFAULT_SCRIPT_NAMES;
-        const result = Match.value(parsePackageJson(packageJsonPath)).pipe(
-          Match.tag("Read", (read) => checkPackageScripts(read.packageJson, scriptNames)),
-          Match.tag("Unreadable", (read) => invalidPackageJson(scriptNames, read.cause)),
-          Match.exhaustive,
-        );
+        const read = parsePackageJson(packageJsonPath);
+        const result: PackageCheckResult =
+          read._tag === "Read"
+            ? checkPackageScripts(read.packageJson, scriptNames)
+            : invalidPackageJson(scriptNames, read.cause);
 
-        Match.value(result).pipe(
-          Match.tag("Configured", () => undefined),
-          Match.tag("Missing", (missing) => {
-            context.report({
-              node,
-              messageId: missing.messageId,
-              data: { scriptNames: missing.scriptNames, cause: missing.cause ?? "" },
-            });
-          }),
-          Match.exhaustive,
-        );
+        if (result._tag === "Configured") return;
+        context.report({
+          node,
+          messageId: result.messageId,
+          data: { scriptNames: result.scriptNames, cause: result.cause ?? "" },
+        });
       },
     };
   },

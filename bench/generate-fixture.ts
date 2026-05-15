@@ -176,23 +176,6 @@ function generateFixture(size: SizeName): string {
     `import guard from "${pluginEntry}";
 import tsParser from "@typescript-eslint/parser";
 
-const ARCHITECTURE_OPTIONS = {
-  projectRoot: import.meta.dirname,
-  tsconfigPath: "tsconfig.json",
-};
-
-const ARCHITECTURE_RULE_IDS = Object.keys(guard.configs.architecture.rules);
-
-const recommendedRules = {
-  ...guard.configs.recommended.rules,
-  ...Object.fromEntries(
-    ARCHITECTURE_RULE_IDS.map((id) => [
-      id,
-      [guard.configs.recommended.rules[id] ?? "error", ARCHITECTURE_OPTIONS],
-    ]),
-  ),
-};
-
 export default [
   {
     files: ["src/**/*.ts"],
@@ -202,7 +185,7 @@ export default [
     },
     plugins: guard.configs.recommended.plugins,
     settings: guard.configs.recommended.settings,
-    rules: recommendedRules,
+    rules: guard.configs.recommended.rules,
   },
   { ignores: ["node_modules/**", "dist/**"] },
 ];
