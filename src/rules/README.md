@@ -5,7 +5,6 @@ rule registry.
 
 Rule families are grouped by the kind of shape they inspect:
 
-- `architecture/` analyzes project, package, folder, and module boundaries.
 - `async-flow/` catches erased async and nullish-control-flow contracts.
 - `effect/` catches Effect/Either error-channel and discriminant misuse.
 - `manual-algebra/` catches hand-rolled types that duplicate library algebras.

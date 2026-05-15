@@ -15,13 +15,18 @@ Drop this into `eslint.config.js`:
 
 ```js
 import guard from "eslint-plugin-agent-code-guard";
+import tsParser from "@typescript-eslint/parser";
 
 export default [
-  { files: ["src/**/*.ts"], ...guard.configs.recommended },
+  {
+    files: ["src/**/*.ts"],
+    languageOptions: { parser: tsParser },
+    ...guard.configs.recommended,
+  },
 ];
 ```
 
-Then run `eslint .` against any TypeScript file and the agent-code-guard syntax floor lights up.
+Then run `eslint .` against any TypeScript file and the agent-code-guard syntax floor lights up. `@typescript-eslint/parser` is the only peer the syntax floor needs.
 
 ## What it catches
 

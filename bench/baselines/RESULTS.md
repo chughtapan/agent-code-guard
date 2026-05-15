@@ -1,5 +1,11 @@
 # Benchmark Results
 
+> Historical record. The architecture analyzer these phases optimized
+> now lives in `safer-by-default/lsp/architecture/`; the
+> `cacheTtlMs` option and architecture-options recommendations below
+> apply only against the archived analyzer code, not the current ACG
+> tree.
+
 Cumulative impact of Phases 1–3 vs the Phase 0 baseline.
 
 Wall-time medians across N=2 subprocesses × M=3 lints, on the same
