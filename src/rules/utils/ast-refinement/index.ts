@@ -10,35 +10,35 @@ import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
 type NonEmptyArray<T> = readonly [T, ...T[]];
 
-// Per-brand key: each brand carries a unique property name so two brands
-// can intersect without TypeScript collapsing the shared key to `never`.
-// `StaticMemberExpression & TagAccess` composes correctly because the
-// brand keys do not overlap.
+// Each brand uses its own `unique symbol` so the brand cannot be forged
+// from outside this module (no string property is sufficient) and so two
+// brands can intersect without TypeScript collapsing a shared key to
+// `never` (the symbols differ at the type level).
+declare const StaticStringBrand: unique symbol;
+declare const NodeWithParentBrand: unique symbol;
+declare const StaticMemberExpressionBrand: unique symbol;
+declare const TagAccessBrand: unique symbol;
 
 /** A string value the analyzer has proven to be statically known. */
-export type StaticString = string & { readonly __brand_StaticString: "StaticString" };
+export type StaticString = string & { readonly [StaticStringBrand]: "StaticString" };
 
-// The smart constructor stays module-private so callers cannot mint a
-// `StaticString` without going through a narrower that has actually
-// proven the value is static. Exported narrowers (`getStaticStringKey`,
-// `resolveStringLiteralValue`, etc.) are the only legal factories.
 const staticString = (value: string): StaticString => value as StaticString;
 
 /** An AST node whose parent reference has been proven non-null. */
 export type NodeWithParent = TSESTree.Node & {
   readonly parent: TSESTree.Node;
-} & { readonly __brand_NodeWithParent: "NodeWithParent" };
+} & { readonly [NodeWithParentBrand]: "NodeWithParent" };
 
 /** A non-computed member expression with an `Identifier` property. */
 export type StaticMemberExpression = TSESTree.MemberExpression & {
   readonly computed: false;
   readonly property: TSESTree.Identifier;
-} & { readonly __brand_StaticMemberExpression: "StaticMemberExpression" };
+} & { readonly [StaticMemberExpressionBrand]: "StaticMemberExpression" };
 
 /** A static member expression whose property name is `_tag`. */
 export type TagAccess = StaticMemberExpression & {
   readonly property: TSESTree.Identifier & { readonly name: "_tag" };
-} & { readonly __brand_TagAccess: "TagAccess" };
+} & { readonly [TagAccessBrand]: "TagAccess" };
 
 /**
  * First element of `values`, or `null` when the array is empty.

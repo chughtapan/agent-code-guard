@@ -90,6 +90,24 @@ const invalidPackageJson = (
 const errorSummary = (cause: unknown): string =>
   cause instanceof Error ? cause.message : String(cause);
 
+function absurd(value: never): never {
+  throw new Error(`unreachable tag: ${JSON.stringify(value)}`);
+}
+
+function resolvePackageCheck(
+  read: PackageJsonRead,
+  scriptNames: readonly string[],
+): PackageCheckResult {
+  switch (read._tag) {
+    case "Read":
+      return checkPackageScripts(read.packageJson, scriptNames);
+    case "Unreadable":
+      return invalidPackageJson(scriptNames, read.cause);
+    default:
+      return absurd(read);
+  }
+}
+
 export default createRule<[Options], MessageId>({
   name: "require-knip-in-lint",
   meta: {
@@ -133,18 +151,24 @@ export default createRule<[Options], MessageId>({
         if (!fs.existsSync(packageJsonPath)) return;
 
         const scriptNames = options.scriptNames ?? DEFAULT_SCRIPT_NAMES;
-        const read = parsePackageJson(packageJsonPath);
-        const result: PackageCheckResult =
-          read._tag === "Read"
-            ? checkPackageScripts(read.packageJson, scriptNames)
-            : invalidPackageJson(scriptNames, read.cause);
+        const result = resolvePackageCheck(
+          parsePackageJson(packageJsonPath),
+          scriptNames,
+        );
 
-        if (result._tag === "Configured") return;
-        context.report({
-          node,
-          messageId: result.messageId,
-          data: { scriptNames: result.scriptNames, cause: result.cause ?? "" },
-        });
+        switch (result._tag) {
+          case "Configured":
+            return;
+          case "Missing":
+            context.report({
+              node,
+              messageId: result.messageId,
+              data: { scriptNames: result.scriptNames, cause: result.cause ?? "" },
+            });
+            return;
+          default:
+            return absurd(result);
+        }
       },
     };
   },
