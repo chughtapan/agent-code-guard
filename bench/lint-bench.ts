@@ -82,7 +82,7 @@ function parseOptions(argv: readonly string[]): BenchOptions {
 
 function collectTargets(only: string | null): Target[] {
   const all: Target[] = [];
-  for (const size of ["small", "medium", "large", "xlarge"] as const) {
+  for (const size of ["small", "medium", "large", "large-ps", "xlarge"] as const) {
     const dir = path.join(FIXTURES_ROOT, size);
     if (!fs.existsSync(dir)) continue;
     all.push({ name: size, cwd: dir, patterns: "src/**/*.ts" });

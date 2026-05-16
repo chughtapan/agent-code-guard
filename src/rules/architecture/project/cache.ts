@@ -1,5 +1,7 @@
+import type ts from "typescript";
 import { analyzeResolvedArchitecture } from "../index.js";
 import type { ArchitectureReport, ResolvedArchitectureOptions } from "./diagnostics/index.js";
+import { createProgram } from "./api/index.js";
 
 // Long-lived hosts (ESLint LSP, VS Code) reuse the cache across edits;
 // without a TTL, "fixed" diagnostics linger until the editor restarts.
@@ -27,13 +29,14 @@ function cacheKeyFor(options: ResolvedArchitectureOptions): string {
 
 export function cachedProjectArchitecture(
   options: ResolvedArchitectureOptions,
+  programProvider: () => ts.Program | null = () => createProgram(options),
 ): ArchitectureReport {
   const cacheKey = cacheKeyFor(options);
   const now = Date.now();
   const cached = reportCache.get(cacheKey);
   if (cached !== undefined && cached.expiresAt > now) return cached.report;
 
-  const report = analyzeResolvedArchitecture(options);
+  const report = analyzeResolvedArchitecture(options, programProvider);
   reportCache.set(cacheKey, { report, expiresAt: now + REPORT_CACHE_TTL_MS });
   return report;
 }
