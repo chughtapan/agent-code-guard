@@ -23,16 +23,15 @@ Targets:
   minutes — generate via `pnpm bench:generate xlarge` only when needed)
 - `self` — this repo's own `src/`
 
-The pre-optimization architecture analyzer is O(F·D) in its per-file scan
-(see plan), which is the cost this bench is measuring. `xlarge` is excluded
-from the default `pnpm bench` baseline because a single cold lint takes
-~10 min on pre-Phase-1 code; revisit after Phase 1.
-
 Each target spawns N subprocesses (default 3). Each subprocess runs ESLint
-M times in-process (default 4). The first lint per subprocess is "cold"
-(empty architecture cache); the rest are "warm". Output shows the median
-cold and warm times across all subprocesses, plus the diagnostic count
-and a hash of the sorted diagnostic set (parity check).
+M times in-process (default 4). The first lint per subprocess is "cold";
+the rest are "warm". Output shows the median cold and warm times across
+all subprocesses, plus the diagnostic count and a hash of the sorted
+diagnostic set (parity check).
+
+The architecture analyzer that this bench was originally written to
+measure now lives in `safer-by-default/lsp/architecture/`. The bench
+here covers the syntax floor only.
 
 ## Baseline
 

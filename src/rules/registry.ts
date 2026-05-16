@@ -1,7 +1,7 @@
 /**
- * @file Central plugin rule registry. Aggregates every non-architecture
- * rule family map (`syntaxRules`) and exposes the `recommended` and
- * `integrationTests` rule severity entries used by the preset surface.
+ * @file Central plugin rule registry. Aggregates every rule family map
+ * (`syntaxRules`) and exposes the `recommended` and `integrationTests`
+ * rule severity entries used by the preset surface.
  */
 
 import type { TSESLint } from "@typescript-eslint/utils";
@@ -16,8 +16,7 @@ type RuleEntry = TSESLint.Linter.RuleEntry;
 
 /**
  * Combined map of every syntax-level rule family (async-flow, effect,
- * manual-algebra, safety, testing, tooling). The plugin entry merges
- * this with the architecture rules to form `plugin.rules`.
+ * manual-algebra, safety, testing, tooling).
  */
 export const syntaxRules = {
   ...asyncFlowRules,

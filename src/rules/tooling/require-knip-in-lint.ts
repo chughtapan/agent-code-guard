@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import { Match } from "effect";
 import { createRule } from "../utils/create-rule.js";
 
 type Options = {
@@ -91,6 +90,24 @@ const invalidPackageJson = (
 const errorSummary = (cause: unknown): string =>
   cause instanceof Error ? cause.message : String(cause);
 
+function absurd(value: never): never {
+  throw new Error(`unreachable tag: ${JSON.stringify(value)}`);
+}
+
+function resolvePackageCheck(
+  read: PackageJsonRead,
+  scriptNames: readonly string[],
+): PackageCheckResult {
+  switch (read._tag) {
+    case "Read":
+      return checkPackageScripts(read.packageJson, scriptNames);
+    case "Unreadable":
+      return invalidPackageJson(scriptNames, read.cause);
+    default:
+      return absurd(read);
+  }
+}
+
 export default createRule<[Options], MessageId>({
   name: "require-knip-in-lint",
   meta: {
@@ -134,23 +151,24 @@ export default createRule<[Options], MessageId>({
         if (!fs.existsSync(packageJsonPath)) return;
 
         const scriptNames = options.scriptNames ?? DEFAULT_SCRIPT_NAMES;
-        const result = Match.value(parsePackageJson(packageJsonPath)).pipe(
-          Match.tag("Read", (read) => checkPackageScripts(read.packageJson, scriptNames)),
-          Match.tag("Unreadable", (read) => invalidPackageJson(scriptNames, read.cause)),
-          Match.exhaustive,
+        const result = resolvePackageCheck(
+          parsePackageJson(packageJsonPath),
+          scriptNames,
         );
 
-        Match.value(result).pipe(
-          Match.tag("Configured", () => undefined),
-          Match.tag("Missing", (missing) => {
+        switch (result._tag) {
+          case "Configured":
+            return;
+          case "Missing":
             context.report({
               node,
-              messageId: missing.messageId,
-              data: { scriptNames: missing.scriptNames, cause: missing.cause ?? "" },
+              messageId: result.messageId,
+              data: { scriptNames: result.scriptNames, cause: result.cause ?? "" },
             });
-          }),
-          Match.exhaustive,
-        );
+            return;
+          default:
+            return absurd(result);
+        }
       },
     };
   },

@@ -7,29 +7,38 @@
 
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { Brand } from "effect";
 
 type NonEmptyArray<T> = readonly [T, ...T[]];
 
+// Each brand uses its own `unique symbol` so the brand cannot be forged
+// from outside this module (no string property is sufficient) and so two
+// brands can intersect without TypeScript collapsing a shared key to
+// `never` (the symbols differ at the type level).
+declare const StaticStringBrand: unique symbol;
+declare const NodeWithParentBrand: unique symbol;
+declare const StaticMemberExpressionBrand: unique symbol;
+declare const TagAccessBrand: unique symbol;
+
 /** A string value the analyzer has proven to be statically known. */
-export type StaticString = string & Brand.Brand<"StaticString">;
-const StaticString = Brand.nominal<StaticString>();
+export type StaticString = string & { readonly [StaticStringBrand]: "StaticString" };
+
+const staticString = (value: string): StaticString => value as StaticString;
 
 /** An AST node whose parent reference has been proven non-null. */
 export type NodeWithParent = TSESTree.Node & {
   readonly parent: TSESTree.Node;
-} & Brand.Brand<"NodeWithParent">;
+} & { readonly [NodeWithParentBrand]: "NodeWithParent" };
 
 /** A non-computed member expression with an `Identifier` property. */
 export type StaticMemberExpression = TSESTree.MemberExpression & {
   readonly computed: false;
   readonly property: TSESTree.Identifier;
-} & Brand.Brand<"StaticMemberExpression">;
+} & { readonly [StaticMemberExpressionBrand]: "StaticMemberExpression" };
 
 /** A static member expression whose property name is `_tag`. */
 export type TagAccess = StaticMemberExpression & {
   readonly property: TSESTree.Identifier & { readonly name: "_tag" };
-} & Brand.Brand<"TagAccess">;
+} & { readonly [TagAccessBrand]: "TagAccess" };
 
 /**
  * First element of `values`, or `null` when the array is empty.
@@ -63,10 +72,10 @@ export function getStaticStringKey(
   computed: boolean,
 ): StaticString | null {
   if (!computed && key.type === AST_NODE_TYPES.Identifier) {
-    return StaticString(key.name);
+    return staticString(key.name);
   }
   if (key.type === AST_NODE_TYPES.Literal && typeof key.value === "string") {
-    return StaticString(key.value);
+    return staticString(key.value);
   }
   return computed && key.type === AST_NODE_TYPES.TemplateLiteral
     ? getStaticTemplateValue(key)
@@ -84,7 +93,7 @@ export function resolveStringLiteralValue(
   node: TSESTree.Node | null,
 ): StaticString | null {
   if (node?.type === AST_NODE_TYPES.Literal && typeof node.value === "string") {
-    return StaticString(node.value);
+    return staticString(node.value);
   }
   return node?.type === AST_NODE_TYPES.TemplateLiteral
     ? getStaticTemplateValue(node)
@@ -96,7 +105,7 @@ function getStaticTemplateValue(
 ): StaticString | null {
   if (node.expressions.length > 0) return null;
   const head = getFirst(node.quasis);
-  return head === null ? null : StaticString(head.value.cooked ?? head.value.raw);
+  return head === null ? null : staticString(head.value.cooked ?? head.value.raw);
 }
 
 /**
@@ -150,7 +159,7 @@ export function getStaticMemberPropertyName(
   node: TSESTree.Node,
 ): StaticString | null {
   const member = getStaticMemberExpression(node);
-  return member ? StaticString(member.property.name) : null;
+  return member ? staticString(member.property.name) : null;
 }
 
 /**
@@ -210,7 +219,7 @@ type FunctionNameLookup = StaticString | null | undefined;
 
 function getFunctionNameAtNode(node: NodeWithParent): FunctionNameLookup {
   if (node.type === AST_NODE_TYPES.FunctionDeclaration) {
-    return node.id ? StaticString(node.id.name) : null;
+    return node.id ? staticString(node.id.name) : null;
   }
   if (!isFunctionExpressionLike(node)) return undefined;
   const parent = getParent(node);
@@ -235,7 +244,7 @@ function getVariableDeclaratorName(
   node: TSESTree.VariableDeclarator,
 ): StaticString | null {
   return node.id.type === AST_NODE_TYPES.Identifier
-    ? StaticString(node.id.name)
+    ? staticString(node.id.name)
     : null;
 }
 
