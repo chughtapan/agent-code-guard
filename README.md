@@ -206,29 +206,30 @@ Every disable in source should carry a written reason via `@eslint-community/esl
 ## Name notes
 
 - **npm package**: `eslint-plugin-agent-code-guard`.
-- **Rule namespace**: `agent-code-guard/<rule>` — same identifier as both the npm package and the companion Claude Code plugin. One name across the floor (lint) and the ceiling (write-time guidance) keeps the mental model consistent for anyone using both halves.
+- **Rule namespace**: `agent-code-guard/<rule>` — used by both this package and the LSP servers safer-by-default declares (`agent-code-guard-syntax`, `agent-code-guard-architecture`). One namespace across the floor (lint), the editor (LSP), and the agent loop keeps the mental model consistent.
 
 ## Companion
 
-**floor** — this ESLint plugin (lint-time checks). Catches patterns your agent must not ship: `throw new Error(...)`, `as Record<string, unknown>`, bare `catch {}`, etc.
+**floor** — this ESLint plugin (lint-time checks). Catches per-file patterns your agent must not ship: `throw new Error(...)`, `as Record<string, unknown>`, bare `catch {}`, etc. Every rule's `meta.docs.url` points at the corresponding heading in [`safer-by-default/PRINCIPLES.md`](https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md), so any ESLint LSP renders a `codeDescription.href` link straight from each diagnostic to the underlying doctrine.
 
-**ceiling** — the [`agent-code-guard` Claude Code plugin](https://github.com/chughtapan/agent-code-guard). A Claude Code plugin is a skill that instruments the Claude Code IDE and directs the coding agent at **write-time**, before code is committed. This plugin recalibrates the agent in-band when it writes TypeScript, using the floor rules as a teaching signal.
+**ceiling** — [`safer-by-default`](https://github.com/chughtapan/safer-by-default), a Claude Code skill plugin. It calibrates the coding agent at **write-time** before code is committed, and its `.claude-plugin/plugin.json` declares two `lspServers` that auto-start when an LSP-aware editor (or the Claude Code agent loop) opens a TypeScript file:
+
+- `agent-code-guard-syntax` — wraps upstream `vscode-eslint-language-server` to surface every rule from this plugin with its rationale + PRINCIPLES.md link.
+- `agent-code-guard-architecture` — runs a custom architecture analyzer (folder graph, public surface, vendor type leaks, cycle detection). Architecture rules used to live in this repo; they moved to safer-by-default to keep the npm package pure-syntax. See safer-by-default's [`ARCHITECTURE.md`](https://github.com/chughtapan/safer-by-default/blob/main/ARCHITECTURE.md) → LSP integration.
 
 Install both for the full calibration loop:
 
-```
-# The floor (this repo) — lint checks:
+```bash
+# The floor (this repo) — lint checks via npm:
 pnpm add -D eslint-plugin-agent-code-guard@latest
 
-# The ceiling (Claude Code skills + binaries):
-mkdir -p ~/.claude/skills
-git clone --single-branch --depth 1 --branch main \
-  https://github.com/chughtapan/agent-code-guard.git \
-  ~/.claude/skills/agent-code-guard
-cd ~/.claude/skills/agent-code-guard && pnpm install
+# The ceiling (Claude Code skill plugin + LSPs) — via Claude Code:
+# In a Claude Code session:
+/plugin marketplace add chughtapan/safer-by-default
+/plugin install safer@safer-by-default
 ```
 
-**Alternatively**, invoke the `/safer:setup` skill to automate both steps on your behalf (wires floor → `eslint.config.js`, installs ceiling skill).
+**Alternatively**, invoke `/safer:setup` in any TypeScript repo to automate both steps (wires this floor into `eslint.config.js`, flips tsconfig strict flags, installs the integration-tests preset, and the two LSPs auto-register from the Claude plugin).
 
 ## Development
 
