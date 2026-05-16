@@ -18,8 +18,12 @@ import type {
   ArchitectureReport,
   ResolvedArchitectureOptions,
 } from "../diagnostics/index.js";
+import { dependencyWatermarks } from "./dependency-watermark.js";
 
-const CACHE_VERSION = 1;
+// v2 bumped 2026-05-12: watermark now includes package.json, tsconfig
+// content, and analyzer version so dependency / config edits invalidate.
+// v1 caches read as null on next call.
+const CACHE_VERSION = 2;
 const CACHE_DIR_SEGMENTS = ["node_modules", ".cache", "agent-code-guard"];
 const CACHE_FILE = "report.json";
 
@@ -135,6 +139,14 @@ export function computeFileWatermark(
       // tsconfig). Treat as cache-busting by inventing a unique hash.
       watermarks.push({ path: filePath, hash: `missing-${Date.now()}` });
     }
+  }
+  // Pseudo-watermarks for analyzer behavior inputs that aren't source
+  // files: edits to any of these change the report even when no .ts
+  // file changed, so the watermark must capture them.
+  const tsconfigFinder = (root: string): string | undefined =>
+    ts.findConfigFile(root, ts.sys.fileExists, "tsconfig.json") ?? undefined;
+  for (const extra of dependencyWatermarks(options, tsconfigFinder)) {
+    watermarks.push(extra);
   }
   watermarks.sort((left, right) => left.path.localeCompare(right.path));
   return watermarks;
