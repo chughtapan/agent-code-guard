@@ -149,7 +149,7 @@ function benchTarget(target: Target, opts: BenchOptions): TargetResult {
 function printTable(results: readonly TargetResult[], baseline: readonly TargetResult[] | null): void {
   const baselineByTarget = new Map(baseline?.map((r) => [r.target, r]) ?? []);
   const rows: string[][] = [
-    ["target", "cold (med)", "warm (med)", "diagnostics", "RSS", "vs baseline"],
+    ["target", "cold (med)", "warm (med)", "diagnostics", "hash", "RSS", "vs baseline"],
   ];
   for (const r of results) {
     const b = baselineByTarget.get(r.target);
@@ -158,13 +158,15 @@ function printTable(results: readonly TargetResult[], baseline: readonly TargetR
       const coldPct = ((r.cold_ms_median - b.cold_ms_median) / b.cold_ms_median) * 100;
       const warmPct = ((r.warm_ms_median - b.warm_ms_median) / b.warm_ms_median) * 100;
       const sign = (n: number): string => (n >= 0 ? "+" : "");
-      delta = `cold ${sign(coldPct)}${coldPct.toFixed(1)}% · warm ${sign(warmPct)}${warmPct.toFixed(1)}%`;
+      const hashMark = r.diagnosticsHash === b.diagnosticsHash ? "" : " ⚠ HASH DRIFT";
+      delta = `cold ${sign(coldPct)}${coldPct.toFixed(1)}% · warm ${sign(warmPct)}${warmPct.toFixed(1)}%${hashMark}`;
     }
     rows.push([
       r.target,
       `${fmt(r.cold_ms_median)} [${fmt(r.cold_ms_min)}–${fmt(r.cold_ms_max)}]`,
       `${fmt(r.warm_ms_median)} [${fmt(r.warm_ms_min)}–${fmt(r.warm_ms_max)}]`,
       String(r.diagnostics),
+      r.diagnosticsHash.slice(0, 8),
       `${r.peakRssMB} MB`,
       delta,
     ]);

@@ -3,7 +3,8 @@
   "entry": [
     "src/**/*.test.ts",
     "src/**/test-support/**/*.ts",
-    "bench/lint-one.ts"
+    "bench/lint-one.ts",
+    "bench/listener-microbench.ts"
   ],
   "ignore": [
     "bench/fixtures/**"
