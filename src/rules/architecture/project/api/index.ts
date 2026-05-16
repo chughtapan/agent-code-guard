@@ -10,7 +10,7 @@ export {
   resolveArchitectureOptions,
   type ArchitectureOptionsInput,
 } from "../config.js";
-export { cachedProjectArchitecture, clearArchitectureCache } from "../cache.js";
+export { cachedProjectArchitecture, clearArchitectureCache } from "../cache/index.js";
 export {
   SOURCE_EXTENSIONS,
   candidateFileNames,

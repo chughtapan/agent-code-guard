@@ -15,3 +15,18 @@ The implementation is organized by analysis surface:
 
 `index.ts` is the architecture analyzer facade. `plugin-rules.ts` adapts
 architecture diagnostics into individual ESLint rules and presets.
+
+## Performance
+
+The architecture analyzer runs once per project and is cached. The cache
+TTL defaults to 5 seconds so long-lived hosts (ESLint LSP, VS Code) see
+fixes promptly. CI lints finish in one pass, so a longer TTL is safe:
+
+```js
+const ARCHITECTURE_OPTIONS = {
+  // …
+  cacheTtlMs: Infinity, // CI: never rebuild within a single lint run
+};
+```
+
+Valid range: `0` (always rebuild) through `Infinity`.

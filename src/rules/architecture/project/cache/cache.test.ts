@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
-import * as h from "../test-support/helper-fixtures.js";
-import type { ArchitectureDiagnostic } from "../test-support/helper-fixtures.js";
+import * as h from "../../test-support/helper-fixtures.js";
+import type { ArchitectureDiagnostic } from "../../test-support/helper-fixtures.js";
 
 const { fs, os, path, fc, ts, exportDeclarationIsTypeOnly, exportedSiblingModuleKeys, eligibleSiblingModuleKeys, inventoryBarrelDiagnostic, isExcludedSourceFile, isIndexSourceFile, siblingModuleKeyFromSpecifier, sourceModuleKey, checkPackageExports, packagePathSegments, packageReportPath, pathHasForbiddenSegment, checkPublicVendorTypeLeaks, externalReExportDiagnostics, normalizeTypePackageName, packageAllowedInPublicTypes, packageNameFromFileName, packageNameFromSpecifier, cachedProjectArchitecture, clearArchitectureCache, uniqueDiagnostics, resolveArchitectureOptions, collectExportsValue, collectPackageExportEntries, readPackageJson, candidateSourcePaths, createProgram, findPackageReportFile, projectSourceFiles, publicApiSourceFiles, sourcePathForPackageTarget, folderEdgeDensity, stronglyConnectedFolderComponents, buildProjectGraph, exportedDeclarationName, folderKeyForFile, hasExportModifier, isTestLikePath, isStarExportDeclaration, layerIndexFor, resolveLocalSpecifier, topFolder, hasSourceExtension, OUTPUT_EXTENSIONS, replaceKnownExtension, SOURCE_EXTENSIONS, stripKnownExtension, withTrailingSeparator, segmentArb, packageSegmentArb, scopedPackageArb, sourceExtensionArb, testOnlySegmentArb, exportSourceFileFor, writeSiblingModules, packageJsonForExports, packageExportDiagnostics, diagnosticsForRule, programFromSourceFiles, sourceFileAt, sourceFilesByRelativePath, writePublicTypeProject, writeNodePackage, publicTypeDiagnostics, nestedReadonlyObjectType } = h;
 
@@ -59,6 +59,10 @@ it("normalizes options and clears the architecture cache without retaining stale
       projectRoot,
       minExportedSiblingModules: 1,
       maxExportedSiblingRatio: 0,
+      // Disable TTL — this test asserts cache holds until clear() is
+      // called, independent of wall-clock. Under parallel test load
+      // the 5s default can expire mid-test.
+      cacheTtlMs: Infinity,
     });
     const staleReport = cachedProjectArchitecture(options);
     expect(diagnosticsForRule(staleReport.diagnostics, "no-inventory-barrel")).toHaveLength(1);
@@ -210,6 +214,16 @@ it("Property: schema enforces ratio option bounds inclusively", () => {
     .toBe(0);
   expect(resolveArchitectureOptions({ maxFolderEdgeDensity: 1 }).maxFolderEdgeDensity)
     .toBe(1);
+});
+
+it("defaults cacheTtlMs to 5000 and accepts Infinity for unlimited caching", () => {
+  expect(resolveArchitectureOptions({}).cacheTtlMs).toBe(5000);
+  expect(resolveArchitectureOptions({ cacheTtlMs: 0 }).cacheTtlMs).toBe(0);
+  expect(resolveArchitectureOptions({ cacheTtlMs: 60_000 }).cacheTtlMs).toBe(60_000);
+  expect(resolveArchitectureOptions({ cacheTtlMs: Infinity }).cacheTtlMs).toBe(Infinity);
+  expect(() => resolveArchitectureOptions({ cacheTtlMs: -1 })).toThrowError(
+    /cacheTtlMs/,
+  );
 });
 
 it("Property: schema rejects non-positive and non-integer count options", () => {

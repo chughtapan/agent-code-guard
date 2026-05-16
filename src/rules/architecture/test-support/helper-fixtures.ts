@@ -41,7 +41,12 @@ export {
   packageNameFromFileName,
   packageNameFromSpecifier,
 } from "../type-surface/index.js";
-export { cachedProjectArchitecture, clearArchitectureCache } from "../project/cache.js";
+export {
+  cachedProjectArchitecture,
+  clearArchitectureCache,
+  clearWorkspaceCache,
+  getOrCreateWorkspaceCache,
+} from "../project/cache/index.js";
 export { uniqueDiagnostics } from "../project/diagnostics/index.js";
 export { resolveArchitectureOptions } from "../project/config.js";
 export { collectExportsValue, collectPackageExportEntries } from "../package-api/index.js";

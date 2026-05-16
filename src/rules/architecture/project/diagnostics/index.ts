@@ -33,6 +33,14 @@ export interface ArchitectureDiagnostic {
 export interface ArchitectureReport {
   /** Deduplicated diagnostics produced by every analysis pass. */
   readonly diagnostics: readonly ArchitectureDiagnostic[];
+
+  /**
+   * Diagnostics grouped by absolute file path so the per-file ESLint
+   * rule listener can look up its findings in O(1) instead of scanning
+   * the whole array on every `(file × rule)` invocation. Files with no
+   * findings are absent from the map.
+   */
+  readonly diagnosticsByFile: ReadonlyMap<string, readonly ArchitectureDiagnostic[]>;
 }
 
 /** Parsed shape of the analyzer's view of `package.json`. */

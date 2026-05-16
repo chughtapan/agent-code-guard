@@ -6,6 +6,7 @@
  */
 
 import path from "node:path";
+import type ts from "typescript";
 import { checkFolderShape } from "./folder-shape/index.js";
 import { checkInventoryBarrels } from "./exports/inventory-barrels.js";
 import { buildProjectGraph, checkFolderGraph } from "./imports/index.js";
@@ -52,14 +53,21 @@ interface DirectiveAnalysis {
  * the cache layer so options are not re-decoded on every rule.
  * @param options Pre-resolved architecture options (already
  * schema-decoded and path-resolved).
+ * @param programProvider Lazy provider for the `ts.Program`. The
+ * default builds one from the project tsconfig via `createProgram`.
+ * The rule path passes a provider that returns
+ * `parserServices.program` so the analyzer reuses the program
+ * typescript-eslint already maintains instead of parsing every project
+ * file a second time.
  * @returns The combined architecture report with deduplicated
  * diagnostics, after directive suppressions are applied.
  */
 export function analyzeResolvedArchitecture(
   options: ResolvedArchitectureOptions,
+  programProvider: () => ts.Program | null = () => createProgram(options),
 ): ArchitectureReport {
   const packageJson = readPackageJson(options.projectRoot) ?? emptyPackageJson();
-  const program = createProgram(options);
+  const program = programProvider();
   const sourceFiles = program ? projectSourceFiles(program, options.projectRoot) : [];
   const packageReportFile = findPackageReportFile(sourceFiles, options.projectRoot);
   const graph = buildProjectGraph(sourceFiles, packageJson, options, packageReportFile);
@@ -75,12 +83,23 @@ export function analyzeResolvedArchitecture(
     ...checkModuleShape(graph, options),
   ]);
 
-  return {
-    diagnostics: [
-      ...directiveAnalysis.directiveErrorDiagnostics,
-      ...filterSuppressedDiagnostics(allDiagnostics, directiveAnalysis),
-    ],
-  };
+  const diagnostics = [
+    ...directiveAnalysis.directiveErrorDiagnostics,
+    ...filterSuppressedDiagnostics(allDiagnostics, directiveAnalysis),
+  ];
+  return { diagnostics, diagnosticsByFile: indexByFile(diagnostics) };
+}
+
+function indexByFile(
+  diagnostics: readonly ArchitectureDiagnostic[],
+): ReadonlyMap<string, readonly ArchitectureDiagnostic[]> {
+  const byFile = new Map<string, ArchitectureDiagnostic[]>();
+  for (const diagnostic of diagnostics) {
+    const bucket = byFile.get(diagnostic.file);
+    if (bucket === undefined) byFile.set(diagnostic.file, [diagnostic]);
+    else bucket.push(diagnostic);
+  }
+  return byFile;
 }
 
 function resolvePublicVendorTypeLeaks(

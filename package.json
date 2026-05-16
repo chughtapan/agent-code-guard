@@ -6,7 +6,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "agent-code-guard-knip": "./dist/knip.js"
+    "agent-code-guard-knip": "./dist/knip.js",
+    "agent-code-guard-init": "./dist/init.js"
   },
   "exports": {
     ".": {

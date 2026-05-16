@@ -13,7 +13,6 @@ import {
   architectureOptionsJsonSchema,
   cachedProjectArchitecture,
   resolveArchitectureOptions,
-  type ArchitectureDiagnostic,
   type ArchitectureReport,
   type ArchitectureOptionsInput,
 } from "./project/api/index.js";
@@ -22,6 +21,7 @@ import {
   type ArchitectureRuleId,
 } from "./rule-ids.js";
 import { createRule } from "../utils/create-rule.js";
+import { requireServices } from "../utils/typed-linter/services.js";
 
 type RuleEntry = TSESLint.Linter.RuleEntry;
 type Options = [ArchitectureOptionsInput?];
@@ -61,9 +61,11 @@ function createArchitectureDiagnosticRule(
 
       try {
         const options = resolveArchitectureOptions(rawOptions, projectRoot);
+        const services = requireServices(context);
+        const programProvider = services !== null ? () => services.program : undefined;
         return architectureReportListener(
           context,
-          cachedProjectArchitecture(options),
+          cachedProjectArchitecture(options, programProvider),
           allowedRuleIds,
           filename,
         );
@@ -108,10 +110,12 @@ function architectureReportListener(
   allowedRuleIds: ReadonlySet<ArchitectureRuleId>,
   filename: string,
 ): TSESLint.RuleListener {
+  const fileDiagnostics = report.diagnosticsByFile.get(filename);
+  if (fileDiagnostics === undefined) return {};
   return {
     Program(node) {
-      for (const diagnostic of report.diagnostics) {
-        if (shouldReportDiagnostic(diagnostic, allowedRuleIds, filename)) {
+      for (const diagnostic of fileDiagnostics) {
+        if (allowedRuleIds.has(diagnostic.ruleId)) {
           context.report({
             node,
             messageId: "architectureViolation",
@@ -121,15 +125,6 @@ function architectureReportListener(
       }
     },
   };
-}
-
-function shouldReportDiagnostic(
-  diagnostic: ArchitectureDiagnostic,
-  allowedRuleIds: ReadonlySet<ArchitectureRuleId>,
-  filename: string,
-): boolean {
-  return allowedRuleIds.has(diagnostic.ruleId) &&
-    path.resolve(diagnostic.file) === filename;
 }
 
 export {
