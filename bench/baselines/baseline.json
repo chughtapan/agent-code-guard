@@ -1,0 +1,54 @@
+{
+  "capturedAt": "2026-05-12T05:44:20.828Z",
+  "node": "v24.14.1",
+  "results": [
+    {
+      "target": "small",
+      "cold_ms_median": 5197.6146645,
+      "cold_ms_min": 5171.392666,
+      "cold_ms_max": 5223.836663,
+      "warm_ms_median": 334.30556799999977,
+      "warm_ms_min": 292.99201600000015,
+      "warm_ms_max": 349.6399019999999,
+      "diagnostics": 136,
+      "diagnosticsHash": "481cc6b97d3291de",
+      "peakRssMB": 527.8
+    },
+    {
+      "target": "medium",
+      "cold_ms_median": 9199.004575,
+      "cold_ms_min": 8382.031920000001,
+      "cold_ms_max": 10015.97723,
+      "warm_ms_median": 3924.126106499999,
+      "warm_ms_min": 2654.3567380000004,
+      "warm_ms_max": 4056.2213659999998,
+      "diagnostics": 1383,
+      "diagnosticsHash": "e3ee14c33936a36b",
+      "peakRssMB": 724.9
+    },
+    {
+      "target": "large",
+      "cold_ms_median": 22380.448771,
+      "cold_ms_min": 22294.643518,
+      "cold_ms_max": 22466.254023999998,
+      "warm_ms_median": 16662.772888,
+      "warm_ms_min": 16011.021151,
+      "warm_ms_max": 17482.499373,
+      "diagnostics": 4040,
+      "diagnosticsHash": "84a1d7209b8de6cc",
+      "peakRssMB": 1151.2
+    },
+    {
+      "target": "self",
+      "cold_ms_median": 19684.929926,
+      "cold_ms_min": 18410.917968,
+      "cold_ms_max": 20958.941884,
+      "warm_ms_median": 11192.6963455,
+      "warm_ms_min": 11162.571767999998,
+      "warm_ms_max": 12881.726341000001,
+      "diagnostics": 0,
+      "diagnosticsHash": "e3b0c44298fc1c14",
+      "peakRssMB": 1468.9
+    }
+  ]
+}

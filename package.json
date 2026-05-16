@@ -26,6 +26,8 @@
     "lint": "eslint . && knip",
     "test": "vitest run --changed",
     "test:all": "vitest run",
+    "bench": "tsx bench/lint-bench.ts",
+    "bench:generate": "tsx bench/generate-fixture.ts",
     "mutation": "stryker run",
     "prepublishOnly": "pnpm build && pnpm test:all"
   },
@@ -68,6 +70,7 @@
     "@typescript-eslint/rule-tester": "^8.0.0",
     "eslint": "^9.0.0",
     "fast-check": "^4.7.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.4.0",
     "vitest": "^2.0.0"
   }
