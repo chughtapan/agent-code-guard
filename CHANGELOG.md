@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.0.14] - 2026-05-16
+
+### Breaking
+
+- **Architecture rules removed from this package.** The `architecture` preset, all 21 architecture rules (`no-folder-cycle`, `no-cross-domain-sibling-import`, `require-curated-public-facade`, `no-public-vendor-type-leak`, etc.), and the per-rule docs under `docs/rules/architecture/` are gone. Consumers using `extends: ["plugin:agent-code-guard/architecture"]` will now get a clear "preset not found" error from ESLint (regression test covers this). Architecture analysis moved to [safer-by-default](https://github.com/chughtapan/safer-by-default) where it runs as a custom LSP server alongside this floor's syntax rules. Migration: install the safer-by-default Claude plugin (`/plugin install safer@safer-by-default`); its `agent-code-guard-architecture` LSP auto-runs the analyzer in editor + agent context. This narrows the ESLint plugin to per-file syntax checks, which is what `eslint-language-server` and other ESLint hosts run efficiently.
+- **`effect` dropped from runtime dependencies.** The two non-architecture files that used `effect` (`tooling/require-knip-in-lint.ts` via `Match`, `utils/ast-refinement/index.ts` via `Brand`) refactored to plain `switch` and a manual `string & { __brand }` smart-constructor pattern respectively. `effect` is no longer a `dependency`; `peerDependencies` still requires `typescript >=5` as before.
+
+### Added
+
+- **Rule metadata carries rationale + doctrine link.** Every rule now sets `meta.docs.description` (a one-line rationale per rule) and `meta.docs.url` (a stable link to the corresponding heading in [`safer-by-default/PRINCIPLES.md`](https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md)). Any ESLint host that respects `codeDescription.href` (vscode-eslint, eslint-language-server, the editor tooltip) now renders a clickable link from each diagnostic straight to the doctrine that explains why the rule exists. Anchors derive from PRINCIPLES.md heading text at publish time; a CI check (`tests/rule-meta-docs.test.ts`) asserts every rule has both fields and validates anchors against a static fixture of PRINCIPLES.md headings.
+- **`src/rules/utils/principles.ts`** — shared `PRINCIPLE_URL` constants so the metadata URLs declare in one place instead of duplicating across 47 rule files.
+
+### Changed
+
+- **README rewritten.** `## Hello world` now leads with a 5-line copy-paste `eslint.config.js` skeleton that produces a working lint run on a TypeScript file (the previous lead opened with ~60 lines of architecture-rule prose). `## Companion` rewritten to point at `safer-by-default` as the ceiling and name the two `lspServers` it declares.
+- **Manual brand pattern in `ast-refinement`.** `Brand.nominal` swapped for `string & { __brand: unique symbol }`. Smart constructor stays private to its module; only validated narrower functions construct branded values. Unique-symbol brands mean two brands with the same name string cannot collide at the type level (caught by `/simplify` during the migration).
+
+### For contributors
+
+- `pnpm test:all` now runs 903 tests across 61 files (up from 807); the new `tests/rule-meta-docs.test.ts` adds 94 cases (47 rules × 2 assertions for description + url).
+- `bench/` and architecture test exemptions in `eslint.config.js` retained for the perf-phase work that landed earlier; nothing was removed from the bench harness.
+
 ## [0.0.13] - 2026-05-11
 
 ### Added
