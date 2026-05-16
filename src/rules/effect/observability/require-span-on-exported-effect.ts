@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 function functionExportName(
   declaration: TSESTree.FunctionDeclaration,
@@ -41,8 +42,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag exported Effect.gen-bearing values that never call Effect.withSpan in their definition. Trace boundaries belong on exported Effect surfaces.",
+      description: "Public Effect entrypoints must carry a span so the diagnostic chain survives across the boundary.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       missingSpan:

@@ -1,5 +1,6 @@
 import { createRule } from "../utils/create-rule.js";
 import { getStaticMemberExpression } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const MOCK_METHODS = new Set(["mock", "hoisted", "spyOn"]);
 
@@ -8,8 +9,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `vi.mock` / `vi.hoisted` / `vi.spyOn` calls. Scope this rule to your integration-test glob via flat-config `files:` to enforce real dependencies there.",
+      description: "An integration test that mocks the boundary asserts your code works against your mock, not the real thing.",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       vitestMock:

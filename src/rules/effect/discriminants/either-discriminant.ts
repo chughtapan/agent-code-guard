@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const EQUALITY_OPERATORS = new Set(["==", "===", "!=", "!=="]);
 const EITHER_TAGS = new Set(["Left", "Right"]);
@@ -31,8 +32,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag manual Either narrowing via `Either.isLeft` / `Either.isRight` or `_tag === \"Left\"`. Use `Either.match(...)` instead.",
+      description: "`Either<L, R>` matches must discriminate on the tag, never on truthiness; truthy-checking conflates error with falsy data.",
+      url: PRINCIPLE_URL.EXHAUSTIVENESS,
     },
     messages: {
       eitherDiscriminant:

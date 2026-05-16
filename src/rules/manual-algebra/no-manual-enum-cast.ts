@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 function isStringLiteralType(node: TSESTree.TypeNode): boolean {
   return (
@@ -15,8 +16,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `as \"a\" | \"b\" | ...` string-union casts. Import generated enum types instead of inlining them.",
+      description: "Hand-written unions drift from their source; generated or schema-derived enums do not.",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       manualEnumCast:

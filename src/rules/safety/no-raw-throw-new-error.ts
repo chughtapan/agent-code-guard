@@ -2,6 +2,7 @@ import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
 import { getEnclosingFunctionName } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const ERROR_CTORS = new Set(["Error", "TypeError", "RangeError"]);
 
@@ -10,8 +11,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `throw new Error(...)` (and TypeError/RangeError) in non-test code. Return a tagged error or Effect.fail instead.",
+      description: "`throw new Error(\"bad\")` has no type, no handling contract, no receipt for the caller; tagged errors do.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       rawThrow:

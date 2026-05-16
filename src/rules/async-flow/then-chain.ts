@@ -1,13 +1,14 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 export default createRule({
   name: "then-chain",
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `.then(...)` calls. Compose with Effect.flatMap / Effect.map instead.",
+      description: "`.then()` chains hide the error channel and reorder control flow; same erasure as `Promise<T>`.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       thenChain:

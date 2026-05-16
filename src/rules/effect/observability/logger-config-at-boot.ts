@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const BOOT_FILE_PATTERNS = [
   /(^|[\\/])bin[\\/]/,
@@ -35,8 +36,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Logger.withMinimumLogLevel / withConsoleLog / withConsoleError calls outside boot files. Configure logging once at the entry point.",
+      description: "Logger configuration is boundary state; configure once at boot, never per-call inside the program.",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       loggerConfigAwayFromBoot:

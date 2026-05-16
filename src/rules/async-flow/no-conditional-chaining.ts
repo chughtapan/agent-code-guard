@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type FunctionNode =
   | TSESTree.ArrowFunctionExpression
@@ -14,8 +15,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag optional or nullable function parameters that are passed onward to another call before the function resolves the conditional shape.",
+      description: "Conditional chains (`x?.y?.z`) hide the optionality the type system would have made exhaustive; lift the absence into a discriminant.",
+      url: PRINCIPLE_URL.EXHAUSTIVENESS,
     },
     messages: {
       conditionalChaining:

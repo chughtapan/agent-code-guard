@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const SCHEMA_DECODE_METHODS = new Set([
   "decodeUnknownSync",
@@ -74,8 +75,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Schema.decode* applied to JSON.parse(...) without an Effect.try wrapper. JSON.parse can throw outside the Effect channel; wrap it so the SyntaxError joins the typed error union.",
+      description: "`Schema.decodeUnknownSync` throws on failure; effectful boundaries must use the Effect-returning decoder so failure stays in the typed channel.",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       parseNeedsEffectTry:

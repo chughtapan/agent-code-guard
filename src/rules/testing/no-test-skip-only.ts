@@ -3,6 +3,7 @@ import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
 import { getStaticMemberPropertyName } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const TEST_FNS = new Set(["it", "test", "describe"]);
 const ALIASES: Record<string, "skip"> = {
@@ -41,8 +42,8 @@ export default createRule<[Options], "skipOrOnly">({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `it.skip`, `it.only`, `describe.skip`, `describe.only`, `test.skip`, `test.only`, `xit`, `xdescribe`, `xtest` in committed tests.",
+      description: "Test-hygiene corollary of principle 1: a `.skip` or `.only` shipped to main is a test that does not test.",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       skipOrOnly:

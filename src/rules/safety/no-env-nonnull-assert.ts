@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 function isProcessEnvMemberExpression(node: TSESTree.Node): boolean {
   if (node.type !== AST_NODE_TYPES.MemberExpression) return false;
@@ -16,8 +17,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag non-null assertions on `process.env.X`. Validate the read or default it instead.",
+      description: "`process.env.X!` silences TypeScript without validating the value; environment is a boundary, validated at boot.",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       envNonNullAssert:

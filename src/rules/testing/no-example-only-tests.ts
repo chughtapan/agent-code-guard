@@ -3,6 +3,7 @@ import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
 import { getStaticMemberPropertyName } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type MessageIds = "exampleOnly";
 type Options = [{
@@ -40,8 +41,8 @@ export default createRule<Options, MessageIds>({
   meta: {
     type: "suggestion",
     docs: {
-      description:
-        "Flag test scopes that accumulate example cases without a property or generative invariant test.",
+      description: "A test that asserts one hand-picked input is a compression of a property the type system or `fast-check` could verify; promote to property when one exists.",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       exampleOnly:

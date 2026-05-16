@@ -1,5 +1,6 @@
 import { createRule } from "../utils/create-rule.js";
 import { findManualResultMatch } from "./detection/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const VARIABLE_SURFACE_SELECTOR =
   "VariableDeclarator[init.type='ObjectExpression'], " +
@@ -12,8 +13,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag hand-rolled Result/Either-like algebra surfaces. Prefer Effect.Either/Effect or an endorsed helper instead.",
+      description: "Hand-rolled `Result`-shaped types miss the discriminant guarantees; use the project's `Result` so error tags stay structural.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       manualResult:

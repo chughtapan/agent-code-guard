@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { getParent, getStaticStringKey } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 // Matches `jest.config.ts`, `vitest.config.unit.ts`, `jest.config.integration.cjs`,
 // plus `package.json`. Users can lint package.json if they wire a JSON parser
@@ -31,8 +32,8 @@ export default createRule({
   meta: {
     type: "suggestion",
     docs: {
-      description:
-        "Flag coverage threshold gates in jest/vitest/vite configs. Coverage is diagnostic, not a merge gate.",
+      description: "Coverage % is a diagnostic, never a CI gate (Inozemtseva & Holmes ICSE 2014). Acts on the wrong signal.",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       coverageGate:

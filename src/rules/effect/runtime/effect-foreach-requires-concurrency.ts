@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 function isEffectForEachCall(node: TSESTree.CallExpression): boolean {
   if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return false;
@@ -32,8 +33,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect.forEach calls without an explicit concurrency option. Default sequential is rarely what you want for I/O work; default unbounded is rarely what you want for anything.",
+      description: "`Effect.forEach` over a runtime-sized input has no concurrency budget; bound it explicitly via the `concurrency` option.",
+      url: PRINCIPLE_URL.BUDGET_GATE,
     },
     messages: {
       missingConcurrency:

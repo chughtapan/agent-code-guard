@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const HANDLER_FILE_PATTERNS = [
   /(^|[\\/])handlers?[\\/]/,
@@ -60,8 +61,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "In handler/route files, flag Effect.gen bodies that don't reference Effect.withSpan. Handlers are trace boundaries.",
+      description: "Exported Effect handlers must wrap themselves in `Effect.withSpan`; without it the diagnostic chain breaks at the API boundary.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       handlerMissingSpan:

@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 function isUnknownKeyword(node: TSESTree.TypeNode): boolean {
   return node.type === AST_NODE_TYPES.TSUnknownKeyword;
@@ -21,8 +22,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `as unknown as` cast chains. Use a real decoder, type guard, or typed constructor instead.",
+      description: "`as unknown as T` is a double-cast that bypasses the type system at the boundary; decode through a schema.",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       asUnknownAs:

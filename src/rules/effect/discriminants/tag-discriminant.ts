@@ -7,6 +7,7 @@ import {
   getTagAccess,
 } from "../../utils/ast-refinement/index.js";
 import { EFFECT_TAGGED_TYPE_PATTERN } from "../effect-namespaces.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const EQUALITY_OPERATORS = new Set(["==", "===", "!=", "!=="]);
 
@@ -54,8 +55,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag manual `_tag` discriminant checks on Effect tagged unions. Use Effect.catchTag(...) / catchTags(...) for tagged errors and Match.tag(...) / Match.discriminator('_tag') for tagged unions.",
+      description: "Discriminated unions match on the named tag, not on shape; shape-matching breaks when tags overlap.",
+      url: PRINCIPLE_URL.EXHAUSTIVENESS,
     },
     messages: {
       tagDiscriminant:

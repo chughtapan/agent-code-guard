@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type Options = readonly [{ readonly max?: number; readonly factories?: readonly string[] }?];
 
@@ -50,8 +51,8 @@ export default createRule<Options, "tooMany">({
   meta: {
     type: "suggestion",
     docs: {
-      description:
-        "Cap classes per file. Classes that extend a configured tag-class factory (default: Effect's Data.TaggedError / Context.Tag / Effect.Service / Schema.Class / …) are exempt so co-located error/tag groups don't fight the limit.",
+      description: "Discipline corollary: cap non-trivial classes per file; tag-class factories are exempt so the limit reads the codebase the way the architect designed it.",
+      url: PRINCIPLE_URL.DISCIPLINE,
     },
     messages: {
       tooMany:

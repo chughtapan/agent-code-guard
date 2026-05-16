@@ -1,13 +1,14 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 export default createRule({
   name: "bare-catch",
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `catch {}` blocks that silently swallow errors or bind them to `_`-prefixed names.",
+      description: "A silent catch hides both the error AND the branch; exhaustiveness cannot apply.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       bareCatch: "Silently swallowed error — always bind and log it",

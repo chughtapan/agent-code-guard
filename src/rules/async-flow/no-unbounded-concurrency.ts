@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 import {
   getStaticMemberExpression,
   getStaticStringKey,
@@ -34,8 +35,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect calls that opt into `concurrency: \"unbounded\"`. Prefer a concrete bound unless the fan-out is explicitly proven safe.",
+      description: "Unbounded `Promise.all` over a runtime-sized input has no concurrency budget; bound it explicitly.",
+      url: PRINCIPLE_URL.DISCIPLINE,
     },
     messages: {
       noUnboundedConcurrency:

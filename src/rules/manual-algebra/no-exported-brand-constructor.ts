@@ -2,6 +2,7 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { getStaticMemberExpression } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type ConstructorKind = "brand" | "schema";
 
@@ -22,8 +23,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag exported brand and schema constructors; keep constructors local and export boundary behavior instead.",
+      description: "Exporting a brand's smart constructor breaks the encapsulation that makes the brand load-bearing; the constructor stays private to the module that owns the validation.",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       exportedBrandConstructor:

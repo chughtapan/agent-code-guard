@@ -1,5 +1,6 @@
 import { createRule } from "../utils/create-rule.js";
 import { findManualOptionMatch } from "./detection/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const VARIABLE_SURFACE_SELECTOR =
   "VariableDeclarator[init.type='ObjectExpression'], " +
@@ -12,8 +13,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag hand-rolled Option/Maybe-like algebra surfaces. Prefer Effect.Option or an endorsed helper instead.",
+      description: "Hand-rolled `Option`-shaped types don't compose with the rest of the algebra; use the project's `Option` so `match` works uniformly.",
+      url: PRINCIPLE_URL.EXHAUSTIVENESS,
     },
     messages: {
       manualOption:

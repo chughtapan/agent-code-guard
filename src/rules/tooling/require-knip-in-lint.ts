@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type Options = {
   readonly packageJsonPath?: string;
@@ -113,8 +114,8 @@ export default createRule<[Options], MessageId>({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Require the default package quality script to run Knip so dead-code checks stay in the normal lint path.",
+      description: "Dead-code detection (`knip`) running in lint catches drifted exports before they accumulate; the linter checks structure, not just syntax.",
+      url: PRINCIPLE_URL.DISCIPLINE,
     },
     messages: {
       invalidPackageJson:

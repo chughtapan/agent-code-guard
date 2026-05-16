@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 function isMemberCallToEffectMethod(
   node: TSESTree.CallExpression,
@@ -33,8 +34,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect.annotateCurrentSpan calls in files that never reference withSpan. Without an enclosing withSpan frame, the annotation has nothing to attach to.",
+      description: "`Effect.annotateCurrentSpan` outside a span has no carrier; annotations attach to the span scope or vanish.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       annotateWithoutSpan:

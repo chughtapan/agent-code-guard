@@ -2,6 +2,7 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PURE_EFFECT_NAMESPACES } from "../effect-namespaces.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 type Target = "fs" | "http" | "argv" | "fetch" | "sql" | "cli";
 
@@ -70,8 +71,8 @@ export default createRule<[Options], "rawFs" | "rawHttp" | "rawArgv" | "rawFetch
   meta: {
     type: "problem",
     docs: {
-      description:
-        "In Effect files, prefer @effect/platform / @effect/sql / @effect/cli over raw Node modules and third-party clients.",
+      description: "Raw Node modules and third-party clients (fs, http, fetch, argv, sql, cli) bypass the typed Effect runtime; route through `@effect/platform` (or `@effect/sql` / `@effect/cli`) so the boundary stays validated.",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       rawFs: "Raw `{{module}}` in an Effect file; use @effect/platform's FileSystem",

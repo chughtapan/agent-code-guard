@@ -1,13 +1,14 @@
 import { createRule } from "../../utils/create-rule.js";
 import { isNamedMemberCall } from "../../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 export default createRule({
   name: "effect-promise",
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `Effect.promise(...)`. Use `Effect.tryPromise({ try, catch })` so rejections stay in the typed error channel.",
+      description: "`Promise<T>` inside an `Effect` re-introduces the erased error channel; convert at the boundary.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       effectPromise:

@@ -2,6 +2,7 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isFunctionReturnTypeReference } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 function isPromiseTypeReference(node: TSESTree.Node): boolean {
   return (
@@ -16,8 +17,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `Promise<...>` used as a function return type. Prefer Effect.",
+      description: "`Promise<T>` erases the error channel; tagged-error or `Effect<T, E, R>` keep it visible.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       promiseReturn: "Promise<> return type — prefer Effect",

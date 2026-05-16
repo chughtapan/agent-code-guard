@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const PROMISE_STATICS = new Set(["all", "allSettled", "race", "any"]);
 
@@ -24,8 +25,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Promise.all/allSettled/race/any in files importing Effect. Use Effect.all/forEach with explicit concurrency.",
+      description: "`Promise.all` on Effects erases the typed error channel; use `Effect.all` so failures stay tagged.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       promiseStaticInEffect:

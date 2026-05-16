@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 function isStringKeyword(node: TSESTree.TypeNode): boolean {
   return node.type === AST_NODE_TYPES.TSStringKeyword;
@@ -31,8 +32,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `as Record<string, unknown>` casts. Use typed results instead.",
+      description: "`as Record<string, unknown>` papers over a missing schema at the boundary; decode instead.",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       recordCast:

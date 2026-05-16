@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { findManualBrandConstructorMatch } from "./detection/brand-helper.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const VARIABLE_FUNCTION_SELECTOR =
   "VariableDeclarator[init.type='FunctionExpression'], " +
@@ -11,8 +12,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag constructor functions that create branded values by casting. Use Brand.nominal or schema decoding at the boundary instead.",
+      description: "Manually constructing a branded value bypasses the validation that earned the brand; use the smart constructor.",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       manualBrandConstructor:

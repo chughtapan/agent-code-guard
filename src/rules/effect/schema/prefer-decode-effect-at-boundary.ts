@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const SYNC_DECODE_METHODS = new Set([
   "decodeUnknownSync",
@@ -84,8 +85,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Schema.decodeUnknownSync (and sibling sync decoders) applied to data that just came out of JSON.parse, fs.read*, or fetch. Use the Effect-returning decoder so failures stay typed.",
+      description: "Boundary decoding belongs to the Effect-returning decoder; sync variants drop the typed failure channel and re-throw raw `ParseError`.",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       syncDecodeAtBoundary:

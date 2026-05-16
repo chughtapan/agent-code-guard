@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const FORK_METHODS = new Set(["fork"]);
 
@@ -35,8 +36,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect.fork(...) whose return value is discarded. Capture the Fiber and await/interrupt it, or use Effect.forkScoped / Effect.forkDaemon.",
+      description: "`Effect.fork` without a tied lifecycle (interrupt, join, scope) leaks the fiber; orphan fibers escape the typed error channel.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       forkResultDiscarded:

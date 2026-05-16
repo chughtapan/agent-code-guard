@@ -2,6 +2,7 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 import {
   getNumericLiteralValue,
   getStaticMemberPropertyName,
@@ -112,8 +113,8 @@ export default createRule<Options, MessageIds>({
   meta: {
     type: "suggestion",
     docs: {
-      description:
-        "Flag hardcoded string or number literals passed directly to test assertion matchers. Export as a named constant or assert a structural property instead.",
+      description: "Assertions hardcoding a literal (e.g., `expect(...).toBe(42)` where 42 is the implementation's output) compress the same information as a property; the property has higher coverage.",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       hardcodedLiteral:

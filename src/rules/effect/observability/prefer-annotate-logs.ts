@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const LOG_METHODS = new Set([
   "log",
@@ -32,8 +33,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect.log* calls whose second argument is an object literal. Use Effect.annotateLogs to attach structured context once, instead of re-passing it at each call.",
+      description: "`Effect.log` with extra arguments drops them silently; `Effect.annotateLogs` is the typed channel for structured fields.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       preferAnnotateLogs:

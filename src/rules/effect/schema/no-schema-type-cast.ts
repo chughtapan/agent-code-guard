@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const SCHEMA_TYPE_PATHS: readonly (readonly string[])[] = [
   ["Schema", "Schema", "Type"],
@@ -37,8 +38,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `value as Schema.Schema.Type<typeof S>` casts. Decode through the schema instead of asserting the type.",
+      description: "`Schema.Type` / `Schema.Encoded` casts assert the decoded shape without running the decode; the schema is the runtime path, not a type-only annotation.",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       schemaTypeCast:

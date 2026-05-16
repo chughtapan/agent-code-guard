@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 import {
   getParent,
   getStaticMemberPropertyName,
@@ -177,8 +178,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag hand-rolled tagged error classes and error unions that declare `_tag` manually. Use `Data.TaggedError(...)` instead.",
+      description: "Hand-rolled tagged errors miss the constructor pattern that makes the tag set extensible; use the project's helper.",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       manualTaggedError:
