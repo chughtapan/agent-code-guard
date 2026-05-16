@@ -74,8 +74,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Schema.decode* applied to JSON.parse(...) without an Effect.try wrapper. JSON.parse can throw outside the Effect channel; wrap it so the SyntaxError joins the typed error union.",
+      description: "`Schema.decodeUnknownSync` throws on failure; effectful boundaries must use the Effect-returning decoder so failure stays in the typed channel.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
     },
     messages: {
       parseNeedsEffectTry:

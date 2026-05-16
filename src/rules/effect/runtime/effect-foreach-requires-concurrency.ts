@@ -32,8 +32,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect.forEach calls without an explicit concurrency option. Default sequential is rarely what you want for I/O work; default unbounded is rarely what you want for anything.",
+      description: "`Effect.forEach` over a runtime-sized input has no concurrency budget; bound it explicitly via the `concurrency` option.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#6-the-budget-gate--scope-is-a-hard-budget",
     },
     messages: {
       missingConcurrency:

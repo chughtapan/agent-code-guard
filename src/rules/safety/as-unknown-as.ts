@@ -21,8 +21,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `as unknown as` cast chains. Use a real decoder, type guard, or typed constructor instead.",
+      description: "`as unknown as T` is a double-cast that bypasses the type system at the boundary; decode through a schema.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
     },
     messages: {
       asUnknownAs:

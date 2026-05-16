@@ -112,8 +112,8 @@ export default createRule<Options, MessageIds>({
   meta: {
     type: "suggestion",
     docs: {
-      description:
-        "Flag hardcoded string or number literals passed directly to test assertion matchers. Export as a named constant or assert a structural property instead.",
+      description: "Assertions hardcoding a literal (e.g., `expect(...).toBe(42)` where 42 is the implementation's output) compress the same information as a property; the property has higher coverage.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
     },
     messages: {
       hardcodedLiteral:

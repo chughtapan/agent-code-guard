@@ -32,8 +32,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect.log* calls whose second argument is an object literal. Use Effect.annotateLogs to attach structured context once, instead of re-passing it at each call.",
+      description: "`Effect.log` with extra arguments drops them silently; `Effect.annotateLogs` is the typed channel for structured fields.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       preferAnnotateLogs:

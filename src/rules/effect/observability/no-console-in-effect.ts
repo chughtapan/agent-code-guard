@@ -41,8 +41,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag console.* calls in files importing Effect. Use Effect.log, Effect.logDebug, or a Logger service.",
+      description: "`console.*` bypasses the Effect log channel; route through `Effect.log` so logs stay inside the typed runtime.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       consoleInEffect:

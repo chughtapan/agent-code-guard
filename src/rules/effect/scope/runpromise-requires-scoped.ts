@@ -25,8 +25,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect.runPromise / runSync where the input Effect requires a Scope but is not provided one.",
+      description: "`Effect.runPromise` on a scoped Effect leaks resources; wrap in `Effect.scoped` or provide a `Layer.scoped` so finalizers run.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       runRequiresScope:

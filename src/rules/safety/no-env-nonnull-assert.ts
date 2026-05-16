@@ -16,8 +16,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag non-null assertions on `process.env.X`. Validate the read or default it instead.",
+      description: "`process.env.X!` silences TypeScript without validating the value; environment is a boundary, validated at boot.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
     },
     messages: {
       envNonNullAssert:

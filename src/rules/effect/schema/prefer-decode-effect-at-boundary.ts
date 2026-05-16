@@ -84,8 +84,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Schema.decodeUnknownSync (and sibling sync decoders) applied to data that just came out of JSON.parse, fs.read*, or fetch. Use the Effect-returning decoder so failures stay typed.",
+      description: "Boundary decoding belongs to the Effect-returning decoder; sync variants drop the typed failure channel and re-throw raw `ParseError`.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
     },
     messages: {
       syncDecodeAtBoundary:

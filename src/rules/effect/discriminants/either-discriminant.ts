@@ -31,8 +31,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag manual Either narrowing via `Either.isLeft` / `Either.isRight` or `_tag === \"Left\"`. Use `Either.match(...)` instead.",
+      description: "`Either<L, R>` matches must discriminate on the tag, never on truthiness; truthy-checking conflates error with falsy data.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#4-exhaustiveness-over-optionality--every-branch-handled-switches-end-in-never",
     },
     messages: {
       eitherDiscriminant:

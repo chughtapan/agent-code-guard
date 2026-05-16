@@ -31,8 +31,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `as Record<string, unknown>` casts. Use typed results instead.",
+      description: "`as Record<string, unknown>` papers over a missing schema at the boundary; decode instead.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
     },
     messages: {
       recordCast:

@@ -45,8 +45,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag generic `Error` values pushed into the Effect error channel. Use a tagged domain error instead.",
+      description: "`Effect<T, never, R>` claims no error channel; if the effect can fail, name the error tag, don't erase it.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       effectErrorErasure:

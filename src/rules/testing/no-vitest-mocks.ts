@@ -8,8 +8,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `vi.mock` / `vi.hoisted` / `vi.spyOn` calls. Scope this rule to your integration-test glob via flat-config `files:` to enforce real dependencies there.",
+      description: "An integration test that mocks the boundary asserts your code works against your mock, not the real thing.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
     },
     messages: {
       vitestMock:

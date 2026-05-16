@@ -12,8 +12,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag hand-rolled Result/Either-like algebra surfaces. Prefer Effect.Either/Effect or an endorsed helper instead.",
+      description: "Hand-rolled `Result`-shaped types miss the discriminant guarantees; use the project's `Result` so error tags stay structural.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       manualResult:

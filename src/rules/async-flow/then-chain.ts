@@ -6,8 +6,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `.then(...)` calls. Compose with Effect.flatMap / Effect.map instead.",
+      description: "`.then()` chains hide the error channel and reorder control flow; same erasure as `Promise<T>`.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       thenChain:

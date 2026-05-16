@@ -177,8 +177,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag hand-rolled tagged error classes and error unions that declare `_tag` manually. Use `Data.TaggedError(...)` instead.",
+      description: "Hand-rolled tagged errors miss the constructor pattern that makes the tag set extensible; use the project's helper.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       manualTaggedError:

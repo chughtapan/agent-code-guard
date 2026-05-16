@@ -22,8 +22,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag exported brand and schema constructors; keep constructors local and export boundary behavior instead.",
+      description: "Exporting a brand's smart constructor breaks the encapsulation that makes the brand load-bearing; the constructor stays private to the module that owns the validation.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
     },
     messages: {
       exportedBrandConstructor:

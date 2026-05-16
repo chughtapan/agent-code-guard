@@ -41,8 +41,8 @@ export default createRule<[Options], "skipOrOnly">({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `it.skip`, `it.only`, `describe.skip`, `describe.only`, `test.skip`, `test.only`, `xit`, `xdescribe`, `xtest` in committed tests.",
+      description: "Test-hygiene corollary of principle 1: a `.skip` or `.only` shipped to main is a test that does not test.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
     },
     messages: {
       skipOrOnly:

@@ -70,8 +70,8 @@ export default createRule<[Options], "rawFs" | "rawHttp" | "rawArgv" | "rawFetch
   meta: {
     type: "problem",
     docs: {
-      description:
-        "In Effect files, prefer @effect/platform / @effect/sql / @effect/cli over raw Node modules and third-party clients.",
+      description: "Direct `process.argv` / `process.env` reads bypass the platform runtime; route through `@effect/platform` so the boundary stays validated.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
     },
     messages: {
       rawFs: "Raw `{{module}}` in an Effect file; use @effect/platform's FileSystem",

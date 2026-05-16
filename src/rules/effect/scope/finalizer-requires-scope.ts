@@ -31,8 +31,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Scope.addFinalizer calls in files that never reference scoped frames. Without a Scope context the finalizer never runs.",
+      description: "`Scope.addFinalizer` outside a scoped Effect has no carrier; the finalizer registers on a scope that's already closed.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       finalizerWithoutScope:

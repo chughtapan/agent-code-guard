@@ -35,8 +35,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect.acquireRelease / acquireUseRelease in files that never reference Effect.scoped or Layer.scoped. Without a scope frame the resource leaks.",
+      description: "`Effect.acquireRelease` outside a `Scope` leaks the resource silently; the finalizer needs a scope to attach to or it never runs.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       acquireWithoutScope:

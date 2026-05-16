@@ -16,8 +16,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `Promise<...>` used as a function return type. Prefer Effect.",
+      description: "`Promise<T>` erases the error channel; tagged-error or `Effect<T, E, R>` keep it visible.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       promiseReturn: "Promise<> return type — prefer Effect",

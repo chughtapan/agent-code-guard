@@ -12,8 +12,8 @@ export default createRule({
   meta: {
     type: "suggestion",
     docs: {
-      description:
-        "Flag hand-rolled brand surfaces. Prefer a refined brand (Schema.brand on top of a refinement predicate) so the type is a witness of a checked invariant, not just a nominal label.",
+      description: "A hand-rolled brand without a smart constructor enforces nothing; use the project's `Brand` helper so the constructor is the only path in.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
     },
     messages: {
       manualBrand:

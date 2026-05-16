@@ -6,8 +6,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `catch {}` blocks that silently swallow errors or bind them to `_`-prefixed names.",
+      description: "A silent catch hides both the error AND the branch; exhaustiveness cannot apply.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       bareCatch: "Silently swallowed error — always bind and log it",

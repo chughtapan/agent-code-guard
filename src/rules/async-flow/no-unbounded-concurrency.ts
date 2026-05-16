@@ -34,8 +34,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect calls that opt into `concurrency: \"unbounded\"`. Prefer a concrete bound unless the fan-out is explicitly proven safe.",
+      description: "Unbounded `Promise.all` over a runtime-sized input has no concurrency budget; bound it explicitly.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#5-discipline-over-capability",
     },
     messages: {
       noUnboundedConcurrency:

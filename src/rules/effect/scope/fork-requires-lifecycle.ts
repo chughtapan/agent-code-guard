@@ -35,8 +35,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect.fork(...) whose return value is discarded. Capture the Fiber and await/interrupt it, or use Effect.forkScoped / Effect.forkDaemon.",
+      description: "`Effect.fork` without a tied lifecycle (interrupt, join, scope) leaks the fiber; orphan fibers escape the typed error channel.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       forkResultDiscarded:

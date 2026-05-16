@@ -11,8 +11,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag constructor functions that create branded values by casting. Use Brand.nominal or schema decoding at the boundary instead.",
+      description: "Manually constructing a branded value bypasses the validation that earned the brand; use the smart constructor.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
     },
     messages: {
       manualBrandConstructor:

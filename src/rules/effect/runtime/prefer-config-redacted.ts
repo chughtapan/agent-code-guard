@@ -38,8 +38,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Config.string calls whose key name looks like a secret. Use Config.redacted so the value is never shown in logs or error messages.",
+      description: "Sensitive configuration crosses the env boundary as a Redacted value; `Config.string` for secrets leaks them through the schema.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
     },
     messages: {
       preferRedacted:

@@ -10,8 +10,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect error handlers that collapse distinct typed errors into one broad wrapper error.",
+      description: "Coalescing distinct effect errors into one tag erases the diagnostic; downstream needs the tag set the upstream produced.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       effectErrorCoalescing:

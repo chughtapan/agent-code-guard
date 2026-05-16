@@ -33,8 +33,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Effect.annotateCurrentSpan calls in files that never reference withSpan. Without an enclosing withSpan frame, the annotation has nothing to attach to.",
+      description: "`Effect.annotateCurrentSpan` outside a span has no carrier; annotations attach to the span scope or vanish.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       annotateWithoutSpan:

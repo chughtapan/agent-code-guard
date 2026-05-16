@@ -14,8 +14,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag optional or nullable function parameters that are passed onward to another call before the function resolves the conditional shape.",
+      description: "Conditional chains (`x?.y?.z`) hide the optionality the type system would have made exhaustive; lift the absence into a discriminant.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#4-exhaustiveness-over-optionality--every-branch-handled-switches-end-in-never",
     },
     messages: {
       conditionalChaining:

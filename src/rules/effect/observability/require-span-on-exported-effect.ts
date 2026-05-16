@@ -41,8 +41,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag exported Effect.gen-bearing values that never call Effect.withSpan in their definition. Trace boundaries belong on exported Effect surfaces.",
+      description: "Public Effect entrypoints must carry a span so the diagnostic chain survives across the boundary.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       missingSpan:

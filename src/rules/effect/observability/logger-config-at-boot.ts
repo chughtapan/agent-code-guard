@@ -35,8 +35,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Logger.withMinimumLogLevel / withConsoleLog / withConsoleError calls outside boot files. Configure logging once at the entry point.",
+      description: "Logger configuration is boundary state; configure once at boot, never per-call inside the program.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
     },
     messages: {
       loggerConfigAwayFromBoot:

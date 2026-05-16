@@ -31,8 +31,8 @@ export default createRule({
   meta: {
     type: "suggestion",
     docs: {
-      description:
-        "Flag coverage threshold gates in jest/vitest/vite configs. Coverage is diagnostic, not a merge gate.",
+      description: "Coverage % is a diagnostic, never a CI gate (Inozemtseva & Holmes ICSE 2014). Acts on the wrong signal.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
     },
     messages: {
       coverageGate:

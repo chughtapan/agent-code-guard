@@ -6,8 +6,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `Effect.promise(...)`. Use `Effect.tryPromise({ try, catch })` so rejections stay in the typed error channel.",
+      description: "`Promise<T>` inside an `Effect` re-introduces the erased error channel; convert at the boundary.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       effectPromise:

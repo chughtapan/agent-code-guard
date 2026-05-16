@@ -107,8 +107,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag runtime `process.env` access in application code. Read configuration at the boundary and pass typed values inward.",
+      description: "Reading `process.env.X` outside boot bypasses the env schema; environment is a boundary, validated at boot.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
     },
     messages: {
       noProcessEnvAtRuntime:

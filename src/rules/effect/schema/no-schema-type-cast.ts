@@ -37,8 +37,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `value as Schema.Schema.Type<typeof S>` casts. Decode through the schema instead of asserting the type.",
+      description: "`Schema.Type` / `Schema.Encoded` casts assert the decoded shape without running the decode; the schema is the runtime path, not a type-only annotation.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
     },
     messages: {
       schemaTypeCast:

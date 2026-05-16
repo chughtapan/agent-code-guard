@@ -24,8 +24,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag Promise.all/allSettled/race/any in files importing Effect. Use Effect.all/forEach with explicit concurrency.",
+      description: "`Promise.all` on Effects erases the typed error channel; use `Effect.all` so failures stay tagged.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       promiseStaticInEffect:

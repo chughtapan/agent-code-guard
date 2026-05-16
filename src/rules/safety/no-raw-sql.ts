@@ -54,7 +54,8 @@ export default createRule<[Options], "rawSql" | "rawSqlWith">({
   meta: {
     type: "problem",
     docs: {
-      description: "Flag raw SQL strings passed to `.query(...)` calls.",
+      description: "Raw SQL defeats the compiler; a typed builder makes the schema load-bearing at compile time.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
     },
     messages: {
       rawSql: "Raw SQL in .query(); use a typed SQL boundary",

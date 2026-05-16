@@ -10,8 +10,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `throw new Error(...)` (and TypeError/RangeError) in non-test code. Return a tagged error or Effect.fail instead.",
+      description: "`throw new Error(\"bad\")` has no type, no handling contract, no receipt for the caller; tagged errors do.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       rawThrow:

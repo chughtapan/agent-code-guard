@@ -15,8 +15,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `as \"a\" | \"b\" | ...` string-union casts. Import generated enum types instead of inlining them.",
+      description: "Hand-written unions drift from their source; generated or schema-derived enums do not.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
     },
     messages: {
       manualEnumCast:

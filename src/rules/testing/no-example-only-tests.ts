@@ -40,8 +40,8 @@ export default createRule<Options, MessageIds>({
   meta: {
     type: "suggestion",
     docs: {
-      description:
-        "Flag test scopes that accumulate example cases without a property or generative invariant test.",
+      description: "A test that asserts one hand-picked input is a compression of a property the type system or `fast-check` could verify; promote to property when one exists.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
     },
     messages: {
       exampleOnly:

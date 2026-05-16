@@ -54,8 +54,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag manual `_tag` discriminant checks on Effect tagged unions. Use Effect.catchTag(...) / catchTags(...) for tagged errors and Match.tag(...) / Match.discriminator('_tag') for tagged unions.",
+      description: "Discriminated unions match on the named tag, not on shape; shape-matching breaks when tags overlap.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#4-exhaustiveness-over-optionality--every-branch-handled-switches-end-in-never",
     },
     messages: {
       tagDiscriminant:

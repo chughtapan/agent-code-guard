@@ -6,8 +6,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Flag `async` functions. Prefer Effect.gen and Effect handlers over async/await.",
+      description: "`async`/`await` is the sugar that hides the erased error channel of `Promise<T>`.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       asyncKeyword: "async keyword — prefer Effect.gen / Effect handlers",

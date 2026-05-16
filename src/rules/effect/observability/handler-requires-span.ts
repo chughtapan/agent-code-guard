@@ -60,8 +60,8 @@ export default createRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "In handler/route files, flag Effect.gen bodies that don't reference Effect.withSpan. Handlers are trace boundaries.",
+      description: "Exported Effect handlers must wrap themselves in `Effect.withSpan`; without it the diagnostic chain breaks at the API boundary.",
+      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
     },
     messages: {
       handlerMissingSpan:
