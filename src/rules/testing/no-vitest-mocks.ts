@@ -1,5 +1,6 @@
 import { createRule } from "../utils/create-rule.js";
 import { getStaticMemberExpression } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const MOCK_METHODS = new Set(["mock", "hoisted", "spyOn"]);
 
@@ -9,7 +10,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "An integration test that mocks the boundary asserts your code works against your mock, not the real thing.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       vitestMock:

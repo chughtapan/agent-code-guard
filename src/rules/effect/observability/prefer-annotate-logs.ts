@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const LOG_METHODS = new Set([
   "log",
@@ -33,7 +34,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`Effect.log` with extra arguments drops them silently; `Effect.annotateLogs` is the typed channel for structured fields.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       preferAnnotateLogs:

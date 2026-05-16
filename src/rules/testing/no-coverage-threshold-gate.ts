@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { getParent, getStaticStringKey } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 // Matches `jest.config.ts`, `vitest.config.unit.ts`, `jest.config.integration.cjs`,
 // plus `package.json`. Users can lint package.json if they wire a JSON parser
@@ -32,7 +33,7 @@ export default createRule({
     type: "suggestion",
     docs: {
       description: "Coverage % is a diagnostic, never a CI gate (Inozemtseva & Holmes ICSE 2014). Acts on the wrong signal.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       coverageGate:

@@ -7,6 +7,7 @@ import {
   getTagAccess,
 } from "../../utils/ast-refinement/index.js";
 import { EFFECT_TAGGED_TYPE_PATTERN } from "../effect-namespaces.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const EQUALITY_OPERATORS = new Set(["==", "===", "!=", "!=="]);
 
@@ -55,7 +56,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "Discriminated unions match on the named tag, not on shape; shape-matching breaks when tags overlap.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#4-exhaustiveness-over-optionality--every-branch-handled-switches-end-in-never",
+      url: PRINCIPLE_URL.EXHAUSTIVENESS,
     },
     messages: {
       tagDiscriminant:

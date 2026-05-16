@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type Options = {
   readonly packageJsonPath?: string;
@@ -114,7 +115,7 @@ export default createRule<[Options], MessageId>({
     type: "problem",
     docs: {
       description: "Dead-code detection (`knip`) running in lint catches drifted exports before they accumulate; the linter checks structure, not just syntax.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#5-discipline-over-capability",
+      url: PRINCIPLE_URL.DISCIPLINE,
     },
     messages: {
       invalidPackageJson:

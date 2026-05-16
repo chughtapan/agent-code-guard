@@ -1,5 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 export default createRule({
   name: "async-keyword",
@@ -7,7 +8,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`async`/`await` is the sugar that hides the erased error channel of `Promise<T>`.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       asyncKeyword: "async keyword — prefer Effect.gen / Effect handlers",

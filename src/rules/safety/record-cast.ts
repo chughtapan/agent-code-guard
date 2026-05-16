@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 function isStringKeyword(node: TSESTree.TypeNode): boolean {
   return node.type === AST_NODE_TYPES.TSStringKeyword;
@@ -32,7 +33,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`as Record<string, unknown>` papers over a missing schema at the boundary; decode instead.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       recordCast:

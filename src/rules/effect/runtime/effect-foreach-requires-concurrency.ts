@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 function isEffectForEachCall(node: TSESTree.CallExpression): boolean {
   if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return false;
@@ -33,7 +34,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`Effect.forEach` over a runtime-sized input has no concurrency budget; bound it explicitly via the `concurrency` option.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#6-the-budget-gate--scope-is-a-hard-budget",
+      url: PRINCIPLE_URL.BUDGET_GATE,
     },
     messages: {
       missingConcurrency:

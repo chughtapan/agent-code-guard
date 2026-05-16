@@ -2,6 +2,7 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { getStaticMemberExpression } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type ConstructorKind = "brand" | "schema";
 
@@ -23,7 +24,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "Exporting a brand's smart constructor breaks the encapsulation that makes the brand load-bearing; the constructor stays private to the module that owns the validation.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       exportedBrandConstructor:

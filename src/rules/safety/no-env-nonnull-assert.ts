@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 function isProcessEnvMemberExpression(node: TSESTree.Node): boolean {
   if (node.type !== AST_NODE_TYPES.MemberExpression) return false;
@@ -17,7 +18,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`process.env.X!` silences TypeScript without validating the value; environment is a boundary, validated at boot.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       envNonNullAssert:

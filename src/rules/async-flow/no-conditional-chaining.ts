@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type FunctionNode =
   | TSESTree.ArrowFunctionExpression
@@ -15,7 +16,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "Conditional chains (`x?.y?.z`) hide the optionality the type system would have made exhaustive; lift the absence into a discriminant.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#4-exhaustiveness-over-optionality--every-branch-handled-switches-end-in-never",
+      url: PRINCIPLE_URL.EXHAUSTIVENESS,
     },
     messages: {
       conditionalChaining:

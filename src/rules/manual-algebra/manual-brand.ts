@@ -1,5 +1,6 @@
 import { createRule } from "../utils/create-rule.js";
 import { findManualBrandMatch } from "./detection/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const VARIABLE_SURFACE_SELECTOR =
   "VariableDeclarator[init.type='ObjectExpression'], " +
@@ -13,7 +14,7 @@ export default createRule({
     type: "suggestion",
     docs: {
       description: "A hand-rolled brand without a smart constructor enforces nothing; use the project's `Brand` helper so the constructor is the only path in.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       manualBrand:

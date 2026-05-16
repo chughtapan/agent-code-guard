@@ -2,6 +2,7 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { requireServices } from "../../utils/typed-linter/index.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const SCOPED_RUNNERS = new Set(["runPromise", "runPromiseExit", "runSync", "runSyncExit"]);
 
@@ -26,7 +27,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`Effect.runPromise` on a scoped Effect leaks resources; wrap in `Effect.scoped` or provide a `Layer.scoped` so finalizers run.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       runRequiresScope:

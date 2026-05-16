@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const SCHEMA_TYPE_PATHS: readonly (readonly string[])[] = [
   ["Schema", "Schema", "Type"],
@@ -38,7 +39,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`Schema.Type` / `Schema.Encoded` casts assert the decoded shape without running the decode; the schema is the runtime path, not a type-only annotation.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       schemaTypeCast:

@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const EQUALITY_OPERATORS = new Set(["==", "===", "!=", "!=="]);
 const EITHER_TAGS = new Set(["Left", "Right"]);
@@ -32,7 +33,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`Either<L, R>` matches must discriminate on the tag, never on truthiness; truthy-checking conflates error with falsy data.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#4-exhaustiveness-over-optionality--every-branch-handled-switches-end-in-never",
+      url: PRINCIPLE_URL.EXHAUSTIVENESS,
     },
     messages: {
       eitherDiscriminant:

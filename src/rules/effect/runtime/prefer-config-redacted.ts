@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const SECRET_NAME_TERMS = [
   /api[_-]?key/i,
@@ -39,7 +40,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "Sensitive configuration crosses the env boundary as a Redacted value; `Config.string` for secrets leaks them through the schema.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       preferRedacted:

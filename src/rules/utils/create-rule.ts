@@ -1,17 +1,15 @@
 /**
- * @file ESLint rule factory shared by every rule in the plugin. Each
- * rule supplies its own `meta.docs.description` (one-line rationale)
- * and `meta.docs.url` (anchor in safer-by-default's `PRINCIPLES.md`).
- * LSPs propagate both fields via the standard ESLint diagnostic
- * protocol so the agent's inline link points at the principle the
- * rule projects from.
+ * @file ESLint rule factory shared by every rule in the plugin. Uses
+ * `RuleCreator.withoutDocs` so each rule's `meta.docs.url` survives
+ * intact — rules anchor at their own principle in `PRINCIPLES.md`
+ * rather than a uniform docs path.
  */
 
 import { ESLintUtils } from "@typescript-eslint/utils";
 
 /**
- * ESLint rule factory. Delegates to `RuleCreator.withoutDocs` so each
- * rule's `meta.docs.url` is preserved verbatim — the principle anchor
- * lives in the rule file, not in this factory.
+ * ESLint rule factory shared by every rule in the plugin. Each rule
+ * supplies its own `meta.docs.url` (anchored at the principle it
+ * projects from); the factory does not override it.
  */
 export const createRule = ESLintUtils.RuleCreator.withoutDocs;

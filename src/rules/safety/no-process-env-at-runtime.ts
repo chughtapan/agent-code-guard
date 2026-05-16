@@ -2,6 +2,7 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { getStaticStringKey } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 function resolveLiteralStringValue(node: { type: string; value?: unknown } | null): string | null {
   return node?.type === AST_NODE_TYPES.Literal && typeof node.value === "string"
@@ -108,7 +109,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "Reading `process.env.X` outside boot bypasses the env schema; environment is a boundary, validated at boot.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       noProcessEnvAtRuntime:

@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 import {
   getStaticMemberExpression,
   getStaticStringKey,
@@ -35,7 +36,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "Unbounded `Promise.all` over a runtime-sized input has no concurrency budget; bound it explicitly.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#5-discipline-over-capability",
+      url: PRINCIPLE_URL.DISCIPLINE,
     },
     messages: {
       noUnboundedConcurrency:

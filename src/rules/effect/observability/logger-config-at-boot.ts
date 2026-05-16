@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const BOOT_FILE_PATTERNS = [
   /(^|[\\/])bin[\\/]/,
@@ -36,7 +37,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "Logger configuration is boundary state; configure once at boot, never per-call inside the program.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       loggerConfigAwayFromBoot:

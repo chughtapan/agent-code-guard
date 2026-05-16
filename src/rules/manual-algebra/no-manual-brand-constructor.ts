@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { findManualBrandConstructorMatch } from "./detection/brand-helper.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const VARIABLE_FUNCTION_SELECTOR =
   "VariableDeclarator[init.type='FunctionExpression'], " +
@@ -12,7 +13,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "Manually constructing a branded value bypasses the validation that earned the brand; use the smart constructor.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       manualBrandConstructor:

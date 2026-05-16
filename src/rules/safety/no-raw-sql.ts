@@ -2,6 +2,7 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { getFirst } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const SQL_KEYWORD_RE = /\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|WITH)\b/i;
 
@@ -55,7 +56,7 @@ export default createRule<[Options], "rawSql" | "rawSqlWith">({
     type: "problem",
     docs: {
       description: "Raw SQL defeats the compiler; a typed builder makes the schema load-bearing at compile time.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       rawSql: "Raw SQL in .query(); use a typed SQL boundary",

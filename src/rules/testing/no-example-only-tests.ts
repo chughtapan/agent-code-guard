@@ -3,6 +3,7 @@ import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
 import { getStaticMemberPropertyName } from "../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type MessageIds = "exampleOnly";
 type Options = [{
@@ -41,7 +42,7 @@ export default createRule<Options, MessageIds>({
     type: "suggestion",
     docs: {
       description: "A test that asserts one hand-picked input is a compression of a property the type system or `fast-check` could verify; promote to property when one exists.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#1-types-beat-tests--move-constraints-into-the-type-system",
+      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
       exampleOnly:

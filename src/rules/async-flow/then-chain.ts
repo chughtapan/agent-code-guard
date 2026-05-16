@@ -1,5 +1,6 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 export default createRule({
   name: "then-chain",
@@ -7,7 +8,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`.then()` chains hide the error channel and reorder control flow; same erasure as `Promise<T>`.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       thenChain:

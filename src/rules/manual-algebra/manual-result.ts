@@ -1,5 +1,6 @@
 import { createRule } from "../utils/create-rule.js";
 import { findManualResultMatch } from "./detection/index.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const VARIABLE_SURFACE_SELECTOR =
   "VariableDeclarator[init.type='ObjectExpression'], " +
@@ -13,7 +14,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "Hand-rolled `Result`-shaped types miss the discriminant guarantees; use the project's `Result` so error tags stay structural.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       manualResult:

@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const SCHEMA_DECODE_METHODS = new Set([
   "decodeUnknownSync",
@@ -75,7 +76,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`Schema.decodeUnknownSync` throws on failure; effectful boundaries must use the Effect-returning decoder so failure stays in the typed channel.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#2-validate-at-every-boundary--schemas-where-data-enters-types-inside",
+      url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
       parseNeedsEffectTry:

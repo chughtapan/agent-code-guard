@@ -1,5 +1,6 @@
 import { createRule } from "../../utils/create-rule.js";
 import { isNamedMemberCall } from "../../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 export default createRule({
   name: "effect-promise",
@@ -7,7 +8,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`Promise<T>` inside an `Effect` re-introduces the erased error channel; convert at the boundary.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       effectPromise:

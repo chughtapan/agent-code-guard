@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const CLI_FILE_PATTERNS = [
   /(^|[\\/])cli[\\/]/,
@@ -42,7 +43,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`console.*` bypasses the Effect log channel; route through `Effect.log` so logs stay inside the typed runtime.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       consoleInEffect:

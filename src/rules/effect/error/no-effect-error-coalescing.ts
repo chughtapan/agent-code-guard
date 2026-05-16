@@ -2,6 +2,7 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { isNamedMemberCall } from "../../utils/ast-refinement/index.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const ERROR_COALESCING_METHODS = new Set(["catchAll", "catchAllCause", "mapError"]);
 
@@ -11,7 +12,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "Coalescing distinct effect errors into one tag erases the diagnostic; downstream needs the tag set the upstream produced.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       effectErrorCoalescing:

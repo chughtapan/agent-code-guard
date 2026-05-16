@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 function isEffectAcquireReleaseCall(node: TSESTree.CallExpression): boolean {
   if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return false;
@@ -36,7 +37,7 @@ export default createRule({
     type: "problem",
     docs: {
       description: "`Effect.acquireRelease` outside a `Scope` leaks the resource silently; the finalizer needs a scope to attach to or it never runs.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#3-errors-are-typed-not-thrown--tagged-errors-or-typed-results-no-raw-throws-no-silent-catches",
+      url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       acquireWithoutScope:
