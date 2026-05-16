@@ -228,6 +228,11 @@ const ArchitectureOptionsSchema = Schema.Struct({
   packageRuntime: PackageRuntime.pipe(
     Schema.optionalWith({ default: () => "universal" as const }),
   ),
+
+  cacheTtlMs: Schema.Number.pipe(
+    Schema.greaterThanOrEqualTo(0),
+    Schema.optionalWith({ default: () => 5_000 }),
+  ),
 });
 
 // Encoded = what users write in eslint.config.js (allowance arrays optional, etc.).

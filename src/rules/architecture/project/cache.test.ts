@@ -212,6 +212,16 @@ it("Property: schema enforces ratio option bounds inclusively", () => {
     .toBe(1);
 });
 
+it("defaults cacheTtlMs to 5000 and accepts Infinity for unlimited caching", () => {
+  expect(resolveArchitectureOptions({}).cacheTtlMs).toBe(5000);
+  expect(resolveArchitectureOptions({ cacheTtlMs: 0 }).cacheTtlMs).toBe(0);
+  expect(resolveArchitectureOptions({ cacheTtlMs: 60_000 }).cacheTtlMs).toBe(60_000);
+  expect(resolveArchitectureOptions({ cacheTtlMs: Infinity }).cacheTtlMs).toBe(Infinity);
+  expect(() => resolveArchitectureOptions({ cacheTtlMs: -1 })).toThrowError(
+    /cacheTtlMs/,
+  );
+});
+
 it("Property: schema rejects non-positive and non-integer count options", () => {
   const positiveIntOptions = [
     "minExportedSiblingModules",
