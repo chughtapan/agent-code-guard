@@ -204,6 +204,28 @@ function resolveNodeWalk(
   }
 }
 
+/**
+ * Whether `node` reads a member off a namespace-style qualifier, as in `Option.some(x)`
+ * or `O.none()`.
+ *
+ * A qualified read is a *use* of an algebra, not a definition of one. The definition, if
+ * it is hand-rolled, is a separate surface the rule inspects on its own — an object
+ * literal, class, type, or a constructor function. Harvesting the property names off use
+ * sites makes consuming `Option` indistinguishable from declaring one, so a function that
+ * calls `Option.some`, `Option.none`, and `Option.match` reports as a manual Option: the
+ * rule firing on the very API it exists to promote.
+ *
+ * The qualifier test is initial-capital rather than a fixed namespace list so that aliased
+ * imports (`import * as O`) and project-local re-exports are covered too. Lower-cased
+ * receivers stay harvested, because `option.value` and `result._tag` are real evidence
+ * about the shape a function is destructuring by hand.
+ */
+function isNamespaceQualifiedRead(node: TSESTree.MemberExpression): boolean {
+  if (node.object.type !== AST_NODE_TYPES.Identifier) return false;
+  const initial = node.object.name.charAt(0);
+  return initial !== "" && initial === initial.toUpperCase() && initial !== initial.toLowerCase();
+}
+
 function addFunctionBody(
   surface: MutableSurface,
   node:
@@ -218,6 +240,7 @@ function addFunctionBody(
       return;
     }
     if (child.type === AST_NODE_TYPES.MemberExpression) {
+      if (isNamespaceQualifiedRead(child)) return;
       addKey(surface, child.property, child.computed);
       return;
     }

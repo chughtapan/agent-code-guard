@@ -46,6 +46,15 @@ ruleTester.run("manual-result", rule, {
     {
       code: "// eslint-disable-next-line @rule-tester/manual-result -- suppression test\ntype Result<T, E> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E };",
     },
+    {
+      name: "a function that consumes Effect's Either is not hand-rolling a Result",
+      code: `
+        function decode(raw: string) {
+          const parsed = Either.isLeft(read(raw)) ? Either.left("bad") : Either.right(raw);
+          return Either.match(parsed, { onLeft: (error) => error, onRight: (value) => value });
+        }
+      `,
+    },
   ],
   invalid: [
     {
