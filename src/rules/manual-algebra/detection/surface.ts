@@ -204,6 +204,26 @@ function resolveNodeWalk(
   }
 }
 
+const NAMESPACE_QUALIFIER = /^\p{Lu}/u;
+
+/**
+ * Whether `node` reads a member off a namespace-style qualifier, as in `Option.some(x)`.
+ *
+ * A qualified read uses an algebra; it does not define one. A hand-rolled definition is a
+ * separate surface these rules already inspect — object literal, class, type, or
+ * constructor function — so skipping use sites costs no true positives. Harvesting them
+ * made consuming `Option` indistinguishable from declaring it, and reported any function
+ * calling `Option.some`, `Option.none`, and `Option.match`.
+ *
+ * Initial-capital rather than {@link PURE_EFFECT_NAMESPACES} so aliased imports
+ * (`import * as O`) and project-local re-exports are covered. Lower-cased receivers stay
+ * harvested: `option.value` and `result._tag` are evidence of a shape destructured by hand.
+ */
+function isNamespaceQualifiedRead(node: TSESTree.MemberExpression): boolean {
+  return node.object.type === AST_NODE_TYPES.Identifier &&
+    NAMESPACE_QUALIFIER.test(node.object.name);
+}
+
 function addFunctionBody(
   surface: MutableSurface,
   node:
@@ -218,6 +238,7 @@ function addFunctionBody(
       return;
     }
     if (child.type === AST_NODE_TYPES.MemberExpression) {
+      if (isNamespaceQualifiedRead(child)) return;
       addKey(surface, child.property, child.computed);
       return;
     }

@@ -64,6 +64,41 @@ ruleTester.run("manual-option", rule, {
     {
       code: "// eslint-disable-next-line @rule-tester/manual-option -- suppression test\ntype Option<T> = { readonly _tag: 'Some'; readonly value: T } | { readonly _tag: 'None' };",
     },
+    {
+      name: "a function that consumes Effect's Option is not hand-rolling one",
+      code: `
+        function renderPack(entry: Entry) {
+          const label = Option.match(entry.summary, { onNone: () => "", onSome: (s) => s });
+          return label === "" ? Option.none() : Option.some(label);
+        }
+      `,
+    },
+    {
+      name: "consuming Option through an aliased namespace import",
+      code: `
+        import * as O from "effect/Option";
+        const pick = (input: string | null) => {
+          const held = input === null ? O.none() : O.some(input);
+          return O.getOrElse(held, () => "fallback");
+        };
+      `,
+    },
+    {
+      name: "consuming Either alongside Option",
+      code: `
+        function decode(raw: string) {
+          const parsed = Either.match(read(raw), { onLeft: () => Option.none(), onRight: (v) => Option.some(v) });
+          return Option.flatMap(parsed, (v) => Option.some(v));
+        }
+      `,
+    },
+    {
+      name: "a locally shadowed Option namespace is still the library shape, not a definition",
+      code: `
+        const summarize = (rows: readonly string[]) =>
+          rows.length === 0 ? Option.none() : Option.some(rows[0]);
+      `,
+    },
   ],
   invalid: [
     {
