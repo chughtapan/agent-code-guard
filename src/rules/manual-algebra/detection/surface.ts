@@ -204,26 +204,24 @@ function resolveNodeWalk(
   }
 }
 
+const NAMESPACE_QUALIFIER = /^\p{Lu}/u;
+
 /**
- * Whether `node` reads a member off a namespace-style qualifier, as in `Option.some(x)`
- * or `O.none()`.
+ * Whether `node` reads a member off a namespace-style qualifier, as in `Option.some(x)`.
  *
- * A qualified read is a *use* of an algebra, not a definition of one. The definition, if
- * it is hand-rolled, is a separate surface the rule inspects on its own — an object
- * literal, class, type, or a constructor function. Harvesting the property names off use
- * sites makes consuming `Option` indistinguishable from declaring one, so a function that
- * calls `Option.some`, `Option.none`, and `Option.match` reports as a manual Option: the
- * rule firing on the very API it exists to promote.
+ * A qualified read uses an algebra; it does not define one. A hand-rolled definition is a
+ * separate surface these rules already inspect — object literal, class, type, or
+ * constructor function — so skipping use sites costs no true positives. Harvesting them
+ * made consuming `Option` indistinguishable from declaring it, and reported any function
+ * calling `Option.some`, `Option.none`, and `Option.match`.
  *
- * The qualifier test is initial-capital rather than a fixed namespace list so that aliased
- * imports (`import * as O`) and project-local re-exports are covered too. Lower-cased
- * receivers stay harvested, because `option.value` and `result._tag` are real evidence
- * about the shape a function is destructuring by hand.
+ * Initial-capital rather than {@link PURE_EFFECT_NAMESPACES} so aliased imports
+ * (`import * as O`) and project-local re-exports are covered. Lower-cased receivers stay
+ * harvested: `option.value` and `result._tag` are evidence of a shape destructured by hand.
  */
 function isNamespaceQualifiedRead(node: TSESTree.MemberExpression): boolean {
-  if (node.object.type !== AST_NODE_TYPES.Identifier) return false;
-  const initial = node.object.name.charAt(0);
-  return initial !== "" && initial === initial.toUpperCase() && initial !== initial.toLowerCase();
+  return node.object.type === AST_NODE_TYPES.Identifier &&
+    NAMESPACE_QUALIFIER.test(node.object.name);
 }
 
 function addFunctionBody(

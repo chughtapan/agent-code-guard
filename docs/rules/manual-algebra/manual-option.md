@@ -36,6 +36,19 @@ const renderSession = (id: SessionId) =>
 
 Domain-state unions and transport wrappers stay allowed when they are just data. This rule is about reusable maybe-value control-flow helpers, not every `_tag` union in the codebase.
 
+## Consuming an Option is never flagged
+
+The rule looks for a *definition* of a maybe-value algebra. Reads qualified by a namespace-style receiver — `Option.some(x)`, `Option.none()`, `O.getOrElse(...)` — are uses, so they contribute nothing to detection however densely a function calls them:
+
+```ts
+function renderPack(entry: Entry) {
+  const label = Option.match(entry.summary, { onNone: () => "", onSome: (s) => s });
+  return label === "" ? Option.none() : Option.some(label);
+}
+```
+
+Lower-cased receivers still count, because `option.value` and `result._tag` are evidence of a shape being taken apart by hand rather than delegated to a library.
+
 ## Disabling per-line
 
 If the union is intentionally hand-rolled at a boundary (e.g., a wire-format type that must match a JSON contract), suppress with a written reason:
