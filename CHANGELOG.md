@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.0.15] - 2026-07-26
+
+### Fixed
+
+- **`manual-option` and `manual-result` no longer fire on correct use of Effect's `Option` and `Either`.** `addFunctionBody` in `detection/surface.ts` added the property name of every member expression in a function body to the surface's key set, so `Option.some(x)` contributed `some`, `Option.none()` contributed `none`, and `Option.match(...)` contributed `match`. `some` + `none` satisfied `hasOptionBranchPair` and `match` satisfied `hasOptionReusableSignal`, so a function that consumed the algebra reported as one that defined it — the denser and more idiomatic the usage, the likelier the report. Member reads qualified by a namespace-style receiver are now skipped: a qualified read *uses* an algebra, and a hand-rolled *definition* is a separate surface these rules already inspect (object literal, class, type, constructor function), so no true positives are lost. Lower-cased receivers stay harvested, because `option.value` and `result._tag` are evidence of a shape taken apart by hand. The qualifier test is initial-capital rather than the curated `PURE_EFFECT_NAMESPACES` set, so aliased imports (`import * as O from "effect/Option"`) and project-local re-exports are covered. Fixes #82 via #83.
+
+### Changed
+
+- **`docs/rules/manual-algebra/manual-option.md` and `manual-result.md` state the detection boundary.** Both now carry a "Consuming an X is never flagged" section. Worth knowing why: `manual-option.md`'s own **After (preferred)** example calls `Option.some`, `Option.none`, and `Option.match`, and escaped the old detector only because it splits them across two functions — `findSession` carried the `some`/`none` pair without a helper signal, `renderSession` carried `match` with keys normalizing to `onsome`/`onnone`. The same logic written as one function reported. The documentation was safe by accident.
+
+### For contributors
+
+- `pnpm test:all` now runs 908 tests across 61 files (up from 903). The four new cases cover consuming `Option` directly, through an aliased namespace import, alongside `Either`, and consuming `Either` in `manual-result`.
+- The fix is ablated in both directions: reverting `detection/surface.ts` alone fails exactly those four and passes the other 49 in that pair of files.
+
 ## [0.0.14] - 2026-05-16
 
 ### Breaking
