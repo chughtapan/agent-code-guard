@@ -61,7 +61,8 @@ function functionOwnsParameter(node: TSESTree.Parameter): boolean {
   while (current.parent !== undefined) {
     const parent: TSESTree.Node = current.parent;
     if (isParameterOwner(parent)) {
-      return parent.params.some((parameter) => parameter === current);
+      const candidate = current;
+      return parent.params.some((parameter) => parameter === candidate);
     }
     if (!PARAMETER_WRAPPER_TYPES.has(parent.type)) {
       return false;
@@ -148,10 +149,19 @@ export const preferOptionalOverUndefinedUnion = createRule({
     }
 
     return {
+      AccessorProperty(node) {
+        reportAnnotation(node.optional, node.typeAnnotation);
+      },
       ArrayPattern: reportParameter,
       Identifier: reportParameter,
       ObjectPattern: reportParameter,
       PropertyDefinition(node) {
+        reportAnnotation(node.optional, node.typeAnnotation);
+      },
+      TSAbstractAccessorProperty(node) {
+        reportAnnotation(node.optional, node.typeAnnotation);
+      },
+      TSAbstractPropertyDefinition(node) {
         reportAnnotation(node.optional, node.typeAnnotation);
       },
       TSPropertySignature(node) {

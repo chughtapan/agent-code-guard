@@ -1,8 +1,8 @@
 import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
+import { noDefinePropertyAccessors } from "./descriptor-accessors.js";
 import {
-  noDefinePropertyAccessors,
   noPrototypeManipulation,
   noUnsafeNumericCoercion,
 } from "./mutation.js";
@@ -26,6 +26,7 @@ ruleTester.run("no-unsafe-numeric-coercion", noUnsafeNumericCoercion, {
     "const value = Number.parseInt(input, 16);",
     "const parseFloat = (value: string) => value; const parsed = parseFloat(input);",
     "const Number = { parseInt: (value: string) => value }; const parsed = Number.parseInt(input);",
+    "const globalThis = { parseFloat: (value: string) => value }; const parsed = globalThis.parseFloat(input);",
   ],
   invalid: [
     {
@@ -50,6 +51,14 @@ ruleTester.run("no-unsafe-numeric-coercion", noUnsafeNumericCoercion, {
     },
     {
       code: "const value = Number['parseInt'](input);",
+      errors: [{ messageId: "parseInt" }],
+    },
+    {
+      code: "const value = globalThis.parseFloat(input);",
+      errors: [{ messageId: "parseFloat" }],
+    },
+    {
+      code: "const value = globalThis['parseInt'](input, 10);",
       errors: [{ messageId: "parseInt" }],
     },
     {
@@ -99,6 +108,10 @@ ruleTester.run("no-prototype-manipulation", noPrototypeManipulation, {
       code: "Reflect.deleteProperty(Widget.prototype, 'value');",
       errors: [{ messageId: "prototype" }],
     },
+    {
+      code: "Widget.prototype.count++;",
+      errors: [{ messageId: "prototype" }],
+    },
   ],
 });
 
@@ -123,6 +136,14 @@ ruleTester.run("no-define-property-accessors", noDefinePropertyAccessors, {
     },
     {
       code: "Object['defineProperty'](target, 'value', { ['set']: (value) => { target.value = value; } });",
+      errors: [{ messageId: "descriptorAccessor" }],
+    },
+    {
+      code: "Object.defineProperties(target, { value: { get() { return 1; } } });",
+      errors: [{ messageId: "descriptorAccessor" }],
+    },
+    {
+      code: "Reflect.defineProperty(target, 'value', { get() { return 1; } });",
       errors: [{ messageId: "descriptorAccessor" }],
     },
   ],

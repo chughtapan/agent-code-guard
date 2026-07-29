@@ -42,6 +42,12 @@ it("documentation preset rejects undocumented named export lists", () => {
   );
 });
 
+it("documentation preset permits an empty module marker", () => {
+  const linter = new Linter();
+  const messages = linter.verify("export {};", plugin.configs.documentation);
+  expect(messages).toEqual([]);
+});
+
 it("recommended and strict presets provide type-aware Google Style enforcement", () => {
   for (const config of [plugin.configs.recommended, plugin.configs.strict]) {
     expect(config.languageOptions?.parser).toBeDefined();
@@ -51,6 +57,7 @@ it("recommended and strict presets provide type-aware Google Style enforcement",
     expect(config.plugins).toHaveProperty("@eslint-community/eslint-comments");
     expect(config.rules).toHaveProperty("@typescript-eslint/await-thenable", "error");
     expect(config.rules).toHaveProperty("@typescript-eslint/naming-convention");
+    expect(config.rules).toHaveProperty("agent-code-guard/component-function-naming", "error");
     expect(config.rules).toHaveProperty("import-x/no-default-export", "error");
     expect(config.rules).toHaveProperty("@eslint-community/eslint-comments/require-description");
     expect(config.settings).toHaveProperty("import-x/extensions");
@@ -135,7 +142,7 @@ it("documentation preset enforces content requirements without formatter rules",
       (context) => typeof context === "string" && context.includes("ExportNamedDeclaration"),
     ),
   ).toBe(true);
-  expect(contexts).toContain("ExportNamedDeclaration[declaration=null]");
+  expect(contexts).toContain("ExportNamedDeclaration[declaration=null][specifiers.length>0]");
 });
 
 it("bundles Knip behind a package-owned bin", () => {

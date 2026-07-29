@@ -83,7 +83,7 @@ const jsdocRequireRuleForTopLevelExports: TSESLint.Linter.RuleEntry = [
       "ExportNamedDeclaration > VariableDeclaration",
       "ExportNamedDeclaration > FunctionDeclaration",
       "ExportNamedDeclaration > ClassDeclaration",
-      "ExportNamedDeclaration[declaration=null]",
+      "ExportNamedDeclaration[declaration=null][specifiers.length>0]",
     ],
     enableFixer: false,
   },

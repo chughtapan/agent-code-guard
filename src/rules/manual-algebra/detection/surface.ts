@@ -227,6 +227,8 @@ const NAMESPACE_QUALIFIER = /^\p{Lu}/u;
  * Initial-capital rather than {@link PURE_EFFECT_NAMESPACES} so aliased imports
  * (`import * as O`) and project-local re-exports are covered. Lower-cased receivers stay
  * harvested: `option.value` and `result._tag` are evidence of a shape destructured by hand.
+ * @param node The member expression whose receiver may be a namespace.
+ * @returns Whether the receiver uses the namespace-style initial-capital convention.
  */
 function isNamespaceQualifiedRead(node: TSESTree.MemberExpression): boolean {
   return node.object.type === AST_NODE_TYPES.Identifier &&
@@ -247,7 +249,9 @@ function addFunctionBody(
       return;
     }
     if (child.type === AST_NODE_TYPES.MemberExpression) {
-      if (isNamespaceQualifiedRead(child)) return;
+      if (isNamespaceQualifiedRead(child)) {
+        return;
+      }
       addKey(surface, child.property, child.computed);
       return;
     }

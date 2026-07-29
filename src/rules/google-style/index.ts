@@ -5,10 +5,11 @@
 
 import { requireAssertionRationale } from "./assertions.js";
 import { noPrivateIdentifiers, noRedundantPublic, noStaticThis } from "./classes.js";
+import { componentFunctionNaming } from "./component-function-naming.js";
+import { noDefinePropertyAccessors } from "./descriptor-accessors.js";
 import { noEnumBooleanCoercion } from "./enum-coercion.js";
 import { noUnsafeParameterDefaults } from "./expressions.js";
 import {
-  noDefinePropertyAccessors,
   noPrototypeManipulation,
   noUnsafeNumericCoercion,
 } from "./mutation.js";
@@ -19,6 +20,7 @@ import { noNullishTypeAliases, preferOptionalOverUndefinedUnion } from "./type-s
  * ecosystem.
  */
 export const googleStyleRules = {
+  "component-function-naming": componentFunctionNaming,
   "no-define-property-accessors": noDefinePropertyAccessors,
   "no-enum-boolean-coercion": noEnumBooleanCoercion,
   "no-nullish-type-aliases": noNullishTypeAliases,
@@ -37,6 +39,7 @@ export const googleStyleRules = {
  * stricter Agent Code Guard doctrine are both blocking.
  */
 export const googleStyleRuleEntries = {
+  "agent-code-guard/component-function-naming": "error",
   "agent-code-guard/no-define-property-accessors": "error",
   "agent-code-guard/no-enum-boolean-coercion": "error",
   "agent-code-guard/no-nullish-type-aliases": "error",

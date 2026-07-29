@@ -178,33 +178,42 @@ function nestedPattern(node: TSESTree.Node): boolean {
   return node.type === AST_NODE_TYPES.ArrayPattern || node.type === AST_NODE_TYPES.ObjectPattern;
 }
 
+type ObjectParameterContext = Readonly<{
+  report(descriptor: {
+    messageId: "computedDestructuring" | "nestedDestructuring";
+    node: TSESTree.Node;
+  }): void;
+}>;
+
+function reportUnsafeObjectProperty(
+  context: ObjectParameterContext,
+  property: TSESTree.RestElement | TSESTree.Property,
+): void {
+  if (property.type !== AST_NODE_TYPES.Property) {
+    return;
+  }
+  if (nestedPattern(property.value)) {
+    context.report({ node: property.value, messageId: "nestedDestructuring" });
+    return;
+  }
+  if (
+    property.computed ||
+    property.key.type !== AST_NODE_TYPES.Identifier ||
+    !property.shorthand
+  ) {
+    context.report({ node: property.key, messageId: "computedDestructuring" });
+  }
+}
+
 function reportUnsafeObjectParameter(
-  context: Readonly<{
-    report(descriptor: {
-      messageId: "computedDestructuring" | "nestedDestructuring";
-      node: TSESTree.Node;
-    }): void;
-  }>,
+  context: ObjectParameterContext,
   node: TSESTree.ObjectPattern,
 ): void {
   if (!isObjectParameterPattern(node)) {
     return;
   }
   for (const property of node.properties) {
-    if (property.type !== AST_NODE_TYPES.Property) {
-      continue;
-    }
-    if (nestedPattern(property.value)) {
-      context.report({ node: property.value, messageId: "nestedDestructuring" });
-      continue;
-    }
-    if (
-      property.computed ||
-      property.key.type !== AST_NODE_TYPES.Identifier ||
-      !property.shorthand
-    ) {
-      context.report({ node: property.key, messageId: "computedDestructuring" });
-    }
+    reportUnsafeObjectProperty(context, property);
   }
 }
 

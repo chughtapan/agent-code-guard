@@ -36,13 +36,31 @@ function isNumberNamespaceCall(
   );
 }
 
+function isGlobalThisCall(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.CallExpression,
+  name: string,
+): boolean {
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return false;
+  }
+  return (
+    node.callee.object.type === AST_NODE_TYPES.Identifier &&
+    node.callee.object.name === "globalThis" &&
+    isUnshadowedGlobal(sourceCode, node.callee.object) &&
+    staticMemberName(node.callee) === name
+  );
+}
+
 function isNumericParserCall(
   sourceCode: Readonly<TSESLint.SourceCode>,
   node: TSESTree.CallExpression,
   name: string,
 ): boolean {
   return (
-    isGlobalCall(sourceCode, node, name) || isNumberNamespaceCall(sourceCode, node, name)
+    isGlobalCall(sourceCode, node, name) ||
+    isNumberNamespaceCall(sourceCode, node, name) ||
+    isGlobalThisCall(sourceCode, node, name)
   );
 }
 
@@ -131,6 +149,17 @@ interface StaticCall {
   readonly owner: TSESTree.Identifier;
 }
 
+const OBJECT_PROTOTYPE_MUTATION_METHODS: ReadonlySet<string> = new Set([
+  "assign",
+  "defineProperties",
+  "defineProperty",
+]);
+const REFLECT_PROTOTYPE_MUTATION_METHODS: ReadonlySet<string> = new Set([
+  "defineProperty",
+  "deleteProperty",
+  "set",
+]);
+
 function staticCall(node: TSESTree.CallExpression): StaticCall | null {
   if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
     return null;
@@ -163,6 +192,16 @@ function firstArgumentTargetsPrototype(node: TSESTree.CallExpression): boolean {
   return target?.type !== AST_NODE_TYPES.SpreadElement && targetsPrototype(target);
 }
 
+function supportsPrototypeTargetMutation(call: StaticCall): boolean {
+  if (call.owner.name === "Object") {
+    return OBJECT_PROTOTYPE_MUTATION_METHODS.has(call.method);
+  }
+  if (call.owner.name === "Reflect") {
+    return REFLECT_PROTOTYPE_MUTATION_METHODS.has(call.method);
+  }
+  return false;
+}
+
 function isPrototypeTargetMutation(
   sourceCode: Readonly<TSESLint.SourceCode>,
   call: StaticCall,
@@ -171,17 +210,7 @@ function isPrototypeTargetMutation(
   if (!isUnshadowedGlobal(sourceCode, call.owner)) {
     return false;
   }
-  const objectMutation =
-    call.owner.name === "Object" &&
-    (call.method === "assign" ||
-      call.method === "defineProperties" ||
-      call.method === "defineProperty");
-  const reflectMutation =
-    call.owner.name === "Reflect" &&
-    (call.method === "defineProperty" ||
-      call.method === "deleteProperty" ||
-      call.method === "set");
-  return (objectMutation || reflectMutation) && firstArgumentTargetsPrototype(node);
+  return supportsPrototypeTargetMutation(call) && firstArgumentTargetsPrototype(node);
 }
 
 function isPrototypeMutationCall(
@@ -244,76 +273,6 @@ export const noPrototypeManipulation = createRule({
           targetsPrototype(node.argument)
         ) {
           context.report({ node, messageId: "prototype" });
-        }
-      },
-    };
-  },
-});
-
-function isObjectDefineProperty(
-  sourceCode: Readonly<TSESLint.SourceCode>,
-  node: TSESTree.CallExpression,
-): boolean {
-  const call = staticCall(node);
-  return (
-    call?.owner.name === "Object" &&
-    call.method === "defineProperty" &&
-    isUnshadowedGlobal(sourceCode, call.owner)
-  );
-}
-
-function isAccessorProperty(property: TSESTree.ObjectLiteralElement): boolean {
-  if (property.type !== AST_NODE_TYPES.Property) {
-    return false;
-  }
-  const name =
-    property.key.type === AST_NODE_TYPES.Identifier
-      ? property.key.name
-      : property.key.type === AST_NODE_TYPES.Literal &&
-          typeof property.key.value === "string"
-        ? property.key.value
-        : null;
-  if (name === null) {
-    return false;
-  }
-  return name === "get" || name === "set";
-}
-
-/**
- * Rejects Object.defineProperty accessors in favor of language-level getters
- * and setters.
- */
-export const noDefinePropertyAccessors = createRule({
-  name: "no-define-property-accessors",
-  meta: {
-    type: "suggestion",
-    docs: {
-      description:
-        "Language-level accessors are visible to TypeScript and readers; descriptor accessors hide the class contract.",
-      url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
-    },
-    messages: {
-      descriptorAccessor:
-        "Declare getters and setters with language syntax instead of Object.defineProperty.",
-    },
-    schema: [],
-    fixable: undefined,
-    hasSuggestions: false,
-  },
-  defaultOptions: [],
-  create(context) {
-    const sourceCode = context.sourceCode;
-    return {
-      CallExpression(node) {
-        if (!isObjectDefineProperty(sourceCode, node)) {
-          return;
-        }
-        const descriptor = node.arguments[2];
-        if (descriptor?.type !== AST_NODE_TYPES.ObjectExpression) {
-          return;
-        }
-        if (descriptor.properties.some(isAccessorProperty)) {
-          context.report({ node, messageId: "descriptorAccessor" });
         }
       },
     };

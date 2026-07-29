@@ -94,7 +94,10 @@ ruleTester.run("require-typescript-quality-gate", rule, {
       code: "export const value = 1;",
       options: [
         {
-          ...qualityGateFixture({ check: "pnpm run typecheck && eslint ." }),
+          ...qualityGateFixture({
+            check: "pnpm run typecheck && eslint .",
+            typecheck: "tsc --noEmit",
+          }),
           scriptNames: ["check"],
         },
       ],
@@ -108,6 +111,36 @@ ruleTester.run("require-typescript-quality-gate", rule, {
     {
       code: "export const value = 1;",
       options: [qualityGateFixture({ lint: "eslint ." })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "tsc --noCheck && eslint ." })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "echo tsc && eslint ." })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        qualityGateFixture({
+          lint: "pnpm run typecheck && eslint .",
+          typecheck: "echo skipped",
+        }),
+      ],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        qualityGateFixture({
+          lint: "pnpm run typecheck && eslint .",
+          typecheck: "pnpm run lint",
+        }),
+      ],
       errors: [{ messageId: "missingTypecheck" }],
     },
     {
@@ -139,6 +172,16 @@ ruleTester.run("require-typescript-quality-gate", rule, {
       code: "export const value = 1;",
       options: [rawQualityGateFixture("{not-json", JSON.stringify({ compilerOptions: {} }))],
       errors: [{ messageId: "invalidPackageJson" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        rawQualityGateFixture(
+          JSON.stringify({ scripts: { lint: "tsc --noEmit && eslint ." } }),
+          "{not-json",
+        ),
+      ],
+      errors: [{ messageId: "invalidTsconfig" }],
     },
     {
       code: "export const value = 1;",

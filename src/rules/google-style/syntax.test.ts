@@ -3,6 +3,7 @@ import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { requireAssertionRationale } from "./assertions.js";
 import { noPrivateIdentifiers, noRedundantPublic, noStaticThis } from "./classes.js";
+import { componentFunctionNaming } from "./component-function-naming.js";
 import { noUnsafeParameterDefaults } from "./expressions.js";
 import { noNullishTypeAliases, preferOptionalOverUndefinedUnion } from "./type-shape.js";
 
@@ -56,6 +57,14 @@ ruleTester.run("prefer-optional-over-undefined-union", preferOptionalOverUndefin
       errors: [{ messageId: "preferOptional" }],
     },
     {
+      code: "class Store { accessor value: string | undefined; }",
+      errors: [{ messageId: "preferOptional" }],
+    },
+    {
+      code: "abstract class Store { abstract value: string | undefined; }",
+      errors: [{ messageId: "preferOptional" }],
+    },
+    {
       code: "function read(value: string | undefined = undefined): void { void value; }",
       errors: [{ messageId: "preferOptional" }],
     },
@@ -92,6 +101,10 @@ ruleTester.run("no-static-this", noStaticThis, {
       code: "class Store { static build = (): typeof Store => this; }",
       errors: [{ messageId: "staticThis" }],
     },
+    {
+      code: "class Store { static value = 1; static { this.value = 2; } }",
+      errors: [{ messageId: "staticThis" }],
+    },
   ],
 });
 
@@ -110,6 +123,7 @@ ruleTester.run("no-redundant-public", noRedundantPublic, {
     "class Store { value = 1; read(): number { return this.value; } }",
     "class Store { private value = 1; }",
     "class Store { constructor(public value: number) {} }",
+    "abstract class Store { abstract value: number; abstract read(): number; }",
   ],
   invalid: [
     {
@@ -123,6 +137,57 @@ ruleTester.run("no-redundant-public", noRedundantPublic, {
     {
       code: "class Store { constructor(public readonly value: number) {} }",
       errors: [{ messageId: "redundantPublic" }],
+    },
+    {
+      code: "class Store { public accessor value = 1; }",
+      errors: [{ messageId: "redundantPublic" }],
+    },
+    {
+      code: "abstract class Store { public abstract value: number; }",
+      errors: [{ messageId: "redundantPublic" }],
+    },
+    {
+      code: "abstract class Store { public abstract read(): number; }",
+      errors: [{ messageId: "redundantPublic" }],
+    },
+  ],
+});
+
+ruleTester.run("component-function-naming", componentFunctionNaming, {
+  valid: [
+    "function readValue(): number { return 1; }",
+    "const FACTORY = (): number => 1;",
+    {
+      code: "function UserCard() { return <div />; }",
+      filename: "component.tsx",
+    },
+    {
+      code: "const UserCard = () => <div />;",
+      filename: "component.tsx",
+    },
+    {
+      code: "function UserCard(): null { return null; }\nconst view = <UserCard />;",
+      filename: "component.tsx",
+    },
+  ],
+  invalid: [
+    {
+      code: "function ReadValue(): number { return 1; }",
+      errors: [{ messageId: "ordinaryLowerCamel" }],
+    },
+    {
+      code: "const ReadValue = (): number => 1;",
+      errors: [{ messageId: "ordinaryLowerCamel" }],
+    },
+    {
+      code: "function userCard() { return <div />; }",
+      errors: [{ messageId: "componentUpperCamel" }],
+      filename: "component.tsx",
+    },
+    {
+      code: "const userCard = () => <div />;",
+      errors: [{ messageId: "componentUpperCamel" }],
+      filename: "component.tsx",
     },
   ],
 });
@@ -180,6 +245,10 @@ ruleTester.run("require-assertion-rationale", requireAssertionRationale, {
   invalid: [
     {
       code: "const value = input as string;",
+      errors: [{ messageId: "rationale" }],
+    },
+    {
+      code: "const value = <string>input;",
       errors: [{ messageId: "rationale" }],
     },
     {

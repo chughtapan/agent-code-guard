@@ -4,6 +4,7 @@
  */
 
 import type { TSESLint } from "@typescript-eslint/utils";
+import { googleNamingConventionRule } from "./naming-rule-entry.js";
 
 type RuleEntry = TSESLint.Linter.RuleEntry;
 
@@ -47,91 +48,7 @@ export const googleTypeScriptRuleEntries: Record<string, RuleEntry> = {
   ],
   "@typescript-eslint/default-param-last": "error",
   "@typescript-eslint/dot-notation": ["error", { allowKeywords: true }],
-  "@typescript-eslint/naming-convention": [
-    "error",
-    {
-      format: null,
-      modifiers: ["requiresQuotes"],
-      selector: "default",
-    },
-    {
-      filter: {
-        match: true,
-        regex: "^_tag$",
-      },
-      format: null,
-      selector: ["classProperty", "objectLiteralProperty", "typeProperty"],
-    },
-    {
-      format: null,
-      selector: "default",
-    },
-    {
-      format: null,
-      modifiers: ["destructured"],
-      selector: "variable",
-    },
-    {
-      format: ["camelCase", "UPPER_CASE"],
-      leadingUnderscore: "forbid",
-      modifiers: ["const", "global"],
-      selector: "variable",
-      trailingUnderscore: "forbid",
-    },
-    {
-      format: ["camelCase"],
-      leadingUnderscore: "forbid",
-      selector: "variable",
-      trailingUnderscore: "forbid",
-    },
-    {
-      format: ["camelCase"],
-      leadingUnderscore: "forbid",
-      selector: ["function", "parameter"],
-      trailingUnderscore: "forbid",
-    },
-    {
-      format: ["camelCase", "UPPER_CASE"],
-      leadingUnderscore: "forbid",
-      modifiers: ["readonly", "static"],
-      selector: "classProperty",
-      trailingUnderscore: "forbid",
-    },
-    {
-      format: ["camelCase"],
-      leadingUnderscore: "forbid",
-      selector: "classProperty",
-      trailingUnderscore: "forbid",
-    },
-    {
-      format: ["camelCase"],
-      leadingUnderscore: "forbid",
-      selector: "typeProperty",
-      trailingUnderscore: "forbid",
-    },
-    {
-      format: ["camelCase"],
-      leadingUnderscore: "forbid",
-      selector: ["classMethod", "typeMethod", "accessor"],
-      trailingUnderscore: "forbid",
-    },
-    {
-      format: null,
-      selector: ["objectLiteralMethod", "objectLiteralProperty"],
-    },
-    {
-      format: ["PascalCase"],
-      selector: "typeLike",
-    },
-    {
-      format: ["PascalCase"],
-      selector: "typeParameter",
-    },
-    {
-      format: ["UPPER_CASE"],
-      selector: "enumMember",
-    },
-  ],
+  "@typescript-eslint/naming-convention": googleNamingConventionRule,
   "@typescript-eslint/no-array-constructor": "error",
   "@typescript-eslint/no-base-to-string": "error",
   "@typescript-eslint/no-confusing-non-null-assertion": "error",

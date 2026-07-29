@@ -3,7 +3,7 @@
  * maintained ESLint rule surface.
  */
 
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
@@ -15,11 +15,22 @@ function isFunctionBoundary(node: TSESTree.Node): boolean {
 }
 
 function staticMemberValue(node: TSESTree.Node): boolean | null {
-  if (node.type === AST_NODE_TYPES.MethodDefinition) {
+  if (
+    node.type === AST_NODE_TYPES.MethodDefinition ||
+    node.type === AST_NODE_TYPES.TSAbstractMethodDefinition
+  ) {
     return node.static;
   }
-  if (node.type === AST_NODE_TYPES.PropertyDefinition) {
+  if (
+    node.type === AST_NODE_TYPES.AccessorProperty ||
+    node.type === AST_NODE_TYPES.PropertyDefinition ||
+    node.type === AST_NODE_TYPES.TSAbstractAccessorProperty ||
+    node.type === AST_NODE_TYPES.TSAbstractPropertyDefinition
+  ) {
     return node.static;
+  }
+  if (node.type === AST_NODE_TYPES.StaticBlock) {
+    return true;
   }
   return null;
 }
@@ -111,12 +122,35 @@ export const noPrivateIdentifiers = createRule({
 });
 
 function publicMemberNode(
-  node: TSESTree.MethodDefinition | TSESTree.PropertyDefinition,
+  node:
+    | TSESTree.AccessorProperty
+    | TSESTree.MethodDefinition
+    | TSESTree.PropertyDefinition
+    | TSESTree.TSAbstractAccessorProperty
+    | TSESTree.TSAbstractMethodDefinition
+    | TSESTree.TSAbstractPropertyDefinition,
 ): TSESTree.Node | null {
   if (node.accessibility !== "public") {
     return null;
   }
   return node.key;
+}
+
+function reportRedundantPublic(
+  context: Readonly<TSESLint.RuleContext<"redundantPublic", []>>,
+  node:
+    | TSESTree.AccessorProperty
+    | TSESTree.MethodDefinition
+    | TSESTree.PropertyDefinition
+    | TSESTree.TSAbstractAccessorProperty
+    | TSESTree.TSAbstractMethodDefinition
+    | TSESTree.TSAbstractPropertyDefinition,
+): void {
+  const reportNode = publicMemberNode(node);
+  if (reportNode === null) {
+    return;
+  }
+  context.report({ node: reportNode, messageId: "redundantPublic" });
 }
 
 /**
@@ -141,25 +175,29 @@ export const noRedundantPublic = createRule({
   defaultOptions: [],
   create(context) {
     return {
+      AccessorProperty(node) {
+        reportRedundantPublic(context, node);
+      },
       MethodDefinition(node) {
-        const reportNode = publicMemberNode(node);
-        if (reportNode === null) {
-          return;
-        }
-        context.report({ node: reportNode, messageId: "redundantPublic" });
+        reportRedundantPublic(context, node);
       },
       PropertyDefinition(node) {
-        const reportNode = publicMemberNode(node);
-        if (reportNode === null) {
-          return;
-        }
-        context.report({ node: reportNode, messageId: "redundantPublic" });
+        reportRedundantPublic(context, node);
       },
       TSParameterProperty(node) {
         if (node.accessibility !== "public" || !node.readonly) {
           return;
         }
         context.report({ node, messageId: "redundantPublic" });
+      },
+      TSAbstractAccessorProperty(node) {
+        reportRedundantPublic(context, node);
+      },
+      TSAbstractMethodDefinition(node) {
+        reportRedundantPublic(context, node);
+      },
+      TSAbstractPropertyDefinition(node) {
+        reportRedundantPublic(context, node);
       },
     };
   },
