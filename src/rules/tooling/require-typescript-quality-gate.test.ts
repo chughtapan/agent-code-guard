@@ -106,6 +106,14 @@ ruleTester.run("require-typescript-quality-gate", rule, {
       code: "export const value = 1;",
       options: [inheritedQualityGateFixture()],
     },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: 'tsc --project "./tsconfig.json"' })],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "tsc --build" })],
+    },
   ],
   invalid: [
     {
@@ -116,6 +124,61 @@ ruleTester.run("require-typescript-quality-gate", rule, {
     {
       code: "export const value = 1;",
       options: [qualityGateFixture({ lint: "tsc --noCheck && eslint ." })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "tsc --noEmit || true" })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "true || tsc --noEmit" })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "tsc --noEmit; true" })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "tsc --noEmit & true" })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "tsc --strict false --noEmit" })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "tsc --noImplicitAny false --noEmit" })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "tsc --build tsconfig.loose.json" })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "tsc --showConfig" })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "tsc src/index.ts --noEmit" })],
+      errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        qualityGateFixture({
+          lint: "pnpm run typecheck -- --project other.json",
+          typecheck: "tsc --noEmit",
+        }),
+      ],
       errors: [{ messageId: "missingTypecheck" }],
     },
     {
@@ -154,6 +217,16 @@ ruleTester.run("require-typescript-quality-gate", rule, {
         qualityGateFixture(
           { lint: "tsc --noEmit && eslint ." },
           { ...REQUIRED_OPTIONS, noImplicitReturns: false },
+        ),
+      ],
+      errors: [{ messageId: "missingCompilerOptions" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        qualityGateFixture(
+          { lint: "tsc --noEmit && eslint ." },
+          { ...REQUIRED_OPTIONS, strictNullChecks: false },
         ),
       ],
       errors: [{ messageId: "missingCompilerOptions" }],

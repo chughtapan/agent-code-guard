@@ -63,7 +63,7 @@
   },
   "peerDependencies": {
     "eslint": ">=9",
-    "typescript": ">=5"
+    "typescript": ">=5 <6.1.0"
   },
   "devDependencies": {
     "@stryker-mutator/core": "^9.6.1",

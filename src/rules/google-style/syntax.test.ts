@@ -169,6 +169,18 @@ ruleTester.run("component-function-naming", componentFunctionNaming, {
       code: "function UserCard(): null { return null; }\nconst view = <UserCard />;",
       filename: "component.tsx",
     },
+    {
+      code: "function renderLabel(): ReactNode { return 'label'; }",
+      filename: "component.tsx",
+    },
+    {
+      code: "export function UserCard() { return React.createElement('div'); }",
+      filename: "component.tsx",
+    },
+    {
+      code: "export function UserCard() { return null; }",
+      filename: "component.tsx",
+    },
   ],
   invalid: [
     {
@@ -187,6 +199,26 @@ ruleTester.run("component-function-naming", componentFunctionNaming, {
     {
       code: "const userCard = () => <div />;",
       errors: [{ messageId: "componentUpperCamel" }],
+      filename: "component.tsx",
+    },
+    {
+      code: "const userCard = function () { return <></>; };",
+      errors: [{ messageId: "componentUpperCamel" }],
+      filename: "component.tsx",
+    },
+    {
+      code: "function userCard(): JSX.Element { throw new Error(); }",
+      errors: [{ messageId: "componentUpperCamel" }],
+      filename: "component.tsx",
+    },
+    {
+      code: "function userCard() { return React.createElement('div'); }",
+      errors: [{ messageId: "componentUpperCamel" }],
+      filename: "component.tsx",
+    },
+    {
+      code: "function ReadValue() { function Inner() { return <div />; } return 1; }",
+      errors: [{ messageId: "ordinaryLowerCamel" }],
       filename: "component.tsx",
     },
   ],

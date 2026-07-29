@@ -4,16 +4,34 @@
  */
 
 import path from "node:path";
+import * as ts from "typescript";
+import { missingCompilerOptions } from "./typescript-compiler-floor.js";
 
-const COMMAND_SEPARATOR_PATTERN = /(?:&&|\|\||[;|])/;
-const NO_CHECK_FLAGS: ReadonlySet<string> = new Set(["--noCheck", "--no-check"]);
+const COMMAND_SEPARATOR_PATTERN = /&&/;
 const PACKAGE_RUNNERS: ReadonlySet<string> = new Set(["bun", "npm", "pnpm", "yarn"]);
 const TSC_RUNNERS: ReadonlySet<string> = new Set(["bunx", "npx"]);
+const UNSAFE_SHELL_OPERATOR_PATTERN = /(?:\|\||[;|]|(?<!&)&(?!&)|[$`#]|\r|\n)/;
+const SHELL_WORD_PATTERN = /"[^"]*"|'[^']*'|[^\s]+/gu;
+const NON_CHECKING_OPTIONS = [
+  "help",
+  "init",
+  "listFilesOnly",
+  "noCheck",
+  "showConfig",
+  "version",
+  "watch",
+] as const satisfies ReadonlyArray<keyof ts.CompilerOptions>;
 
 interface ScriptTrace {
+  readonly compilerOptions: ts.CompilerOptions;
   readonly packageDirectory: string;
   readonly scripts: Readonly<Record<string, string>>;
   readonly tsconfigPath: string;
+}
+
+interface ReferencedScript {
+  readonly forwardedArguments: readonly string[];
+  readonly name: string;
 }
 
 function stringScripts(value: Readonly<Record<string, unknown>>): Readonly<Record<string, string>> {
@@ -24,8 +42,21 @@ function stringScripts(value: Readonly<Record<string, unknown>>): Readonly<Recor
   );
 }
 
-function commandTokens(command: string): readonly string[] {
-  return command.trim().split(/\s+/).filter((token) => token.length > 0);
+function normalizedShellWord(word: string): string | null {
+  const quote = word[0];
+  if ((quote === "'" || quote === '"') && word.at(-1) === quote) {
+    return word.slice(1, -1);
+  }
+  return /['"\\]/u.test(word) ? null : word;
+}
+
+function commandTokens(command: string): readonly string[] | null {
+  const words = command.trim().match(SHELL_WORD_PATTERN) ?? [];
+  const tokens = words.map(normalizedShellWord);
+  if (tokens.some((token) => token === null)) {
+    return null;
+  }
+  return tokens.filter((token): token is string => token !== null);
 }
 
 function commandName(token: string): string {
@@ -64,56 +95,106 @@ function directTscIndex(tokens: readonly string[]): number | null {
   );
 }
 
-function configuredProjectPath(
-  tokens: readonly string[],
-  tscIndex: number,
-  packageDirectory: string,
-): string | null {
-  for (let index = tscIndex + 1; index < tokens.length; index += 1) {
-    const token = tokens[index];
-    if (token === "-p" || token === "--project") {
-      const value = tokens[index + 1];
-      return value === undefined ? null : path.resolve(packageDirectory, value);
-    }
-    if (token?.startsWith("--project=")) {
-      return path.resolve(packageDirectory, token.slice("--project=".length));
-    }
+function buildProjectPath(project: string, packageDirectory: string): string {
+  const resolved = path.resolve(packageDirectory, project);
+  return path.extname(resolved) === ".json"
+    ? resolved
+    : path.join(resolved, "tsconfig.json");
+}
+
+function buildCommandRunsTypecheck(
+  commandArguments: readonly string[],
+  trace: ScriptTrace,
+): boolean {
+  const parsed = ts.parseBuildCommand(commandArguments);
+  if (
+    parsed.errors.length > 0 ||
+    parsed.buildOptions.clean === true ||
+    parsed.buildOptions.dry === true ||
+    parsed.buildOptions.watch === true
+  ) {
+    return false;
   }
-  return path.join(packageDirectory, "tsconfig.json");
+  return parsed.projects.some(
+    (project) => buildProjectPath(project, trace.packageDirectory) === trace.tsconfigPath,
+  );
+}
+
+function regularCommandSkipsTypecheck(parsed: ts.ParsedCommandLine): boolean {
+  if (parsed.errors.length > 0 || parsed.fileNames.length > 0) {
+    return true;
+  }
+  return NON_CHECKING_OPTIONS.some((name) => parsed.options[name] === true);
+}
+
+function regularCommandRunsTypecheck(
+  commandArguments: readonly string[],
+  trace: ScriptTrace,
+): boolean {
+  const parsed = ts.parseCommandLine(commandArguments);
+  if (regularCommandSkipsTypecheck(parsed)) {
+    return false;
+  }
+  const projectPath = path.resolve(
+    trace.packageDirectory,
+    parsed.options.project ?? "tsconfig.json",
+  );
+  if (projectPath !== trace.tsconfigPath) {
+    return false;
+  }
+  return missingCompilerOptions({
+    ...trace.compilerOptions,
+    ...parsed.options,
+  }).length === 0;
 }
 
 function directCommandRunsTypecheck(tokens: readonly string[], trace: ScriptTrace): boolean {
   const tscIndex = directTscIndex(tokens);
-  if (tscIndex === null || tokens.some((token) => NO_CHECK_FLAGS.has(token))) {
+  if (tscIndex === null) {
     return false;
   }
-  return (
-    configuredProjectPath(tokens, tscIndex, trace.packageDirectory) === trace.tsconfigPath
-  );
+  const commandArguments = tokens.slice(tscIndex + 1);
+  return commandArguments[0] === "--build" || commandArguments[0] === "-b"
+    ? buildCommandRunsTypecheck(commandArguments, trace)
+    : regularCommandRunsTypecheck(commandArguments, trace);
 }
 
-function referencedScriptName(tokens: readonly string[]): string | null {
+function referencedScript(tokens: readonly string[]): ReferencedScript | null {
   const runner = commandName(tokens[0] ?? "");
   if (!PACKAGE_RUNNERS.has(runner) || tokens[1] !== "run") {
     return null;
   }
-  return tokens[2] ?? null;
+  const name = tokens[2];
+  if (name === undefined) {
+    return null;
+  }
+  const argumentStart = tokens[3] === "--" ? 4 : 3;
+  return { forwardedArguments: tokens.slice(argumentStart), name };
 }
 
 function commandRunsTypecheck(
   trace: ScriptTrace,
   command: string,
   ancestors: ReadonlySet<string>,
+  forwardedArguments: readonly string[],
 ): boolean {
-  const tokens = commandTokens(command);
+  const commandParts = commandTokens(command);
+  if (commandParts === null) {
+    return false;
+  }
+  const tokens = [...commandParts, ...forwardedArguments];
   if (directCommandRunsTypecheck(tokens, trace)) {
     return true;
   }
-  const referencedName = referencedScriptName(tokens);
+  const reference = referencedScript(tokens);
   return (
-    referencedName !== null &&
-    !tokens.some((token) => NO_CHECK_FLAGS.has(token)) &&
-    scriptRunsTypecheck(trace, referencedName, ancestors)
+    reference !== null &&
+    scriptRunsTypecheck(
+      trace,
+      reference.name,
+      ancestors,
+      reference.forwardedArguments,
+    )
   );
 }
 
@@ -121,6 +202,7 @@ function scriptRunsTypecheck(
   trace: ScriptTrace,
   scriptName: string,
   ancestors: ReadonlySet<string>,
+  forwardedArguments: readonly string[] = [],
 ): boolean {
   if (ancestors.has(scriptName)) {
     return false;
@@ -129,11 +211,18 @@ function scriptRunsTypecheck(
   if (script === undefined) {
     return false;
   }
+  if (UNSAFE_SHELL_OPERATOR_PATTERN.test(script)) {
+    return false;
+  }
+  const commands = script.split(COMMAND_SEPARATOR_PATTERN);
+  if (forwardedArguments.length > 0 && commands.length !== 1) {
+    return false;
+  }
   const nextAncestors = new Set(ancestors);
   nextAncestors.add(scriptName);
-  return script
-    .split(COMMAND_SEPARATOR_PATTERN)
-    .some((command) => commandRunsTypecheck(trace, command, nextAncestors));
+  return commands.some((command) =>
+    commandRunsTypecheck(trace, command, nextAncestors, forwardedArguments)
+  );
 }
 
 /**
@@ -153,20 +242,23 @@ export function hasConfiguredScript(
  * Resolves package-script references until a real tsc invocation is found.
  * @param scripts Raw package.json scripts.
  * @param scriptNames Entry scripts that may provide the quality gate.
- * @param packageJsonPath Absolute path to the owning package.json.
- * @param tsconfigPath Absolute path to the validated tsconfig.json.
+ * @param contract Package paths and effective compiler options to validate.
  * @returns Whether a script chain runs tsc without disabling checking against the validated config.
  */
 export function packageScriptsRunTypecheck(
   scripts: Readonly<Record<string, unknown>>,
   scriptNames: readonly string[],
-  packageJsonPath: string,
-  tsconfigPath: string,
+  contract: Readonly<{
+    compilerOptions: ts.CompilerOptions;
+    packageJsonPath: string;
+    tsconfigPath: string;
+  }>,
 ): boolean {
   const trace: ScriptTrace = {
-    packageDirectory: path.dirname(packageJsonPath),
+    compilerOptions: contract.compilerOptions,
+    packageDirectory: path.dirname(contract.packageJsonPath),
     scripts: stringScripts(scripts),
-    tsconfigPath,
+    tsconfigPath: contract.tsconfigPath,
   };
   return scriptNames.some((name) => scriptRunsTypecheck(trace, name, new Set()));
 }

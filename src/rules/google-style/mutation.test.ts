@@ -27,6 +27,7 @@ ruleTester.run("no-unsafe-numeric-coercion", noUnsafeNumericCoercion, {
     "const parseFloat = (value: string) => value; const parsed = parseFloat(input);",
     "const Number = { parseInt: (value: string) => value }; const parsed = Number.parseInt(input);",
     "const globalThis = { parseFloat: (value: string) => value }; const parsed = globalThis.parseFloat(input);",
+    "const globalThis = { Number: { parseInt: (value: string) => value } }; const parsed = globalThis.Number.parseInt(input, 10);",
   ],
   invalid: [
     {
@@ -62,6 +63,10 @@ ruleTester.run("no-unsafe-numeric-coercion", noUnsafeNumericCoercion, {
       errors: [{ messageId: "parseInt" }],
     },
     {
+      code: "const value = globalThis.Number.parseInt(input, 10);",
+      errors: [{ messageId: "parseInt" }],
+    },
+    {
       code: "const value = +input;",
       errors: [{ messageId: "unaryPlus" }],
     },
@@ -74,6 +79,7 @@ ruleTester.run("no-prototype-manipulation", noPrototypeManipulation, {
     "Object.defineProperty(target, 'value', { value: 1 });",
     "const Object = { assign: () => undefined }; Object.assign(Widget.prototype, { value: 1 });",
     "const Reflect = { defineProperty: () => true }; Reflect.defineProperty(Widget.prototype, 'value', { value: 1 });",
+    "const globalThis = { Object: { setPrototypeOf: () => undefined } }; globalThis.Object.setPrototypeOf(target, parent);",
   ],
   invalid: [
     {
@@ -109,6 +115,10 @@ ruleTester.run("no-prototype-manipulation", noPrototypeManipulation, {
       errors: [{ messageId: "prototype" }],
     },
     {
+      code: "globalThis.Object.defineProperty(Widget.prototype, 'value', { value: 1 });",
+      errors: [{ messageId: "prototype" }],
+    },
+    {
       code: "Widget.prototype.count++;",
       errors: [{ messageId: "prototype" }],
     },
@@ -120,6 +130,7 @@ ruleTester.run("no-define-property-accessors", noDefinePropertyAccessors, {
     "Object.defineProperty(target, 'value', { value: 1 });",
     "class Store { get value(): number { return 1; } }",
     "const Object = { defineProperty: () => undefined }; Object.defineProperty(target, 'value', { get: () => 1 });",
+    "const get = 'value' as const; Object.defineProperty(target, 'value', { [get]: 1 });",
   ],
   invalid: [
     {
@@ -144,6 +155,22 @@ ruleTester.run("no-define-property-accessors", noDefinePropertyAccessors, {
     },
     {
       code: "Reflect.defineProperty(target, 'value', { get() { return 1; } });",
+      errors: [{ messageId: "descriptorAccessor" }],
+    },
+    {
+      code: "globalThis.Object.defineProperty(target, 'value', { get() { return 1; } });",
+      errors: [{ messageId: "descriptorAccessor" }],
+    },
+    {
+      code: "const descriptor = { get() { return 1; } }; Object.defineProperty(target, 'value', descriptor);",
+      errors: [{ messageId: "descriptorAccessor" }],
+    },
+    {
+      code: "const descriptor = { set(value: number) { target.value = value; } }; const descriptors = { value: descriptor }; Object.defineProperties(target, descriptors);",
+      errors: [{ messageId: "descriptorAccessor" }],
+    },
+    {
+      code: "const get = 'get' as const; Object.defineProperty(target, 'value', { [get]: () => 1 });",
       errors: [{ messageId: "descriptorAccessor" }],
     },
   ],

@@ -4,15 +4,18 @@
 
 import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { getStaticStringKey } from "../utils/ast-refinement/index.js";
+import { getUnshadowedGlobalNamespace } from "../utils/global-namespace.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
-import { isUnshadowedGlobal } from "../utils/unshadowed-global.js";
 
 type DescriptorDefinitionKind = "bulk" | "single";
 
 interface StaticCall {
   readonly method: string;
-  readonly owner: TSESTree.Identifier;
+  readonly owner: string;
 }
+
+const DESCRIPTOR_NAMESPACES: ReadonlySet<string> = new Set(["Object", "Reflect"]);
 
 function staticMemberName(node: TSESTree.MemberExpression): string | null {
   if (node.property.type === AST_NODE_TYPES.Identifier && !node.computed) {
@@ -27,30 +30,38 @@ function staticMemberName(node: TSESTree.MemberExpression): string | null {
   return null;
 }
 
-function staticCall(node: TSESTree.CallExpression): StaticCall | null {
-  if (
-    node.callee.type !== AST_NODE_TYPES.MemberExpression ||
-    node.callee.object.type !== AST_NODE_TYPES.Identifier
-  ) {
+function staticCall(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.CallExpression,
+): StaticCall | null {
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return null;
+  }
+  const namespace = getUnshadowedGlobalNamespace(
+    sourceCode,
+    node.callee.object,
+    DESCRIPTOR_NAMESPACES,
+  );
+  if (namespace === null) {
     return null;
   }
   const method = staticMemberName(node.callee);
-  return method === null ? null : { method, owner: node.callee.object };
+  return method === null ? null : { method, owner: namespace.name };
 }
 
 function descriptorDefinitionKind(
   sourceCode: Readonly<TSESLint.SourceCode>,
   node: TSESTree.CallExpression,
 ): DescriptorDefinitionKind | null {
-  const call = staticCall(node);
-  if (call === null || !isUnshadowedGlobal(sourceCode, call.owner)) {
+  const call = staticCall(sourceCode, node);
+  if (call === null) {
     return null;
   }
-  if (call.owner.name === "Object" && call.method === "defineProperties") {
+  if (call.owner === "Object" && call.method === "defineProperties") {
     return "bulk";
   }
   if (
-    (call.owner.name === "Object" || call.owner.name === "Reflect") &&
+    (call.owner === "Object" || call.owner === "Reflect") &&
     call.method === "defineProperty"
   ) {
     return "single";
@@ -58,42 +69,154 @@ function descriptorDefinitionKind(
   return null;
 }
 
-function staticPropertyName(property: TSESTree.Property): string | null {
-  if (property.key.type === AST_NODE_TYPES.Identifier) {
-    return property.key.name;
-  }
-  if (
-    property.key.type === AST_NODE_TYPES.Literal &&
-    typeof property.key.value === "string"
-  ) {
-    return property.key.value;
+function constInitializer(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  identifier: TSESTree.Identifier,
+): TSESTree.Expression | null {
+  let scope: TSESLint.Scope.Scope | null = sourceCode.getScope(identifier);
+  while (scope !== null) {
+    const variable = scope.set.get(identifier.name);
+    if (variable !== undefined) {
+      const [definition] = variable.defs;
+      return variable.defs.length === 1 &&
+        definition?.type === "Variable" &&
+        definition.parent.kind === "const"
+        ? definition.node.init
+        : null;
+    }
+    scope = scope.upper;
   }
   return null;
 }
 
-function isAccessorProperty(property: TSESTree.ObjectLiteralElement): boolean {
+function unwrapExpression(node: TSESTree.Expression): TSESTree.Expression {
+  if (
+    node.type === AST_NODE_TYPES.TSAsExpression ||
+    node.type === AST_NODE_TYPES.TSTypeAssertion ||
+    node.type === AST_NODE_TYPES.TSNonNullExpression
+  ) {
+    return unwrapExpression(node.expression);
+  }
+  return node;
+}
+
+function resolveConstExpression(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.Expression,
+  seen: ReadonlySet<string>,
+): TSESTree.Expression | null {
+  const unwrapped = unwrapExpression(node);
+  if (unwrapped.type !== AST_NODE_TYPES.Identifier) {
+    return unwrapped;
+  }
+  if (seen.has(unwrapped.name)) {
+    return null;
+  }
+  const initializer = constInitializer(sourceCode, unwrapped);
+  if (initializer === null) {
+    return null;
+  }
+  const nextSeen = new Set(seen);
+  nextSeen.add(unwrapped.name);
+  return resolveConstExpression(sourceCode, initializer, nextSeen);
+}
+
+function isTypeAssertionExpression(
+  node: TSESTree.Node,
+): node is TSESTree.TSAsExpression | TSESTree.TSTypeAssertion | TSESTree.TSNonNullExpression {
+  return node.type === AST_NODE_TYPES.TSAsExpression ||
+    node.type === AST_NODE_TYPES.TSTypeAssertion ||
+    node.type === AST_NODE_TYPES.TSNonNullExpression;
+}
+
+function aliasExpression(node: TSESTree.Node): TSESTree.Expression | null {
+  if (node.type === AST_NODE_TYPES.Identifier) {
+    return node;
+  }
+  return isTypeAssertionExpression(node) ? node : null;
+}
+
+function resolveObjectExpression(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.Node,
+): TSESTree.ObjectExpression | null {
+  if (node.type === AST_NODE_TYPES.ObjectExpression) {
+    return node;
+  }
+  const alias = aliasExpression(node);
+  if (alias === null) {
+    return null;
+  }
+  const resolved = resolveConstExpression(sourceCode, alias, new Set());
+  return resolved?.type === AST_NODE_TYPES.ObjectExpression ? resolved : null;
+}
+
+function staticPropertyName(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  property: TSESTree.Property,
+): string | null {
+  const direct = getStaticStringKey(property.key, property.computed);
+  if (direct !== null) {
+    return direct;
+  }
+  if (
+    property.computed &&
+    property.key.type === AST_NODE_TYPES.Identifier
+  ) {
+    const resolved = resolveConstExpression(sourceCode, property.key, new Set());
+    return resolved?.type === AST_NODE_TYPES.Literal &&
+      typeof resolved.value === "string"
+      ? resolved.value
+      : null;
+  }
+  return null;
+}
+
+function isAccessorProperty(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  property: TSESTree.ObjectLiteralElement,
+): boolean {
   if (property.type !== AST_NODE_TYPES.Property) {
     return false;
   }
-  const name = staticPropertyName(property);
+  const name = staticPropertyName(sourceCode, property);
   return name === "get" || name === "set";
 }
 
-function objectHasAccessorDescriptor(node: TSESTree.Node | null): boolean {
-  return (
-    node?.type === AST_NODE_TYPES.ObjectExpression &&
-    node.properties.some(isAccessorProperty)
+function objectHasAccessorDescriptor(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.Node | null,
+): boolean {
+  if (node === null) {
+    return false;
+  }
+  const resolved = resolveObjectExpression(sourceCode, node);
+  if (resolved === null) {
+    return false;
+  }
+  return resolved.properties.some((property) =>
+    property.type === AST_NODE_TYPES.SpreadElement
+      ? objectHasAccessorDescriptor(sourceCode, property.argument)
+      : isAccessorProperty(sourceCode, property)
   );
 }
 
-function bulkDescriptorMapHasAccessor(node: TSESTree.Node | null): boolean {
-  if (node?.type !== AST_NODE_TYPES.ObjectExpression) {
+function bulkDescriptorMapHasAccessor(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.Node | null,
+): boolean {
+  if (node === null) {
     return false;
   }
-  return node.properties.some(
+  const resolved = resolveObjectExpression(sourceCode, node);
+  if (resolved === null) {
+    return false;
+  }
+  return resolved.properties.some(
     (property) =>
-      property.type === AST_NODE_TYPES.Property &&
-      objectHasAccessorDescriptor(property.value),
+      property.type === AST_NODE_TYPES.SpreadElement
+        ? bulkDescriptorMapHasAccessor(sourceCode, property.argument)
+        : objectHasAccessorDescriptor(sourceCode, property.value),
   );
 }
 
@@ -105,12 +228,12 @@ function callDefinesAccessor(
   if (kind === "single") {
     const descriptor = node.arguments[2];
     return descriptor?.type !== AST_NODE_TYPES.SpreadElement &&
-      objectHasAccessorDescriptor(descriptor);
+      objectHasAccessorDescriptor(sourceCode, descriptor);
   }
   if (kind === "bulk") {
     const descriptorMap = node.arguments[1];
     return descriptorMap?.type !== AST_NODE_TYPES.SpreadElement &&
-      bulkDescriptorMapHasAccessor(descriptorMap);
+      bulkDescriptorMapHasAccessor(sourceCode, descriptorMap);
   }
   return false;
 }

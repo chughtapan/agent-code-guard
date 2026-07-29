@@ -13,6 +13,7 @@ type CandidateFunction =
   | TSESTree.FunctionExpression;
 
 interface FunctionCandidate {
+  readonly exported: boolean;
   readonly functionNode: CandidateFunction;
   readonly globalVariable: boolean;
   readonly name: TSESTree.Identifier;
@@ -21,7 +22,16 @@ interface FunctionCandidate {
 
 const CONSTANT_CASE_PATTERN = /^[A-Z][A-Z0-9_]*$/;
 const COMPONENT_RETURN_TYPE_PATTERN =
-  /\b(?:JSX\.)?Element\b|\bReact(?:Element|Node)\b|\bReact\.JSX\.Element\b/;
+  /\bJSX\.Element\b|\bReact(?:\.ReactElement|Element|\.JSX\.Element)\b/;
+const REACT_NODE_RETURN_TYPE_PATTERN = /\bReact(?:\.ReactNode|Node)\b/;
+
+function isFunctionNode(node: TSESTree.Node | null): node is CandidateFunction {
+  return (
+    node?.type === AST_NODE_TYPES.ArrowFunctionExpression ||
+    node?.type === AST_NODE_TYPES.FunctionDeclaration ||
+    node?.type === AST_NODE_TYPES.FunctionExpression
+  );
+}
 
 function isFunctionInitializer(node: TSESTree.Node | null): node is CandidateFunction {
   return (
@@ -51,7 +61,7 @@ function containsJsx(node: TSESTree.Node, root: CandidateFunction): boolean {
   ) {
     return true;
   }
-  if (node !== root && isFunctionInitializer(node)) {
+  if (node !== root && isFunctionNode(node)) {
     return false;
   }
   return Object.entries(node).some(
@@ -72,6 +82,21 @@ function topLevelVariable(node: TSESTree.VariableDeclarator): boolean {
   );
 }
 
+function exportedVariable(node: TSESTree.VariableDeclarator): boolean {
+  const declaration = node.parent;
+  return (
+    declaration.type === AST_NODE_TYPES.VariableDeclaration &&
+    declaration.parent.type === AST_NODE_TYPES.ExportNamedDeclaration
+  );
+}
+
+function exportedFunction(node: TSESTree.FunctionDeclaration): boolean {
+  return (
+    node.parent.type === AST_NODE_TYPES.ExportNamedDeclaration ||
+    node.parent.type === AST_NODE_TYPES.ExportDefaultDeclaration
+  );
+}
+
 function jsxTagName(node: TSESTree.JSXTagNameExpression): string | null {
   return node.type === AST_NODE_TYPES.JSXIdentifier ? node.name : null;
 }
@@ -79,23 +104,107 @@ function jsxTagName(node: TSESTree.JSXTagNameExpression): string | null {
 function returnTypeSignalsComponent(
   sourceCode: Readonly<TSESLint.SourceCode>,
   node: CandidateFunction,
+  upperCamel: boolean,
 ): boolean {
+  if (node.returnType === undefined) {
+    return false;
+  }
+  const returnType = sourceCode.getText(node.returnType);
   return (
-    node.returnType !== undefined &&
-    COMPONENT_RETURN_TYPE_PATTERN.test(sourceCode.getText(node.returnType))
+    COMPONENT_RETURN_TYPE_PATTERN.test(returnType) ||
+    (upperCamel && REACT_NODE_RETURN_TYPE_PATTERN.test(returnType))
   );
+}
+
+function isCreateElementProperty(node: TSESTree.MemberExpression): boolean {
+  const property = node.property;
+  if (property.type === AST_NODE_TYPES.Literal) {
+    return property.value === "createElement";
+  }
+  return !node.computed &&
+    property.type === AST_NODE_TYPES.Identifier &&
+    property.name === "createElement";
+}
+
+function isReactCreateElement(node: TSESTree.Node): boolean {
+  if (
+    node.type !== AST_NODE_TYPES.CallExpression ||
+    node.callee.type !== AST_NODE_TYPES.MemberExpression
+  ) {
+    return false;
+  }
+  const owner = node.callee.object;
+  return owner.type === AST_NODE_TYPES.Identifier &&
+    owner.name === "React" &&
+    isCreateElementProperty(node.callee);
+}
+
+function isNullLiteral(node: TSESTree.Node): boolean {
+  return node.type === AST_NODE_TYPES.Literal && node.value === null;
+}
+
+function containsDirectReturnValue(
+  value: unknown,
+  root: CandidateFunction,
+  predicate: (node: TSESTree.Node) => boolean,
+): boolean {
+  if (Array.isArray(value)) {
+    return value.some((child) => containsDirectReturnValue(child, root, predicate));
+  }
+  if (!isNode(value)) {
+    return false;
+  }
+  if (value !== root && isFunctionNode(value)) {
+    return false;
+  }
+  if (
+    value.type === AST_NODE_TYPES.ReturnStatement &&
+    value.argument !== null &&
+    predicate(value.argument)
+  ) {
+    return true;
+  }
+  return Object.entries(value).some(
+    ([key, child]) =>
+      key !== "parent" && containsDirectReturnValue(child, root, predicate),
+  );
+}
+
+function directlyReturns(
+  node: CandidateFunction,
+  predicate: (value: TSESTree.Node) => boolean,
+): boolean {
+  if (
+    node.type === AST_NODE_TYPES.ArrowFunctionExpression &&
+    node.expression &&
+    predicate(node.body)
+  ) {
+    return true;
+  }
+  return containsDirectReturnValue(node.body, node, predicate);
 }
 
 function isComponent(
   sourceCode: Readonly<TSESLint.SourceCode>,
   jsxTags: ReadonlySet<string>,
   candidate: FunctionCandidate,
+  upperCamel: boolean,
 ): boolean {
-  return (
+  if (
     jsxTags.has(candidate.name.name) ||
-    containsJsx(candidate.functionNode, candidate.functionNode) ||
-    returnTypeSignalsComponent(sourceCode, candidate.functionNode)
-  );
+    containsJsx(candidate.functionNode, candidate.functionNode)
+  ) {
+    return true;
+  }
+  if (returnTypeSignalsComponent(sourceCode, candidate.functionNode, upperCamel)) {
+    return true;
+  }
+  if (directlyReturns(candidate.functionNode, isReactCreateElement)) {
+    return true;
+  }
+  return candidate.exported &&
+    upperCamel &&
+    directlyReturns(candidate.functionNode, isNullLiteral);
 }
 
 function reportCandidate(
@@ -105,8 +214,8 @@ function reportCandidate(
   jsxTags: ReadonlySet<string>,
   candidate: FunctionCandidate,
 ): void {
-  const component = isComponent(context.sourceCode, jsxTags, candidate);
   const upperCamel = /^\p{Lu}/u.test(candidate.name.name);
+  const component = isComponent(context.sourceCode, jsxTags, candidate, upperCamel);
   if (component && !upperCamel) {
     context.report({ node: candidate.name, messageId: "componentUpperCamel" });
     return;
@@ -154,6 +263,7 @@ export const componentFunctionNaming = createRule({
           return;
         }
         candidates.push({
+          exported: exportedFunction(node),
           functionNode: node,
           globalVariable: false,
           name: node.id,
@@ -176,6 +286,7 @@ export const componentFunctionNaming = createRule({
           return;
         }
         candidates.push({
+          exported: exportedVariable(node),
           functionNode: node.init,
           globalVariable: topLevelVariable(node),
           name: node.id,

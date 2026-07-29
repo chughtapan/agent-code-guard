@@ -12,6 +12,7 @@ import {
   hasConfiguredScript,
   packageScriptsRunTypecheck,
 } from "./typescript-quality-script.js";
+import { missingCompilerOptions } from "./typescript-compiler-floor.js";
 
 type MessageId =
   | "invalidPackageJson"
@@ -32,7 +33,10 @@ type JsonRead =
   | { readonly _tag: "Unreadable"; readonly cause: unknown };
 
 type CompilerOptionsRead =
-  | { readonly _tag: "Read"; readonly value: ts.CompilerOptions }
+  | {
+      readonly _tag: "Read";
+      readonly value: ts.CompilerOptions;
+    }
   | { readonly _tag: "Unreadable"; readonly cause: unknown };
 
 type GateResult =
@@ -43,27 +47,43 @@ type GateResult =
       readonly messageId: MessageId;
     };
 
+interface GateCacheEntry {
+  readonly inputs: ReadonlyMap<string, string | null>;
+  readonly result: GateResult;
+}
+
 const DEFAULT_SCRIPT_NAMES = ["lint"] as const;
-const QUALITY_GATE_RESULT_CACHE = new Map<string, GateResult>();
-const REQUIRED_COMPILER_OPTIONS = [
-  ["allowUnreachableCode", false],
-  ["allowUnusedLabels", false],
-  ["forceConsistentCasingInFileNames", true],
-  ["isolatedModules", true],
-  ["noEmitOnError", true],
-  ["noFallthroughCasesInSwitch", true],
-  ["noImplicitOverride", true],
-  ["noImplicitReturns", true],
-  ["strict", true],
-] as const;
+const QUALITY_GATE_RESULT_CACHE = new Map<string, GateCacheEntry>();
 
 function isJsonRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function readJsonRecord(filePath: string): JsonRead {
+function readTracked(
+  filePath: string,
+  inputs: Map<string, string | null>,
+): string | undefined {
+  const normalizedPath = path.resolve(filePath);
   try {
-    const parsed: unknown = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    const contents = fs.readFileSync(normalizedPath, "utf8");
+    inputs.set(normalizedPath, contents);
+    return contents;
+  } catch (cause) {
+    if (!(cause instanceof Error)) {
+      throw cause;
+    }
+    inputs.set(normalizedPath, null);
+    return undefined;
+  }
+}
+
+function readJsonRecord(
+  filePath: string,
+  inputs: Map<string, string | null>,
+): JsonRead {
+  try {
+    const contents = readTracked(filePath, inputs);
+    const parsed: unknown = JSON.parse(contents ?? "");
     return isJsonRecord(parsed)
       ? { _tag: "Read", value: parsed }
       : { _tag: "Unreadable", cause: "JSON root is not an object" };
@@ -72,14 +92,20 @@ function readJsonRecord(filePath: string): JsonRead {
   }
 }
 
-function readCompilerOptions(filePath: string): CompilerOptionsRead {
-  const config = ts.readConfigFile(filePath, (configPath) => ts.sys.readFile(configPath));
+function readCompilerOptions(
+  filePath: string,
+  inputs: Map<string, string | null>,
+): CompilerOptionsRead {
+  const readFile = (configPath: string): string | undefined =>
+    readTracked(configPath, inputs);
+  const config = ts.readConfigFile(filePath, readFile);
   if (config.error !== undefined) {
     return { _tag: "Unreadable", cause: config.error };
   }
+  const host = { ...ts.sys, readFile };
   const parsed = ts.parseJsonConfigFileContent(
     config.config,
-    ts.sys,
+    host,
     path.dirname(filePath),
     undefined,
     filePath,
@@ -94,17 +120,14 @@ function cwdFor(context: Readonly<{ cwd?: string }>): string {
   return typeof context.cwd === "string" && context.cwd.length > 0 ? context.cwd : process.cwd();
 }
 
-function missingCompilerOptions(compilerOptions: ts.CompilerOptions): readonly string[] {
-  return REQUIRED_COMPILER_OPTIONS.filter(
-    ([name, expected]) => compilerOptions[name] !== expected,
-  ).map(([name]) => name);
-}
-
 function scriptsResult(
   packageJson: JsonRecord,
   scriptNames: readonly string[],
-  packageJsonPath: string,
-  tsconfigPath: string,
+  contract: Readonly<{
+    compilerOptions: ts.CompilerOptions;
+    packageJsonPath: string;
+    tsconfigPath: string;
+  }>,
 ): GateResult {
   const data = { scriptNames: scriptNames.join(", ") };
   const scripts = packageJson.scripts;
@@ -114,8 +137,7 @@ function scriptsResult(
   const runsTypecheck = packageScriptsRunTypecheck(
     scripts,
     scriptNames,
-    packageJsonPath,
-    tsconfigPath,
+    contract,
   );
   return runsTypecheck
     ? { _tag: "Configured" }
@@ -133,24 +155,6 @@ function compilerOptionsResult(compilerOptions: ts.CompilerOptions): GateResult 
       };
 }
 
-function configuredPackageResult(
-  packageJsonPath: string,
-  tsconfigPath: string,
-  scriptNames: readonly string[],
-): GateResult {
-  const packageJson = readJsonRecord(packageJsonPath);
-  return packageJson._tag === "Read"
-    ? scriptsResult(packageJson.value, scriptNames, packageJsonPath, tsconfigPath)
-    : { _tag: "Violation", messageId: "invalidPackageJson" };
-}
-
-function configuredTsconfigResult(tsconfigPath: string): GateResult {
-  const tsconfig = readCompilerOptions(tsconfigPath);
-  return tsconfig._tag === "Read"
-    ? compilerOptionsResult(tsconfig.value)
-    : { _tag: "Violation", messageId: "invalidTsconfig" };
-}
-
 function resolvePackageJsonPath(options: QualityGateOptions, cwd: string): string {
   return path.resolve(options.packageJsonPath ?? path.join(cwd, "package.json"));
 }
@@ -159,23 +163,78 @@ function resolveTsconfigPath(options: QualityGateOptions, cwd: string): string {
   return path.resolve(options.tsconfigPath ?? path.join(cwd, "tsconfig.json"));
 }
 
+function missingFileResult(
+  filePath: string,
+  messageId: "invalidPackageJson" | "invalidTsconfig",
+  inputs: Map<string, string | null>,
+): GateCacheEntry | null {
+  if (fs.existsSync(filePath)) {
+    return null;
+  }
+  inputs.set(filePath, null);
+  return {
+    inputs,
+    result: { _tag: "Violation", messageId },
+  };
+}
+
 function uncachedQualityGateResult(
   packageJsonPath: string,
   tsconfigPath: string,
   scriptNames: readonly string[],
-): GateResult {
-  if (!fs.existsSync(packageJsonPath)) {
-    return { _tag: "Violation", messageId: "invalidPackageJson" };
+): GateCacheEntry {
+  const inputs = new Map<string, string | null>();
+  const missingPackage = missingFileResult(packageJsonPath, "invalidPackageJson", inputs);
+  if (missingPackage !== null) {
+    return missingPackage;
   }
-  if (!fs.existsSync(tsconfigPath)) {
-    return { _tag: "Violation", messageId: "invalidTsconfig" };
+  const missingTsconfig = missingFileResult(tsconfigPath, "invalidTsconfig", inputs);
+  if (missingTsconfig !== null) {
+    return missingTsconfig;
   }
 
-  const scriptResult = configuredPackageResult(packageJsonPath, tsconfigPath, scriptNames);
-  if (scriptResult._tag === "Violation") {
-    return scriptResult;
+  const packageJson = readJsonRecord(packageJsonPath, inputs);
+  if (packageJson._tag === "Unreadable") {
+    return {
+      inputs,
+      result: { _tag: "Violation", messageId: "invalidPackageJson" },
+    };
   }
-  return configuredTsconfigResult(tsconfigPath);
+  const compilerOptions = readCompilerOptions(tsconfigPath, inputs);
+  if (compilerOptions._tag === "Unreadable") {
+    return {
+      inputs,
+      result: { _tag: "Violation", messageId: "invalidTsconfig" },
+    };
+  }
+  const compilerResult = compilerOptionsResult(compilerOptions.value);
+  if (compilerResult._tag === "Violation") {
+    return { inputs, result: compilerResult };
+  }
+  const scriptResult = scriptsResult(
+    packageJson.value,
+    scriptNames,
+    {
+      compilerOptions: compilerOptions.value,
+      packageJsonPath,
+      tsconfigPath,
+    },
+  );
+  if (scriptResult._tag === "Violation") {
+    return { inputs, result: scriptResult };
+  }
+  return { inputs, result: compilerResult };
+}
+
+function cacheEntryIsCurrent(entry: GateCacheEntry): boolean {
+  for (const [filePath, contents] of entry.inputs) {
+    const currentInputs = new Map<string, string | null>();
+    readTracked(filePath, currentInputs);
+    if (currentInputs.get(filePath) !== contents) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function qualityGateResult(options: QualityGateOptions, cwd: string): GateResult {
@@ -184,12 +243,12 @@ function qualityGateResult(options: QualityGateOptions, cwd: string): GateResult
   const scriptNames = options.scriptNames ?? DEFAULT_SCRIPT_NAMES;
   const cacheKey = JSON.stringify([packageJsonPath, tsconfigPath, scriptNames]);
   const cached = QUALITY_GATE_RESULT_CACHE.get(cacheKey);
-  if (cached !== undefined) {
-    return cached;
+  if (cached !== undefined && cacheEntryIsCurrent(cached)) {
+    return cached.result;
   }
-  const result = uncachedQualityGateResult(packageJsonPath, tsconfigPath, scriptNames);
-  QUALITY_GATE_RESULT_CACHE.set(cacheKey, result);
-  return result;
+  const entry = uncachedQualityGateResult(packageJsonPath, tsconfigPath, scriptNames);
+  QUALITY_GATE_RESULT_CACHE.set(cacheKey, entry);
+  return entry.result;
 }
 
 /**

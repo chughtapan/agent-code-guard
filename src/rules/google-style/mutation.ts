@@ -5,8 +5,11 @@
 
 import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
+import { getUnshadowedGlobalNamespace } from "../utils/global-namespace.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 import { isUnshadowedGlobal } from "../utils/unshadowed-global.js";
+
+const NUMBER_NAMESPACE: ReadonlySet<string> = new Set(["Number"]);
 
 function isGlobalCall(
   sourceCode: Readonly<TSESLint.SourceCode>,
@@ -28,10 +31,13 @@ function isNumberNamespaceCall(
   if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
     return false;
   }
+  const namespace = getUnshadowedGlobalNamespace(
+    sourceCode,
+    node.callee.object,
+    NUMBER_NAMESPACE,
+  );
   return (
-    node.callee.object.type === AST_NODE_TYPES.Identifier &&
-    node.callee.object.name === "Number" &&
-    isUnshadowedGlobal(sourceCode, node.callee.object) &&
+    namespace !== null &&
     staticMemberName(node.callee) === name
   );
 }
@@ -146,7 +152,7 @@ function targetsPrototype(node: TSESTree.Expression): boolean {
 
 interface StaticCall {
   readonly method: string;
-  readonly owner: TSESTree.Identifier;
+  readonly owner: string;
 }
 
 const OBJECT_PROTOTYPE_MUTATION_METHODS: ReadonlySet<string> = new Set([
@@ -159,12 +165,24 @@ const REFLECT_PROTOTYPE_MUTATION_METHODS: ReadonlySet<string> = new Set([
   "deleteProperty",
   "set",
 ]);
+const PROTOTYPE_MUTATION_NAMESPACES: ReadonlySet<string> = new Set([
+  "Object",
+  "Reflect",
+]);
 
-function staticCall(node: TSESTree.CallExpression): StaticCall | null {
+function staticCall(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.CallExpression,
+): StaticCall | null {
   if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
     return null;
   }
-  if (node.callee.object.type !== AST_NODE_TYPES.Identifier) {
+  const namespace = getUnshadowedGlobalNamespace(
+    sourceCode,
+    node.callee.object,
+    PROTOTYPE_MUTATION_NAMESPACES,
+  );
+  if (namespace === null) {
     return null;
   }
   const method = staticMemberName(node.callee);
@@ -173,18 +191,15 @@ function staticCall(node: TSESTree.CallExpression): StaticCall | null {
   }
   return {
     method,
-    owner: node.callee.object,
+    owner: namespace.name,
   };
 }
 
-function isSetPrototypeOf(sourceCode: Readonly<TSESLint.SourceCode>, call: StaticCall): boolean {
+function isSetPrototypeOf(call: StaticCall): boolean {
   if (call.method !== "setPrototypeOf") {
     return false;
   }
-  return (
-    (call.owner.name === "Object" || call.owner.name === "Reflect") &&
-    isUnshadowedGlobal(sourceCode, call.owner)
-  );
+  return call.owner === "Object" || call.owner === "Reflect";
 }
 
 function firstArgumentTargetsPrototype(node: TSESTree.CallExpression): boolean {
@@ -193,23 +208,19 @@ function firstArgumentTargetsPrototype(node: TSESTree.CallExpression): boolean {
 }
 
 function supportsPrototypeTargetMutation(call: StaticCall): boolean {
-  if (call.owner.name === "Object") {
+  if (call.owner === "Object") {
     return OBJECT_PROTOTYPE_MUTATION_METHODS.has(call.method);
   }
-  if (call.owner.name === "Reflect") {
+  if (call.owner === "Reflect") {
     return REFLECT_PROTOTYPE_MUTATION_METHODS.has(call.method);
   }
   return false;
 }
 
 function isPrototypeTargetMutation(
-  sourceCode: Readonly<TSESLint.SourceCode>,
   call: StaticCall,
   node: TSESTree.CallExpression,
 ): boolean {
-  if (!isUnshadowedGlobal(sourceCode, call.owner)) {
-    return false;
-  }
   return supportsPrototypeTargetMutation(call) && firstArgumentTargetsPrototype(node);
 }
 
@@ -217,11 +228,11 @@ function isPrototypeMutationCall(
   sourceCode: Readonly<TSESLint.SourceCode>,
   node: TSESTree.CallExpression,
 ): boolean {
-  const call = staticCall(node);
+  const call = staticCall(sourceCode, node);
   if (call === null) {
     return false;
   }
-  return isSetPrototypeOf(sourceCode, call) || isPrototypeTargetMutation(sourceCode, call, node);
+  return isSetPrototypeOf(call) || isPrototypeTargetMutation(call, node);
 }
 
 /**
