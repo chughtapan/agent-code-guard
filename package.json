@@ -1,7 +1,7 @@
 {
   "name": "eslint-plugin-agent-code-guard",
-  "version": "0.0.15",
-  "description": "ESLint plugin that guards AI-agent-written TypeScript against common sloppy patterns: async/Promise/.then chains, bare catches, unsafe casts, raw SQL, manual enum casts, mocks in integration tests, and hardcoded secrets.",
+  "version": "0.0.16",
+  "description": "Normative ESLint floor for agent-written TypeScript: Google TypeScript Style plus stricter safety, Effect, testing, and tooling rules.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -24,7 +24,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "pnpm clean && tsc",
-    "lint": "eslint . && knip",
+    "lint": "tsc --noEmit && eslint . && knip",
     "test": "vitest run --changed",
     "test:all": "vitest run",
     "bench": "tsx bench/lint-bench.ts",
@@ -37,6 +37,8 @@
     "eslintplugin",
     "eslint-plugin",
     "typescript",
+    "google-style",
+    "static-analysis",
     "effect",
     "kysely",
     "safer-by-default"
@@ -52,22 +54,26 @@
     "url": "https://github.com/chughtapan/agent-code-guard/issues"
   },
   "dependencies": {
-    "@typescript-eslint/utils": "^8.0.0",
+    "@eslint-community/eslint-plugin-eslint-comments": "4.7.2",
+    "@typescript-eslint/utils": "8.65.0",
+    "eslint-import-resolver-typescript": "4.4.5",
+    "eslint-plugin-import-x": "4.17.1",
     "eslint-plugin-jsdoc": "^62.9.0",
     "eslint-plugin-sonarjs": "^4.0.3",
-    "knip": "^6.12.1"
+    "knip": "^6.12.1",
+    "typescript-eslint": "8.65.0"
   },
   "peerDependencies": {
     "eslint": ">=9",
-    "typescript": ">=5"
+    "typescript": ">=5 <6.1.0"
   },
   "devDependencies": {
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/typescript-checker": "^9.6.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
     "@types/node": "^22.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "@typescript-eslint/rule-tester": "^8.0.0",
+    "@typescript-eslint/parser": "8.65.0",
+    "@typescript-eslint/rule-tester": "8.65.0",
     "eslint": "^9.0.0",
     "fast-check": "^4.7.0",
     "tsx": "^4.21.0",

@@ -1,23 +1,36 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
 function isProcessEnvMemberExpression(node: TSESTree.Node): boolean {
-  if (node.type !== AST_NODE_TYPES.MemberExpression) return false;
-  if (node.computed) return false;
-  if (node.object.type !== AST_NODE_TYPES.Identifier) return false;
-  if (node.object.name !== "process") return false;
-  if (node.property.type !== AST_NODE_TYPES.Identifier) return false;
+  if (node.type !== AST_NODE_TYPES.MemberExpression) {
+    return false;
+  }
+  if (node.computed) {
+    return false;
+  }
+  if (node.object.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
+  if (node.object.name !== "process") {
+    return false;
+  }
+  if (node.property.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
   return node.property.name === "env";
 }
 
-export default createRule({
+/**
+ * Enforces the `no-env-nonnull-assert` Agent Code Guard rule.
+ */
+export const noEnvNonnullAssert = createRule({
   name: "no-env-nonnull-assert",
   meta: {
     type: "problem",
     docs: {
-      description: "`process.env.X!` silences TypeScript without validating the value; environment is a boundary, validated at boot.",
+      description:
+        "`process.env.X!` silences TypeScript without validating the value; environment is a boundary, validated at boot.",
       url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
@@ -33,8 +46,12 @@ export default createRule({
     return {
       TSNonNullExpression(node) {
         const inner = node.expression;
-        if (inner.type !== AST_NODE_TYPES.MemberExpression) return;
-        if (!isProcessEnvMemberExpression(inner.object)) return;
+        if (inner.type !== AST_NODE_TYPES.MemberExpression) {
+          return;
+        }
+        if (!isProcessEnvMemberExpression(inner.object)) {
+          return;
+        }
         context.report({ node, messageId: "envNonNullAssert" });
       },
     };

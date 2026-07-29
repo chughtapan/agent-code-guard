@@ -1,5 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
@@ -30,10 +29,18 @@ function factoryMemberName(node: TSESTree.Expression): string | null {
   while (current.type === AST_NODE_TYPES.CallExpression) {
     current = current.callee;
   }
-  if (current.type !== AST_NODE_TYPES.MemberExpression) return null;
-  if (current.computed) return null;
-  if (current.object.type !== AST_NODE_TYPES.Identifier) return null;
-  if (current.property.type !== AST_NODE_TYPES.Identifier) return null;
+  if (current.type !== AST_NODE_TYPES.MemberExpression) {
+    return null;
+  }
+  if (current.computed) {
+    return null;
+  }
+  if (current.object.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (current.property.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
   return `${current.object.name}.${current.property.name}`;
 }
 
@@ -41,17 +48,23 @@ function extendsTagClassFactory(
   node: TSESTree.ClassDeclaration | TSESTree.ClassExpression,
   factories: ReadonlySet<string>,
 ): boolean {
-  if (node.superClass === null) return false;
+  if (node.superClass === null) {
+    return false;
+  }
   const factory = factoryMemberName(node.superClass);
   return factory !== null && factories.has(factory);
 }
 
-export default createRule<Options, "tooMany">({
+/**
+ * Enforces the `max-non-trivial-classes-per-file` Agent Code Guard rule.
+ */
+export const maxNonTrivialClassesPerFile = createRule<Options, "tooMany">({
   name: "max-non-trivial-classes-per-file",
   meta: {
     type: "suggestion",
     docs: {
-      description: "Discipline corollary: cap non-trivial classes per file; tag-class factories are exempt so the limit reads the codebase the way the architect designed it.",
+      description:
+        "Discipline corollary: cap non-trivial classes per file; tag-class factories are exempt so the limit reads the codebase the way the architect designed it.",
       url: PRINCIPLE_URL.DISCIPLINE,
     },
     messages: {
@@ -79,19 +92,21 @@ export default createRule<Options, "tooMany">({
   create(context, [options]) {
     const max = options?.max ?? DEFAULT_MAX;
     const factories = new Set(options?.factories ?? DEFAULT_TAG_CLASS_FACTORIES);
-    const offenders: (TSESTree.ClassDeclaration | TSESTree.ClassExpression)[] = [];
+    const offenders: Array<TSESTree.ClassDeclaration | TSESTree.ClassExpression> = [];
 
-    const visit = (
-      node: TSESTree.ClassDeclaration | TSESTree.ClassExpression,
-    ): void => {
-      if (!extendsTagClassFactory(node, factories)) offenders.push(node);
+    const visit = (node: TSESTree.ClassDeclaration | TSESTree.ClassExpression): void => {
+      if (!extendsTagClassFactory(node, factories)) {
+        offenders.push(node);
+      }
     };
 
     return {
       ClassDeclaration: visit,
       ClassExpression: visit,
       "Program:exit"() {
-        if (offenders.length <= max) return;
+        if (offenders.length <= max) {
+          return;
+        }
         for (const node of offenders.slice(max)) {
           context.report({
             node,

@@ -1,6 +1,5 @@
 import * as fc from "fast-check";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import type { TSESTree } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { expect, it } from "vitest";
 import {
   getEnclosingFunctionName,
@@ -99,22 +98,18 @@ it("Property 6: Promise return-type detection only fires for function return pos
         interface Box { ${methodName}(): Promise<number>; }
         type ${aliasName} = Promise<number>;
       `);
-      expect(refs.map((node) => isFunctionReturnTypeReference(node))).toEqual([
-        true,
-        true,
-        false,
-      ]);
+      expect(refs.map((node) => isFunctionReturnTypeReference(node))).toEqual([true, true, false]);
     }),
     { numRuns: 40 },
   );
 });
 
 it("Property 7: malformed empty template literals stay safely null", () => {
-  const emptyTemplate = {
+  const emptyTemplate: TSESTree.TemplateLiteral = {
     type: AST_NODE_TYPES.TemplateLiteral,
     expressions: [],
     quasis: [],
-  } as TSESTree.TemplateLiteral;
+  };
 
   expect(getStaticStringKey(emptyTemplate, true)).toBeNull();
   expect(resolveStringLiteralValue(emptyTemplate)).toBeNull();
@@ -129,11 +124,12 @@ it("Property 8: parent helpers return null at the top level and for computed own
   const throws = throwStatements(program);
 
   expect(getParent(program)).toBeNull();
-  expect(getEnclosingFunctionName(throws[0]!)).toBeNull();
+  expect(getEnclosingFunctionName(throws[0])).toBeNull();
 });
 
 it("getEnclosingFunctionName returns null for unsupported function containers", () => {
-  const throws = throwStatements(parseWithParents(`
+  const throws = throwStatements(
+    parseWithParents(`
     const handlers = [() => { throw new Error("x"); }];
     let assigned;
     assigned = () => { throw new Error("y"); };
@@ -141,7 +137,8 @@ it("getEnclosingFunctionName returns null for unsupported function containers", 
       const nested = [() => { throw new Error("z"); }];
       return nested;
     }
-  `));
+  `),
+  );
 
   expect(throws.map((node) => getEnclosingFunctionName(node))).toEqual([null, null, null]);
 });
@@ -191,19 +188,21 @@ function expectStaticObjectKeys(ident: string, text: string): void {
   const interpolatedTemplateProp = firstObjectProperty(
     "const obj = { [`" + text + "${" + ident + "}`]: 1 };",
   );
-  expect(getStaticStringKey(interpolatedTemplateProp.key, interpolatedTemplateProp.computed))
-    .toBeNull();
+  expect(
+    getStaticStringKey(interpolatedTemplateProp.key, interpolatedTemplateProp.computed),
+  ).toBeNull();
 }
 
 function expectLiteralHelpers(text: string, n: number, positive: number): void {
-  expect(resolveStringLiteralValue(firstInitializer(`const value = ${JSON.stringify(text)};`)))
-    .toBe(text);
+  expect(
+    resolveStringLiteralValue(firstInitializer(`const value = ${JSON.stringify(text)};`)),
+  ).toBe(text);
   expect(resolveStringLiteralValue(firstInitializer(`const value = \`${text}\`;`))).toBe(text);
-  expect(resolveStringLiteralValue(firstInitializer(`const value = \`${text}\${suffix}\`;`)))
-    .toBeNull();
+  expect(
+    resolveStringLiteralValue(firstInitializer(`const value = \`${text}\${suffix}\`;`)),
+  ).toBeNull();
   expect(getNumericLiteralValue(firstInitializer(`const value = ${n};`))).toBe(n);
-  expect(getNumericLiteralValue(firstInitializer(`const value = -${positive};`)))
-    .toBe(-positive);
+  expect(getNumericLiteralValue(firstInitializer(`const value = -${positive};`))).toBe(-positive);
   expect(getNumericLiteralValue(firstInitializer(`const value = +${positive};`))).toBeNull();
 }
 

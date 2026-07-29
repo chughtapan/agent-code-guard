@@ -8,12 +8,16 @@ const VARIABLE_SURFACE_SELECTOR =
   "VariableDeclarator[init.type='ArrowFunctionExpression'], " +
   "VariableDeclarator[init.type='ClassExpression']";
 
-export default createRule({
+/**
+ * Enforces the `manual-option` Agent Code Guard rule.
+ */
+export const manualOption = createRule({
   name: "manual-option",
   meta: {
     type: "problem",
     docs: {
-      description: "Hand-rolled `Option`-shaped types don't compose with the rest of the algebra; use the project's `Option` so `match` works uniformly.",
+      description:
+        "Hand-rolled `Option`-shaped types don't compose with the rest of the algebra; use the project's `Option` so `match` works uniformly.",
       url: PRINCIPLE_URL.EXHAUSTIVENESS,
     },
     messages: {
@@ -28,7 +32,9 @@ export default createRule({
   create(context) {
     function maybeReport(node: Parameters<typeof findManualOptionMatch>[0]): void {
       const result = findManualOptionMatch(node);
-      if (result === null) return;
+      if (result === null) {
+        return;
+      }
       context.report({
         node: result.node,
         messageId: "manualOption",

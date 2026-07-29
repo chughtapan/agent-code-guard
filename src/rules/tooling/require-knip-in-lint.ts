@@ -2,19 +2,44 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
+import {
+  directBinaryIndex,
+  packageScriptsRunCommand,
+} from "./package-script-chain.js";
 
-type Options = {
+interface Options {
   readonly packageJsonPath?: string;
   readonly scriptNames?: readonly string[];
-};
+}
 
 type MessageId = "invalidPackageJson" | "missingScript" | "missingKnip";
 
 const DEFAULT_SCRIPT_NAMES = ["lint"] as const;
-const KNIP_COMMAND_PATTERN = /(?:^|[\s;&|])(?:agent-code-guard-)?knip(?:$|[\s;&|])/;
+const KNIP_BINARY_NAMES: ReadonlySet<string> = new Set([
+  "agent-code-guard-knip",
+  "knip",
+]);
+const NON_CHECKING_KNIP_ARGUMENTS: ReadonlySet<string> = new Set([
+  "--help",
+  "--no-exit-code",
+  "--version",
+  "--watch",
+  "-V",
+  "-h",
+]);
 
 interface PackageScripts {
   readonly scripts?: Record<string, unknown>;
+}
+
+function isPackageScripts(value: unknown): value is PackageScripts {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  if (!("scripts" in value) || value.scripts === undefined) {
+    return true;
+  }
+  return typeof value.scripts === "object" && value.scripts !== null;
 }
 
 type PackageJsonRead =
@@ -24,36 +49,42 @@ type PackageJsonRead =
 type PackageCheckResult =
   | { readonly _tag: "Configured"; readonly scriptNames: string }
   | {
-    readonly _tag: "Missing";
-    readonly messageId: MessageId;
-    readonly scriptNames: string;
-    readonly cause?: string;
-  };
+      readonly _tag: "Missing";
+      readonly messageId: MessageId;
+      readonly scriptNames: string;
+      readonly cause?: string;
+    };
+
+function directCommandRunsKnip(tokens: readonly string[]): boolean {
+  const binaryIndex = directBinaryIndex(tokens, KNIP_BINARY_NAMES);
+  if (binaryIndex === null) {
+    return false;
+  }
+  const commandArguments = tokens.slice(binaryIndex + 1);
+  return !commandArguments.some(
+    (argument) =>
+      NON_CHECKING_KNIP_ARGUMENTS.has(argument) ||
+      argument === "--max-issues" ||
+      argument.startsWith("--max-issues="),
+  );
+}
 
 const cwdFor = (context: Readonly<{ cwd?: string }>): string =>
-  typeof context.cwd === "string" && context.cwd.length > 0
-    ? context.cwd
-    : process.cwd();
+  typeof context.cwd === "string" && context.cwd.length > 0 ? context.cwd : process.cwd();
 
-const packagePathFor = (
-  context: Readonly<{ cwd?: string }>,
-  option: Options,
-): string =>
+const packagePathFor = (context: Readonly<{ cwd?: string }>, option: Options): string =>
   path.resolve(option.packageJsonPath ?? path.join(cwdFor(context), "package.json"));
 
 const parsePackageJson = (filePath: string): PackageJsonRead => {
   try {
-    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
-    return parsed && typeof parsed === "object"
-      ? { _tag: "Read", packageJson: parsed as PackageScripts }
+    const parsed: unknown = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    return isPackageScripts(parsed)
+      ? { _tag: "Read", packageJson: parsed }
       : { _tag: "Unreadable", cause: "package.json did not contain an object" };
   } catch (cause) {
     return { _tag: "Unreadable", cause };
   }
 };
-
-const scriptRunsKnip = (script: unknown): boolean =>
-  typeof script === "string" && KNIP_COMMAND_PATTERN.test(script);
 
 const checkPackageScripts = (
   packageJson: PackageScripts,
@@ -69,17 +100,14 @@ const checkPackageScripts = (
     return { _tag: "Missing", messageId: "missingScript", scriptNames: scriptList };
   }
 
-  if (configured.some(([, script]) => scriptRunsKnip(script))) {
+  if (packageScriptsRunCommand(scripts, scriptNames, directCommandRunsKnip)) {
     return { _tag: "Configured", scriptNames: scriptList };
   }
 
   return { _tag: "Missing", messageId: "missingKnip", scriptNames: scriptList };
 };
 
-const invalidPackageJson = (
-  scriptNames: readonly string[],
-  cause: unknown,
-): PackageCheckResult => {
+const invalidPackageJson = (scriptNames: readonly string[], cause: unknown): PackageCheckResult => {
   return {
     _tag: "Missing",
     messageId: "invalidPackageJson",
@@ -88,8 +116,9 @@ const invalidPackageJson = (
   };
 };
 
-const errorSummary = (cause: unknown): string =>
-  cause instanceof Error ? cause.message : String(cause);
+function errorSummary(cause: unknown): string {
+  return cause instanceof Error ? cause.message : String(cause);
+}
 
 function absurd(value: never): never {
   throw new Error(`unreachable tag: ${JSON.stringify(value)}`);
@@ -109,12 +138,24 @@ function resolvePackageCheck(
   }
 }
 
-export default createRule<[Options], MessageId>({
+/**
+ * Enforces the `require-knip-in-lint` Agent Code Guard rule.
+ */
+export const requireKnipInLint = createRule<
+  [
+    {
+      readonly packageJsonPath?: string;
+      readonly scriptNames?: readonly string[];
+    },
+  ],
+  MessageId
+>({
   name: "require-knip-in-lint",
   meta: {
     type: "problem",
     docs: {
-      description: "Dead-code detection (`knip`) running in lint catches drifted exports before they accumulate; the linter checks structure, not just syntax.",
+      description:
+        "Dead-code detection (`knip`) running in lint catches drifted exports before they accumulate; the linter checks structure, not just syntax.",
       url: PRINCIPLE_URL.DISCIPLINE,
     },
     messages: {
@@ -149,13 +190,12 @@ export default createRule<[Options], MessageId>({
     return {
       Program(node) {
         const packageJsonPath = packagePathFor(context, options);
-        if (!fs.existsSync(packageJsonPath)) return;
+        if (!fs.existsSync(packageJsonPath)) {
+          return;
+        }
 
         const scriptNames = options.scriptNames ?? DEFAULT_SCRIPT_NAMES;
-        const result = resolvePackageCheck(
-          parsePackageJson(packageJsonPath),
-          scriptNames,
-        );
+        const result = resolvePackageCheck(parsePackageJson(packageJsonPath), scriptNames);
 
         switch (result._tag) {
           case "Configured":

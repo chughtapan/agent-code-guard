@@ -1,17 +1,20 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { isNamedMemberCall } from "../../utils/ast-refinement/index.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const ERROR_COALESCING_METHODS = new Set(["catchAll", "catchAllCause", "mapError"]);
 
-export default createRule({
+/**
+ * Enforces the `no-effect-error-coalescing` Agent Code Guard rule.
+ */
+export const noEffectErrorCoalescing = createRule({
   name: "no-effect-error-coalescing",
   meta: {
     type: "problem",
     docs: {
-      description: "Coalescing distinct effect errors into one tag erases the diagnostic; downstream needs the tag set the upstream produced.",
+      description:
+        "Coalescing distinct effect errors into one tag erases the diagnostic; downstream needs the tag set the upstream produced.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -27,11 +30,17 @@ export default createRule({
     return {
       CallExpression(node) {
         const method = effectMethodName(node);
-        if (method === null || !ERROR_COALESCING_METHODS.has(method)) return;
+        if (method === null || !ERROR_COALESCING_METHODS.has(method)) {
+          return;
+        }
         const mapper = node.arguments[0];
-        if (!mapper || mapper.type === AST_NODE_TYPES.SpreadElement) return;
+        if (!mapper || mapper.type === AST_NODE_TYPES.SpreadElement) {
+          return;
+        }
         const errorName = returnedWrapperErrorName(mapper);
-        if (errorName === null) return;
+        if (errorName === null) {
+          return;
+        }
         context.report({
           node,
           messageId: "effectErrorCoalescing",
@@ -44,27 +53,39 @@ export default createRule({
 
 function effectMethodName(node: TSESTree.CallExpression): string | null {
   for (const method of ERROR_COALESCING_METHODS) {
-    if (isNamedMemberCall(node, "Effect", method)) return method;
+    if (isNamedMemberCall(node, "Effect", method)) {
+      return method;
+    }
   }
   return null;
 }
 
 function returnedWrapperErrorName(node: TSESTree.Expression): string | null {
-  if (!isFunctionExpression(node)) return null;
+  if (!isFunctionExpression(node)) {
+    return null;
+  }
   if (node.body.type !== AST_NODE_TYPES.BlockStatement) {
     return wrapperErrorName(node.body);
   }
   for (const statement of node.body.body) {
-    if (statement.type !== AST_NODE_TYPES.ReturnStatement || !statement.argument) continue;
+    if (statement.type !== AST_NODE_TYPES.ReturnStatement || !statement.argument) {
+      continue;
+    }
     const name = wrapperErrorName(statement.argument);
-    if (name !== null) return name;
+    if (name !== null) {
+      return name;
+    }
   }
   return null;
 }
 
 function wrapperErrorName(node: TSESTree.Expression): string | null {
-  if (node.type === AST_NODE_TYPES.NewExpression) return newExpressionName(node);
-  if (!isEffectFailExpression(node)) return null;
+  if (node.type === AST_NODE_TYPES.NewExpression) {
+    return newExpressionName(node);
+  }
+  if (!isEffectFailExpression(node)) {
+    return null;
+  }
   const firstArgument = node.arguments[0];
   return firstArgument?.type === AST_NODE_TYPES.NewExpression
     ? newExpressionName(firstArgument)
@@ -72,8 +93,7 @@ function wrapperErrorName(node: TSESTree.Expression): string | null {
 }
 
 function isEffectFailExpression(node: TSESTree.Expression): node is TSESTree.CallExpression {
-  return node.type === AST_NODE_TYPES.CallExpression &&
-    isNamedMemberCall(node, "Effect", "fail");
+  return node.type === AST_NODE_TYPES.CallExpression && isNamedMemberCall(node, "Effect", "fail");
 }
 
 function newExpressionName(node: TSESTree.NewExpression): string | null {
@@ -83,6 +103,8 @@ function newExpressionName(node: TSESTree.NewExpression): string | null {
 function isFunctionExpression(
   node: TSESTree.Expression,
 ): node is TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression {
-  return node.type === AST_NODE_TYPES.ArrowFunctionExpression ||
-    node.type === AST_NODE_TYPES.FunctionExpression;
+  return (
+    node.type === AST_NODE_TYPES.ArrowFunctionExpression ||
+    node.type === AST_NODE_TYPES.FunctionExpression
+  );
 }

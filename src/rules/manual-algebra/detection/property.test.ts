@@ -24,6 +24,23 @@ const optionHelperArb = fc.constantFrom("some", "none", "present", "absent");
 const brandPrefixArb = fc.constantFrom("", "as", "make", "to");
 const errorSuffixArb = fc.constantFrom("Error", "Failure", "Failed", "Exception");
 
+const RESULT_HELPER_SOURCES: Record<string, string> = {
+  ok: "const ok = (value: number) => ({ ok: true as const, value });",
+  err: "const err = (error: Error) => ({ ok: false as const, error });",
+  error: "const error = (error: Error) => ({ ok: false as const, error });",
+  left: 'const left = (left: string) => ({ _tag: "Left" as const, left });',
+  right: 'const right = (right: string) => ({ _tag: "Right" as const, right });',
+  success: 'const success = (success: string) => ({ _tag: "Success" as const, success });',
+  failure: "const failure = (failure: Error) => ({ failure });",
+};
+
+const OPTION_HELPER_SOURCES: Record<string, string> = {
+  some: 'const some = (value: number) => ({ _tag: "Some" as const, value });',
+  none: 'const none = () => ({ _tag: "None" as const });',
+  present: 'const present = (value: number) => ({ _tag: "Present" as const, value });',
+  absent: 'const absent = () => ({ _tag: "Absent" as const });',
+};
+
 it("Property: transport-shaped result aliases remain clean across transport names", () => {
   fc.assert(
     fc.property(typeNameArb, suffixArb, (name, suffix) => {
@@ -39,10 +56,12 @@ it("Property: transport-shaped result aliases remain clean across transport name
 it("Property: result helper names fire only when their evidence matches", () => {
   fc.assert(
     fc.property(resultHelperArb, (helperName) => {
-      expect(findManualResultMatch(parseSubject(resultHelperSource(helperName)))?.displayName)
-        .toBe(helperName);
-      expect(findManualResultMatch(parseSubject(mismatchedResultHelperSource(helperName))))
-        .toBeNull();
+      expect(findManualResultMatch(parseSubject(resultHelperSource(helperName)))?.displayName).toBe(
+        helperName,
+      );
+      expect(
+        findManualResultMatch(parseSubject(mismatchedResultHelperSource(helperName))),
+      ).toBeNull();
     }),
     { numRuns: 80 },
   );
@@ -62,10 +81,12 @@ it("Property: neutral result surfaces need complete branch-pair evidence", () =>
 it("Property: option helper names fire only when their evidence matches", () => {
   fc.assert(
     fc.property(optionHelperArb, (helperName) => {
-      expect(findManualOptionMatch(parseSubject(optionHelperSource(helperName)))?.displayName)
-        .toBe(helperName);
-      expect(findManualOptionMatch(parseSubject(mismatchedOptionHelperSource(helperName))))
-        .toBeNull();
+      expect(findManualOptionMatch(parseSubject(optionHelperSource(helperName)))?.displayName).toBe(
+        helperName,
+      );
+      expect(
+        findManualOptionMatch(parseSubject(mismatchedOptionHelperSource(helperName))),
+      ).toBeNull();
     }),
     { numRuns: 80 },
   );
@@ -99,9 +120,11 @@ it("Property: brand constructor detection requires helper naming plus a direct c
 });
 
 function resultTransportAlias(name: string): string {
-  return `type ${name}<T, E> = ` +
+  return (
+    `type ${name}<T, E> = ` +
     "{ readonly ok: true; readonly value: T } | " +
-    "{ readonly ok: false; readonly error: E };";
+    "{ readonly ok: false; readonly error: E };"
+  );
 }
 
 function resultHelperSource(helperName: string): string {
@@ -121,9 +144,11 @@ function mismatchedOptionHelperSource(helperName: string): string {
 }
 
 function taggedOptionErrorAlias(name: string): string {
-  return `type ${name}<T> = ` +
+  return (
+    `type ${name}<T> = ` +
     '{ readonly _tag: "Some"; readonly value: T } | ' +
-    '{ readonly _tag: "None" };';
+    '{ readonly _tag: "None" };'
+  );
 }
 
 function brandHelperName(brandName: string, prefix: string): string {
@@ -133,20 +158,3 @@ function brandHelperName(brandName: string, prefix: string): string {
 function brandCastHelper(helperName: string, brandName: string): string {
   return `const ${helperName} = (value: string): ${brandName} => value as ${brandName};`;
 }
-
-const RESULT_HELPER_SOURCES: Record<string, string> = {
-  ok: "const ok = (value: number) => ({ ok: true as const, value });",
-  err: "const err = (error: Error) => ({ ok: false as const, error });",
-  error: "const error = (error: Error) => ({ ok: false as const, error });",
-  left: 'const left = (left: string) => ({ _tag: "Left" as const, left });',
-  right: 'const right = (right: string) => ({ _tag: "Right" as const, right });',
-  success: 'const success = (success: string) => ({ _tag: "Success" as const, success });',
-  failure: "const failure = (failure: Error) => ({ failure });",
-};
-
-const OPTION_HELPER_SOURCES: Record<string, string> = {
-  some: 'const some = (value: number) => ({ _tag: "Some" as const, value });',
-  none: 'const none = () => ({ _tag: "None" as const });',
-  present: 'const present = (value: number) => ({ _tag: "Present" as const, value });',
-  absent: 'const absent = () => ({ _tag: "Absent" as const });',
-};

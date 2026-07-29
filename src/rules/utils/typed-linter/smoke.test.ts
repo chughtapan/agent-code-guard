@@ -24,7 +24,9 @@ const probeRule = createRule<[], "stringType" | "noProgram">({
           context.report({ node, messageId: "noProgram" });
           return;
         }
-        if (node.id.type !== AST_NODE_TYPES.Identifier) return;
+        if (node.id.type !== AST_NODE_TYPES.Identifier) {
+          return;
+        }
         const checker = services.program.getTypeChecker();
         const tsNode = services.esTreeNodeToTSNodeMap.get(node.id);
         const typeStr = checker.typeToString(checker.getTypeAtLocation(tsNode));

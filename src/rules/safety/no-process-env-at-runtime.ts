@@ -1,5 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { getStaticStringKey } from "../utils/ast-refinement/index.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
@@ -11,58 +10,47 @@ function resolveLiteralStringValue(node: { type: string; value?: unknown } | nul
 }
 
 interface ScopeLookup {
-  getScope(node: TSESTree.Node): unknown;
-}
-
-interface VariableDefLike {
-  readonly type: string;
-  readonly parent?:
-    | {
-        readonly source?: { readonly type: string; readonly value?: unknown };
-      }
-    | null;
-  readonly node: {
-    readonly init?: TSESTree.Node | null;
-  };
-}
-
-interface VariableLike {
-  readonly defs: readonly VariableDefLike[];
-}
-
-interface ScopeLike {
-  readonly upper: ScopeLike | null;
-  readonly set: ReadonlyMap<string, VariableLike>;
+  getScope(node: TSESTree.Node): TSESLint.Scope.Scope;
 }
 
 function resolveVariable(
   sourceCode: ScopeLookup,
   identifier: TSESTree.Identifier,
-): VariableLike | null {
-  for (
-    let scope = sourceCode.getScope(identifier) as ScopeLike | null;
-    scope !== null;
-    scope = scope.upper
-  ) {
+): TSESLint.Scope.Variable | null {
+  let scope: TSESLint.Scope.Scope | null = sourceCode.getScope(identifier);
+  while (scope !== null) {
     const variable = scope.set.get(identifier.name);
-    if (variable) return variable;
+    if (variable) {
+      return variable;
+    }
+    scope = scope.upper;
   }
   return null;
 }
 
-function variableTargetsProcessModule(variable: VariableLike): boolean {
+function variableTargetsProcessModule(variable: TSESLint.Scope.Variable): boolean {
   return variable.defs.some(variableDefTargetsProcessModule);
 }
 
-function variableDefTargetsProcessModule(def: VariableDefLike): boolean {
-  if (def.type === "ImportBinding") return resolveProcessSource(def.parent?.source ?? null);
-  if (def.type !== "Variable") return false;
-  return resolveProcessInitializer(def.node.init ?? null);
+function variableDefTargetsProcessModule(def: TSESLint.Scope.Definition): boolean {
+  if (def.type === "ImportBinding") {
+    return def.parent.type === AST_NODE_TYPES.ImportDeclaration
+      ? resolveProcessSource(def.parent.source)
+      : false;
+  }
+  if (def.type !== "Variable") {
+    return false;
+  }
+  return resolveProcessInitializer(def.node.init);
 }
 
 function resolveProcessInitializer(init: TSESTree.Node | null): boolean {
-  if (init?.type !== AST_NODE_TYPES.CallExpression) return false;
-  if (!isRequireIdentifier(init.callee)) return false;
+  if (init?.type !== AST_NODE_TYPES.CallExpression) {
+    return false;
+  }
+  if (!isRequireIdentifier(init.callee)) {
+    return false;
+  }
   const firstArgument = init.arguments[0];
   if (firstArgument == null || firstArgument.type === AST_NODE_TYPES.SpreadElement) {
     return false;
@@ -79,23 +67,15 @@ function resolveProcessSource(node: { type: string; value?: unknown } | null): b
   return source === "node:process" || source === "process";
 }
 
-function isProcessReference(
-  sourceCode: ScopeLookup,
-  identifier: TSESTree.Identifier,
-): boolean {
-  if (identifier.name !== "process") return false;
+function isProcessReference(sourceCode: ScopeLookup, identifier: TSESTree.Identifier): boolean {
+  if (identifier.name !== "process") {
+    return false;
+  }
   const variable = resolveVariable(sourceCode, identifier);
-  return (
-    variable === null ||
-    variable.defs.length === 0 ||
-    variableTargetsProcessModule(variable)
-  );
+  return variable === null || variable.defs.length === 0 || variableTargetsProcessModule(variable);
 }
 
-function isProcessEnvAccess(
-  sourceCode: ScopeLookup,
-  node: TSESTree.MemberExpression,
-): boolean {
+function isProcessEnvAccess(sourceCode: ScopeLookup, node: TSESTree.MemberExpression): boolean {
   return (
     node.object.type === AST_NODE_TYPES.Identifier &&
     isProcessReference(sourceCode, node.object) &&
@@ -103,12 +83,16 @@ function isProcessEnvAccess(
   );
 }
 
-export default createRule({
+/**
+ * Enforces the `no-process-env-at-runtime` Agent Code Guard rule.
+ */
+export const noProcessEnvAtRuntime = createRule({
   name: "no-process-env-at-runtime",
   meta: {
     type: "problem",
     docs: {
-      description: "Reading `process.env.X` outside boot bypasses the env schema; environment is a boundary, validated at boot.",
+      description:
+        "Reading `process.env.X` outside boot bypasses the env schema; environment is a boundary, validated at boot.",
       url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
@@ -125,7 +109,9 @@ export default createRule({
 
     return {
       MemberExpression(node) {
-        if (!isProcessEnvAccess(sourceCode, node)) return;
+        if (!isProcessEnvAccess(sourceCode, node)) {
+          return;
+        }
         context.report({ node, messageId: "noProcessEnvAtRuntime" });
       },
     };

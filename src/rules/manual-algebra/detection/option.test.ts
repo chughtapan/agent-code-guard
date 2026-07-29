@@ -25,7 +25,9 @@ it("requires complete option key pairs on option-like surfaces", () => {
 });
 
 it("recognizes the extended option helper names", () => {
-  const present = parseSubject('const present = <T>(value: T) => ({ _tag: "Present" as const, value });');
+  const present = parseSubject(
+    'const present = <T>(value: T) => ({ _tag: "Present" as const, value });',
+  );
   const absent = parseSubject('const absent = () => ({ _tag: "Absent" as const });');
   const hasValue = parseSubject("const hasValue = (option: { value?: number }) => option.value;");
   const isNone = parseSubject(
@@ -41,8 +43,12 @@ it("recognizes the extended option helper names", () => {
 it("keeps helper-like option names clean when the evidence does not match", () => {
   const present = parseSubject('const present = () => ({ _tag: "Missing" as const });');
   const absent = parseSubject('const absent = () => ({ _tag: "Missing" as const });');
-  const hasValue = parseSubject("const hasValue = (option: { current?: number }) => option.current;");
-  const isNone = parseSubject('const isNone = (option: { _tag: "Some" }) => option._tag === "Some";');
+  const hasValue = parseSubject(
+    "const hasValue = (option: { current?: number }) => option.current;",
+  );
+  const isNone = parseSubject(
+    'const isNone = (option: { _tag: "Some" }) => option._tag === "Some";',
+  );
 
   expect(findManualOptionMatch(present)).toBeNull();
   expect(findManualOptionMatch(absent)).toBeNull();
@@ -127,8 +133,12 @@ it("keeps unsupported type, class, and declarator surfaces clean", () => {
 });
 
 it("uses method signatures as reusable signals when properties are absent", () => {
-  const resultInterface = parseSubject("interface helpers { left(): string; right(): string; match(): unknown; }");
-  const optionInterface = parseSubject("interface helpers { some(): number; none(): null; flatMap(): unknown; }");
+  const resultInterface = parseSubject(
+    "interface helpers { left(): string; right(): string; match(): unknown; }",
+  );
+  const optionInterface = parseSubject(
+    "interface helpers { some(): number; none(): null; flatMap(): unknown; }",
+  );
 
   expect(findManualResultMatch(resultInterface)?.displayName).toBe("helpers");
   expect(findManualOptionMatch(optionInterface)?.displayName).toBe("helpers");
@@ -156,18 +166,20 @@ it("Property: option helper detection follows helper names and matching evidence
   );
 });
 
-function optionHelperSource(helperName: string): string {
-  return OPTION_HELPER_SOURCES[helperName] ??
-    'const some = (value: number) => ({ _tag: "Some" as const, value });';
-}
-
-function mismatchedOptionHelperSource(helperName: string): string {
-  return `const ${helperName} = () => ({ _tag: "Missing" as const });`;
-}
-
 const OPTION_HELPER_SOURCES: Record<string, string> = {
   some: 'const some = (value: number) => ({ _tag: "Some" as const, value });',
   none: 'const none = () => ({ _tag: "None" as const });',
   present: 'const present = (value: number) => ({ _tag: "Present" as const, value });',
   absent: 'const absent = () => ({ _tag: "Absent" as const });',
 };
+
+function optionHelperSource(helperName: string): string {
+  return (
+    OPTION_HELPER_SOURCES[helperName] ??
+    'const some = (value: number) => ({ _tag: "Some" as const, value });'
+  );
+}
+
+function mismatchedOptionHelperSource(helperName: string): string {
+  return `const ${helperName} = () => ({ _tag: "Missing" as const });`;
+}

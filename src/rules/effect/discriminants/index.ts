@@ -2,8 +2,8 @@
  * @file Effect discriminants sub-family registry.
  */
 
-import eitherDiscriminant from "./either-discriminant.js";
-import tagDiscriminant from "./tag-discriminant.js";
+import { eitherDiscriminant } from "./either-discriminant.js";
+import { tagDiscriminant } from "./tag-discriminant.js";
 
 /**
  * Effect discriminant rules. Catches manual `_tag` checks and

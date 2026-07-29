@@ -1,6 +1,7 @@
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
-import rule from "./promise-type.js";
+import { promiseType as rule } from "./promise-type.js";
+import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;
@@ -9,7 +10,7 @@ RuleTester.describe = describe;
 
 const ruleTester = new RuleTester({
   languageOptions: {
-    parser: require("@typescript-eslint/parser"),
+    parser: tsParser,
     parserOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
@@ -56,7 +57,9 @@ ruleTester.run("promise-type", rule, {
       code: "// eslint-disable-next-line @rule-tester/promise-type -- suppression test (real prefix in production is `agent-code-guard/promise-type`)\nfunction suppressed(): Promise<number> { return Promise.resolve(1); }",
     },
     // Promise nested in an intersection in return position — not direct annotation
-    { code: "function f(): Promise<number> & { tag: string } { return Promise.resolve(1) as any; }" },
+    {
+      code: "function f(): Promise<number> & { tag: string } { return Promise.resolve(1) as any; }",
+    },
   ],
   invalid: [
     // FunctionDeclaration

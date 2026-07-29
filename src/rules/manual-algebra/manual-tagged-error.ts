@@ -1,5 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 import {
@@ -12,17 +11,15 @@ import {
 
 const ERROR_NAME_RE = /(Error|Failure|Failed|Exception)$/;
 
-function resolveErrorLikeName(name: string | null | undefined): boolean {
+function resolveErrorLikeName(name?: string | null): boolean {
   return typeof name === "string" && ERROR_NAME_RE.test(name);
 }
 
-function resolveIdentifierOrMemberName(
-  node: TSESTree.Expression | null,
-): string | null {
-  if (node?.type === AST_NODE_TYPES.Identifier) return node.name;
-  return node?.type === AST_NODE_TYPES.MemberExpression
-    ? getStaticMemberPropertyName(node)
-    : null;
+function resolveIdentifierOrMemberName(node: TSESTree.Expression | null): string | null {
+  if (node?.type === AST_NODE_TYPES.Identifier) {
+    return node.name;
+  }
+  return node?.type === AST_NODE_TYPES.MemberExpression ? getStaticMemberPropertyName(node) : null;
 }
 
 function isManualTagKey(
@@ -32,7 +29,9 @@ function isManualTagKey(
   return getStaticStringKey(key, computed) === "_tag";
 }
 
-function classHasManualTagField(node: TSESTree.ClassDeclaration | TSESTree.ClassExpression): boolean {
+function classHasManualTagField(
+  node: TSESTree.ClassDeclaration | TSESTree.ClassExpression,
+): boolean {
   return node.body.body.some(
     (member) =>
       member.type === AST_NODE_TYPES.PropertyDefinition &&
@@ -47,20 +46,20 @@ function superClassLooksErrorLike(
 }
 
 function typeElementIsTag(member: TSESTree.TypeElement): boolean {
-  return member.type === AST_NODE_TYPES.TSPropertySignature &&
-    isManualTagKey(member.key, member.computed);
+  return (
+    member.type === AST_NODE_TYPES.TSPropertySignature &&
+    isManualTagKey(member.key, member.computed)
+  );
 }
 
 function typeContainsManualTag(node: TSESTree.TypeNode): boolean {
-  switch (node.type) {
-    case AST_NODE_TYPES.TSTypeLiteral:
-      return node.members.some(typeElementIsTag);
-    case AST_NODE_TYPES.TSUnionType:
-    case AST_NODE_TYPES.TSIntersectionType:
-      return node.types.some(typeContainsManualTag);
-    default:
-      return false;
+  if (node.type === AST_NODE_TYPES.TSTypeLiteral) {
+    return node.members.some(typeElementIsTag);
   }
+  if (node.type === AST_NODE_TYPES.TSUnionType || node.type === AST_NODE_TYPES.TSIntersectionType) {
+    return node.types.some(typeContainsManualTag);
+  }
+  return false;
 }
 
 function objectPropertyIsTag(member: TSESTree.Property): boolean {
@@ -69,23 +68,24 @@ function objectPropertyIsTag(member: TSESTree.Property): boolean {
 
 function objectHasManualTag(node: TSESTree.ObjectExpression): boolean {
   return node.properties.some(
-    (member) =>
-      member.type === AST_NODE_TYPES.Property && objectPropertyIsTag(member),
+    (member) => member.type === AST_NODE_TYPES.Property && objectPropertyIsTag(member),
   );
 }
 
 function getObjectTagName(node: TSESTree.ObjectExpression): string | null {
   for (const member of node.properties) {
     const tagName = objectPropertyTagName(member);
-    if (tagName !== null) return tagName;
+    if (tagName !== null) {
+      return tagName;
+    }
   }
   return null;
 }
 
-function objectPropertyTagName(
-  member: TSESTree.ObjectLiteralElement,
-): string | null {
-  if (member.type !== AST_NODE_TYPES.Property) return null;
+function objectPropertyTagName(member: TSESTree.ObjectLiteralElement): string | null {
+  if (member.type !== AST_NODE_TYPES.Property) {
+    return null;
+  }
   return objectPropertyIsTag(member) ? resolveStringLiteralValue(member.value) : null;
 }
 
@@ -97,17 +97,16 @@ function isEffectFailCall(node: TSESTree.CallExpression): boolean {
   return isNamedMemberCall(node, "Effect", "fail");
 }
 
+const TRANSPARENT_RETURN_WRAPPERS: ReadonlySet<string> = new Set([
+  AST_NODE_TYPES.ChainExpression,
+  AST_NODE_TYPES.TSAsExpression,
+  AST_NODE_TYPES.TSNonNullExpression,
+  AST_NODE_TYPES.TSSatisfiesExpression,
+  AST_NODE_TYPES.TSTypeAssertion,
+]);
+
 function isTransparentReturnWrapper(node: TSESTree.Node): boolean {
-  switch (node.type) {
-    case AST_NODE_TYPES.ChainExpression:
-    case AST_NODE_TYPES.TSAsExpression:
-    case AST_NODE_TYPES.TSNonNullExpression:
-    case AST_NODE_TYPES.TSSatisfiesExpression:
-    case AST_NODE_TYPES.TSTypeAssertion:
-      return true;
-    default:
-      return false;
-  }
+  return TRANSPARENT_RETURN_WRAPPERS.has(node.type);
 }
 
 function objectIsReturnedValue(node: TSESTree.ObjectExpression): boolean {
@@ -115,7 +114,9 @@ function objectIsReturnedValue(node: TSESTree.ObjectExpression): boolean {
   let current = getParent(node);
   while (current !== null) {
     const status = returnedValueStatus(current, child);
-    if (status !== "wrapped") return status === "returned";
+    if (status !== "wrapped") {
+      return status === "returned";
+    }
     child = current;
     current = getParent(current);
   }
@@ -124,38 +125,42 @@ function objectIsReturnedValue(node: TSESTree.ObjectExpression): boolean {
 
 type ReturnedValueStatus = "returned" | "not-returned" | "wrapped";
 
-function returnedValueStatus(
-  current: TSESTree.Node,
-  child: TSESTree.Node,
-): ReturnedValueStatus {
+function returnedValueStatus(current: TSESTree.Node, child: TSESTree.Node): ReturnedValueStatus {
   if (current.type === AST_NODE_TYPES.ReturnStatement) {
     return current.argument === child ? "returned" : "not-returned";
   }
-  if (implicitArrowReturnsChild(current, child)) return "returned";
-  if (isFunctionBoundary(current)) return "not-returned";
+  if (implicitArrowReturnsChild(current, child)) {
+    return "returned";
+  }
+  if (isFunctionBoundary(current)) {
+    return "not-returned";
+  }
   return isTransparentReturnWrapper(current) ? "wrapped" : "not-returned";
 }
 
-function implicitArrowReturnsChild(
-  current: TSESTree.Node,
-  child: TSESTree.Node,
-): boolean {
-  return current.type === AST_NODE_TYPES.ArrowFunctionExpression &&
+function implicitArrowReturnsChild(current: TSESTree.Node, child: TSESTree.Node): boolean {
+  return (
+    current.type === AST_NODE_TYPES.ArrowFunctionExpression &&
     current.expression &&
-    current.body === child;
+    current.body === child
+  );
 }
 
 function isFunctionBoundary(current: TSESTree.Node): boolean {
-  return current.type === AST_NODE_TYPES.ArrowFunctionExpression ||
+  return (
+    current.type === AST_NODE_TYPES.ArrowFunctionExpression ||
     current.type === AST_NODE_TYPES.FunctionDeclaration ||
-    current.type === AST_NODE_TYPES.FunctionExpression;
+    current.type === AST_NODE_TYPES.FunctionExpression
+  );
 }
 
 function objectIsErrorPayload(node: TSESTree.ObjectExpression): boolean {
   let current = getParent(node);
   while (current !== null) {
     const status = errorPayloadStatus(current);
-    if (status !== "continue") return status === "payload";
+    if (status !== "continue") {
+      return status === "payload";
+    }
     current = getParent(current);
   }
   return false;
@@ -173,12 +178,84 @@ function errorPayloadStatus(current: TSESTree.Node): ErrorPayloadStatus {
   return isFunctionBoundary(current) ? "not-payload" : "continue";
 }
 
-export default createRule({
+type ReportManualTaggedError = (node: TSESTree.Node, name: string) => void;
+
+function maybeReportClass(
+  report: ReportManualTaggedError,
+  node: TSESTree.ClassDeclaration | TSESTree.ClassExpression,
+): void {
+  if (!classHasManualTagField(node)) {
+    return;
+  }
+  const className = node.id?.name ?? "(anonymous class)";
+  if (!resolveErrorLikeName(className) && !superClassLooksErrorLike(node)) {
+    return;
+  }
+  report(node, className);
+}
+
+function maybeReportInterface(
+  report: ReportManualTaggedError,
+  node: TSESTree.TSInterfaceDeclaration,
+): void {
+  if (resolveErrorLikeName(node.id.name) && node.body.body.some(typeElementIsTag)) {
+    report(node, node.id.name);
+  }
+}
+
+function maybeReportAlias(
+  report: ReportManualTaggedError,
+  node: TSESTree.TSTypeAliasDeclaration,
+): void {
+  if (resolveErrorLikeName(node.id.name) && typeContainsManualTag(node.typeAnnotation)) {
+    report(node, node.id.name);
+  }
+}
+
+function maybeReportObject(report: ReportManualTaggedError, node: TSESTree.ObjectExpression): void {
+  if (!objectHasManualTag(node)) {
+    return;
+  }
+  const tagName = getObjectTagName(node);
+  if (objectIsErrorPayload(node)) {
+    report(node, tagName ?? "tagged value");
+    return;
+  }
+  if (resolveErrorLikeName(tagName) && objectIsReturnedValue(node)) {
+    report(node, tagName ?? "tagged value");
+  }
+}
+
+function manualTaggedErrorListeners(report: ReportManualTaggedError): TSESLint.RuleListener {
+  return {
+    ClassDeclaration(node) {
+      maybeReportClass(report, node);
+    },
+    ClassExpression(node) {
+      maybeReportClass(report, node);
+    },
+    TSInterfaceDeclaration(node) {
+      maybeReportInterface(report, node);
+    },
+    TSTypeAliasDeclaration(node) {
+      maybeReportAlias(report, node);
+    },
+    ObjectExpression(node) {
+      maybeReportObject(report, node);
+    },
+  };
+}
+
+/**
+ * Enforces the `manual-tagged-error` Agent Code Guard rule.
+ */
+export const manualTaggedError = createRule({
   name: "manual-tagged-error",
   meta: {
     type: "problem",
     docs: {
-      description: "Hand-rolled tagged errors miss the constructor pattern that makes the tag set extensible; use the project's helper.",
+      description:
+        "Hand-rolled tagged errors miss the constructor pattern that makes the tag set extensible; use the project's helper.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -199,39 +276,6 @@ export default createRule({
       });
     }
 
-    function maybeReportClass(
-      node: TSESTree.ClassDeclaration | TSESTree.ClassExpression,
-    ): void {
-      if (!classHasManualTagField(node)) return;
-      const className = node.id?.name ?? "(anonymous class)";
-      if (!resolveErrorLikeName(className) && !superClassLooksErrorLike(node)) return;
-      report(node, className);
-    }
-
-    return {
-      ClassDeclaration: maybeReportClass,
-      ClassExpression: maybeReportClass,
-      TSInterfaceDeclaration(node) {
-        if (!resolveErrorLikeName(node.id.name)) return;
-        if (!node.body.body.some(typeElementIsTag)) return;
-        report(node, node.id.name);
-      },
-      TSTypeAliasDeclaration(node) {
-        if (!resolveErrorLikeName(node.id.name)) return;
-        if (!typeContainsManualTag(node.typeAnnotation)) return;
-        report(node, node.id.name);
-      },
-      ObjectExpression(node) {
-        if (!objectHasManualTag(node)) return;
-        const tagName = getObjectTagName(node);
-        if (objectIsErrorPayload(node)) {
-          report(node, tagName ?? "tagged value");
-          return;
-        }
-        if (!resolveErrorLikeName(tagName)) return;
-        if (!objectIsReturnedValue(node)) return;
-        report(node, tagName ?? "tagged value");
-      },
-    };
+    return manualTaggedErrorListeners(report);
   },
 });

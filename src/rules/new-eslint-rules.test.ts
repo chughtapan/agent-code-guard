@@ -2,7 +2,7 @@ import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import plugin from "../index.js";
+import { plugin } from "../index.js";
 
 const parser: Linter.Parser = tsParser;
 const pluginEntry: NonNullable<Linter.Config["plugins"]>[string] = plugin;
@@ -55,17 +55,27 @@ const exportedConstructorArb = typeNameArb.chain((name) =>
       expectedKind: "schema",
       name,
     },
-  )
+  ),
 );
 
-const nullableParameterArb = fc.tuple(paramNameArb, fc.constantFrom(
-  (name: string) => `${name}?: string`,
-  (name: string) => `${name}: string | undefined`,
-  (name: string) => `${name}: string | null`,
-  (name: string) => `{ ${name} }: { readonly ${name}?: string }`,
-));
+const nullableParameterArb = fc.tuple(
+  paramNameArb,
+  fc.constantFrom(
+    (name: string) => `${name}?: string`,
+    (name: string) => `${name}: string | undefined`,
+    (name: string) => `${name}: string | null`,
+    (name: string) => `{ ${name} }: { readonly ${name}?: string }`,
+  ),
+);
 
-const boundaryPrefixArb = fc.constantFrom("decode", "from", "normalize", "parse", "read", "resolve");
+const boundaryPrefixArb = fc.constantFrom(
+  "decode",
+  "from",
+  "normalize",
+  "parse",
+  "read",
+  "resolve",
+);
 const testFunctionArb = fc.constantFrom("it", "test");
 const propertyPatternArb = fc.constantFrom(
   "fc.assert(fc.property(fc.integer(), (value) => { expect(value).toBe(value); }));",
@@ -95,7 +105,9 @@ describe("property: exported constructors", () => {
           `const ${sample.name} = ${sample.expression};\n` +
           `export const parse${sample.name} = (input: unknown) => input;`;
         expect(lintOne(reexport, "agent-code-guard/no-exported-brand-constructor")).toHaveLength(1);
-        expect(lintOne(localBoundary, "agent-code-guard/no-exported-brand-constructor")).toHaveLength(0);
+        expect(
+          lintOne(localBoundary, "agent-code-guard/no-exported-brand-constructor"),
+        ).toHaveLength(0);
       }),
       { numRuns: 40 },
     );
@@ -116,10 +128,15 @@ describe("property: conditional chaining", () => {
 
   it("explicit boundary parser/normalizer names may accept optional/nullish parameters", () => {
     fc.assert(
-      fc.property(boundaryPrefixArb, typeNameArb, nullableParameterArb, (prefix, suffix, [paramName, renderParam]) => {
-        const code = `function ${prefix}${suffix}(${renderParam(paramName)}) { return ${suffix}(${paramName}); }`;
-        expect(lintOne(code, "agent-code-guard/no-conditional-chaining")).toHaveLength(0);
-      }),
+      fc.property(
+        boundaryPrefixArb,
+        typeNameArb,
+        nullableParameterArb,
+        (prefix, suffix, [paramName, renderParam]) => {
+          const code = `function ${prefix}${suffix}(${renderParam(paramName)}) { return ${suffix}(${paramName}); }`;
+          expect(lintOne(code, "agent-code-guard/no-conditional-chaining")).toHaveLength(0);
+        },
+      ),
       { numRuns: 60 },
     );
   });
@@ -128,14 +145,19 @@ describe("property: conditional chaining", () => {
 describe("property: Effect error coalescing", () => {
   it("Effect error coalescing fires across broad error handlers", () => {
     fc.assert(
-      fc.property(typeNameArb, fc.constantFrom("mapError", "catchAll", "catchAllCause"), (name, method) => {
-        const errorName = `${name}Error`;
-        const body = method === "mapError"
-          ? `new ${errorName}({ cause })`
-          : `Effect.fail(new ${errorName}({ cause }))`;
-        const code = `const run = program.pipe(Effect.${method}((cause) => ${body}));`;
-        expect(lintOne(code, "agent-code-guard/no-effect-error-coalescing")).toHaveLength(1);
-      }),
+      fc.property(
+        typeNameArb,
+        fc.constantFrom("mapError", "catchAll", "catchAllCause"),
+        (name, method) => {
+          const errorName = `${name}Error`;
+          const body =
+            method === "mapError"
+              ? `new ${errorName}({ cause })`
+              : `Effect.fail(new ${errorName}({ cause }))`;
+          const code = `const run = program.pipe(Effect.${method}((cause) => ${body}));`;
+          expect(lintOne(code, "agent-code-guard/no-effect-error-coalescing")).toHaveLength(1);
+        },
+      ),
       { numRuns: 60 },
     );
   });
@@ -159,7 +181,9 @@ describe("property: manual brand constructors", () => {
         const helper = `${prefix}${name}`;
         const constructor = `const ${helper} = (value: string): ${name} => value as ${name};`;
         const neutral = `const project = (value: string): ${name} => value as ${name};`;
-        expect(lintOne(constructor, "agent-code-guard/no-manual-brand-constructor")).toHaveLength(1);
+        expect(lintOne(constructor, "agent-code-guard/no-manual-brand-constructor")).toHaveLength(
+          1,
+        );
         expect(lintOne(neutral, "agent-code-guard/no-manual-brand-constructor")).toHaveLength(0);
       }),
       { numRuns: 40 },
@@ -203,8 +227,9 @@ describe("property: example-only tests", () => {
           "// @agent-code-guard/regression-only: reproduces a historical parser crash\n" +
           exampleTests(testFn, 3).join("\n");
         expect(lintTestFile(single, "agent-code-guard/no-example-only-tests")).toHaveLength(0);
-        expect(lintTestFile(regressionOnly, "agent-code-guard/no-example-only-tests"))
-          .toHaveLength(0);
+        expect(lintTestFile(regressionOnly, "agent-code-guard/no-example-only-tests")).toHaveLength(
+          0,
+        );
       }),
       { numRuns: 10 },
     );
@@ -212,8 +237,9 @@ describe("property: example-only tests", () => {
 });
 
 function exampleTests(testFn: string, count: number): readonly string[] {
-  return Array.from(
-    { length: count },
-    (_, index) => `${testFn}('case ${index}', () => { expect(${index}).toBe(${index}); });`,
-  );
+  const tests: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    tests.push(`${testFn}('case ${index}', () => { expect(${index}).toBe(${index}); });`);
+  }
+  return tests;
 }

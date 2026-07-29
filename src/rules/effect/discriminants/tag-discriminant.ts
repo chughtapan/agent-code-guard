@@ -1,11 +1,8 @@
 import type { TSESTree } from "@typescript-eslint/utils";
-import * as ts from "typescript";
+import type * as ts from "typescript";
 import { createRule } from "../../utils/create-rule.js";
 import { requireServices } from "../../utils/typed-linter/index.js";
-import {
-  resolveStringLiteralValue,
-  getTagAccess,
-} from "../../utils/ast-refinement/index.js";
+import { resolveStringLiteralValue, getTagAccess } from "../../utils/ast-refinement/index.js";
 import { EFFECT_TAGGED_TYPE_PATTERN } from "../effect-namespaces.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
@@ -22,7 +19,9 @@ interface TagComparison {
 }
 
 function tagComparison(node: TSESTree.BinaryExpression): TagComparison | null {
-  if (!EQUALITY_OPERATORS.has(node.operator)) return null;
+  if (!EQUALITY_OPERATORS.has(node.operator)) {
+    return null;
+  }
   const leftTag = getTagAccess(node.left);
   const rightTag = getTagAccess(node.right);
   if (leftTag !== null && rightTag === null) {
@@ -36,26 +35,36 @@ function tagComparison(node: TSESTree.BinaryExpression): TagComparison | null {
 
 function reportableTagComparison(node: TSESTree.BinaryExpression): TagComparison | null {
   const comparison = tagComparison(node);
-  if (comparison === null) return null;
-  if (resolveStringLiteral(comparison.comparedValue) === null) return null;
+  if (comparison === null) {
+    return null;
+  }
+  if (resolveStringLiteral(comparison.comparedValue) === null) {
+    return null;
+  }
   return comparison;
 }
 
 function typeMentionsEffectTagged(type: ts.Type, checker: ts.TypeChecker): boolean {
   const typeString = checker.typeToString(type);
-  if (EFFECT_TAGGED_TYPE_PATTERN.test(typeString)) return true;
+  if (EFFECT_TAGGED_TYPE_PATTERN.test(typeString)) {
+    return true;
+  }
   if (type.isUnion()) {
     return type.types.some((member) => typeMentionsEffectTagged(member, checker));
   }
   return false;
 }
 
-export default createRule({
+/**
+ * Enforces the `tag-discriminant` Agent Code Guard rule.
+ */
+export const tagDiscriminant = createRule({
   name: "tag-discriminant",
   meta: {
     type: "problem",
     docs: {
-      description: "Discriminated unions match on the named tag, not on shape; shape-matching breaks when tags overlap.",
+      description:
+        "Discriminated unions match on the named tag, not on shape; shape-matching breaks when tags overlap.",
       url: PRINCIPLE_URL.EXHAUSTIVENESS,
     },
     messages: {
@@ -69,13 +78,17 @@ export default createRule({
   defaultOptions: [],
   create(context) {
     const maybeServices = requireServices(context);
-    if (maybeServices === null) return {};
+    if (maybeServices === null) {
+      return {};
+    }
     const services = maybeServices;
     const checker = services.program.getTypeChecker();
 
     function receiverIsEffectTagged(receiver: TSESTree.Node): boolean {
       const tsNode = services.esTreeNodeToTSNodeMap.get(receiver);
-      if (!tsNode) return false;
+      if (!tsNode) {
+        return false;
+      }
       const type = checker.getTypeAtLocation(tsNode);
       return typeMentionsEffectTagged(type, checker);
     }
@@ -87,18 +100,28 @@ export default createRule({
     return {
       BinaryExpression(node) {
         const comparison = reportableTagComparison(node);
-        if (comparison === null) return;
-        if (!receiverIsEffectTagged(comparison.receiver)) return;
+        if (comparison === null) {
+          return;
+        }
+        if (!receiverIsEffectTagged(comparison.receiver)) {
+          return;
+        }
         report(node);
       },
       SwitchStatement(node) {
         const discriminant = getTagAccess(node.discriminant);
-        if (discriminant === null) return;
+        if (discriminant === null) {
+          return;
+        }
         const hasStringCase = node.cases.some(
           (caseNode) => resolveStringLiteral(caseNode.test) !== null,
         );
-        if (!hasStringCase) return;
-        if (!receiverIsEffectTagged(discriminant.object)) return;
+        if (!hasStringCase) {
+          return;
+        }
+        if (!receiverIsEffectTagged(discriminant.object)) {
+          return;
+        }
         report(node);
       },
     };

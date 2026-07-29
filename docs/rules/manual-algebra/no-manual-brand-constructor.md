@@ -9,8 +9,8 @@ any input of the underlying type. Branding should happen at a boundary:
 through `Brand.nominal(...)`, `Schema.brand(...)`, or a parser/decoder that
 validates the input before constructing the branded value.
 
-This rule is advisory in the recommended preset (`warn`) so projects can
-migrate older nominal helpers incrementally.
+This rule is blocking in both main presets; migrate older nominal helpers
+before adopting the preset.
 
 ## Before (flagged)
 

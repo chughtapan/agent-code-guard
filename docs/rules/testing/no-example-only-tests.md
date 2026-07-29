@@ -54,7 +54,7 @@ The `regression-only:` comment is a written acknowledgment.
 ## Options
 
 ```js
-"agent-code-guard/no-example-only-tests": ["warn", {
+"agent-code-guard/no-example-only-tests": ["error", {
   minExamplesBeforeWarning: 4,
   propertyCallNames: ["fc.property", "fc.asyncProperty", "it.prop", "test.prop"],
   regressionOnlyCommentPattern: "@agent-code-guard/regression-only:",

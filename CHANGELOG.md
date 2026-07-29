@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.0.16] - 2026-07-29
+
+### Breaking
+
+- **Google TypeScript Style is now the blocking minimum.** `recommended` and
+  `strict` bundle TypeScript-ESLint, Import-X, directive-comment enforcement,
+  JSDoc, SonarJS, and all Agent Code Guard rules. Every enabled diagnostic is
+  an error; rules that previously shipped as warnings now block lint.
+- **Main presets are type-aware.** They now provide the TypeScript parser with
+  `projectService: true`. Linted TypeScript files must belong to a
+  `tsconfig.json`, and the default quality script must run `tsc`.
+- **The package default export is removed.** Migrate
+  `import guard from "eslint-plugin-agent-code-guard"` to
+  `import { plugin as guard } from "eslint-plugin-agent-code-guard"`.
+- **Export documentation is part of both main presets.** Every top-level
+  exported type, interface, enum, class, function, and variable now requires
+  substantive JSDoc. The standalone `documentation` preset remains available
+  for composition.
+
+### Added
+
+- Maintained Google-style rule mappings across ESLint, TypeScript-ESLint,
+  Import-X, and `@eslint-community/eslint-plugin-eslint-comments`.
+- Custom semantic rules for nullish aliases, optional syntax, enum boolean
+  coercion, TSX component naming, static `this`, private identifiers,
+  redundant `public`, parameter defaults/destructuring, numeric coercion, prototype mutation,
+  descriptor-defined accessors, and assertion rationales.
+- `require-typescript-quality-gate`, which validates that the default quality
+  script runs type checking and that `tsconfig.json` explicitly enables the
+  required compiler-option floor.
+- A clause-by-clause
+  [Google TypeScript Style coverage ledger](docs/google-typescript-style-coverage.md)
+  that identifies exact rules, compiler enforcement, formatter exclusions,
+  and honest review-only boundaries.
+- CI now builds first, then runs `pnpm lint` and the full test suite.
+
+### Changed
+
+- The repository migrated to named exports, type-aware self-lint, explicit
+  compiler safety options, and Google-style JSDoc on top-level exports.
+- Formatter concerns remain deliberately separate: no formatting rule,
+  formatter dependency, formatting script, or CI formatting gate was added.
+
+### Fixed
+
+- Quality-gate rules now prove that `tsc`, ESLint, and Knip actually execute:
+  delegated scripts are followed safely, command impersonation and shell
+  masking and ESLint no-op or non-project targets are rejected, forwarded
+  TypeScript project overrides cannot evade the configured compiler floor, and
+  package or extended-config changes invalidate cached results.
+- Google-style semantic rules now preserve binding and return scope when
+  classifying TSX components, resolve aliased React imports and JSX-producing
+  mapped returns, respect shadowed globals, and cover aliased, destructured, or
+  computed-constant numeric, prototype, and descriptor APIs. Generated setup
+  also covers `.ts`, `.tsx`, `.mts`, and `.cts` files.
+
 ## [0.0.15] - 2026-07-26
 
 ### Fixed
@@ -9,11 +65,6 @@
 ### Changed
 
 - **`docs/rules/manual-algebra/manual-option.md` and `manual-result.md` state the detection boundary.** Both now carry a "Consuming an X is never flagged" section. Worth knowing why: `manual-option.md`'s own **After (preferred)** example calls `Option.some`, `Option.none`, and `Option.match`, and escaped the old detector only because it splits them across two functions — `findSession` carried the `some`/`none` pair without a helper signal, `renderSession` carried `match` with keys normalizing to `onsome`/`onnone`. The same logic written as one function reported. The documentation was safe by accident.
-
-### For contributors
-
-- `pnpm test:all` now runs 908 tests across 61 files (up from 903). The four new cases cover consuming `Option` directly, through an aliased namespace import, alongside `Either`, and consuming `Either` in `manual-result`.
-- The fix is ablated in both directions: reverting `detection/surface.ts` alone fails exactly those four and passes the other 49 in that pair of files.
 
 ## [0.0.14] - 2026-05-16
 

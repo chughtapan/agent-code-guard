@@ -14,25 +14,54 @@ pnpm add -D eslint-plugin-agent-code-guard
 Drop this into `eslint.config.js`:
 
 ```js
-import guard from "eslint-plugin-agent-code-guard";
-import tsParser from "@typescript-eslint/parser";
+import { plugin as guard } from "eslint-plugin-agent-code-guard";
 
 export default [
   {
-    files: ["src/**/*.ts"],
-    languageOptions: { parser: tsParser },
+    files: ["**/*.{ts,tsx,mts,cts}"],
     ...guard.configs.recommended,
   },
 ];
 ```
 
-Then run `eslint .` against any TypeScript file and the agent-code-guard syntax floor lights up. `@typescript-eslint/parser` is the only peer the syntax floor needs.
+Then run your default lint script. The preset bundles its TypeScript parser,
+maintained rule plugins, and type-aware `projectService` setup; the project
+must have a `tsconfig.json`, and its lint script must run `tsc`, `eslint .`,
+and Knip.
 
 ## What it catches
 
 Your coding agent is miscalibrated. It was trained on human-written TypeScript — decades of it — written under one constraint that does not apply to it: typing was expensive for humans. That is why its training corpus is saturated with `throw new Error("bad")`, `as Record<string, unknown>`, `try { ... } catch {}`, `Promise<T>` return types, `process.env.FOO!`, raw SQL strings, and `vi.mock` inside integration tests. Those were the compromises humans made when keyboard time was scarce. An agent does not pay the scarcity; it inherits the patterns anyway.
 
-This plugin is the floor. The `recommended` preset bundles the agent-code-guard rules with the full SonarJS recommended set so the standard floor catches both AI miscalibration patterns and the broader bug-and-security floor SonarJS already covers (hardcoded secrets, redundant conditions, unused collections, ReDoS-prone regex, eval, etc.). The `strict` preset adds tight complexity budgets on top. An `integrationTests` preset forbids mocks in files that are supposed to be integration tests.
+This plugin is the floor. The `recommended` preset makes the
+[Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html)
+the minimum, layers stricter Agent Code Guard doctrine over it, and bundles the
+maintained TypeScript-ESLint, import, directive-comment, JSDoc, and SonarJS rule
+sets needed to enforce that contract. Every enabled rule is an error. The
+`strict` preset adds tight complexity budgets on top. An `integrationTests`
+preset forbids mocks in files that are supposed to be integration tests.
+
+The clause-by-clause mapping—including the few honest review-only boundaries—is
+in the [Google TypeScript Style coverage ledger](docs/google-typescript-style-coverage.md).
+Formatting is deliberately absent from every preset and CI gate; use Oxfmt or
+another formatter independently.
+
+### Google TypeScript semantics
+
+| Rule | Catches |
+|---|---|
+| `component-function-naming` | UpperCamelCase TSX components and lowerCamelCase ordinary functions |
+| `no-nullish-type-aliases` | Type aliases that spread `null` or `undefined` through layers |
+| `prefer-optional-over-undefined-union` | Fields and parameters spelled as `T \| undefined` instead of `?` |
+| `no-enum-boolean-coercion` | Explicit or implicit boolean coercion of enum values |
+| `no-static-this` | Dynamic `this` dispatch from static class members |
+| `no-private-identifiers` | JavaScript `#private` fields and methods |
+| `no-redundant-public` | Explicit `public` where TypeScript already defaults to public |
+| `no-unsafe-parameter-defaults` | Effectful defaults, non-empty destructuring defaults, and deep/computed parameter destructuring |
+| `no-unsafe-numeric-coercion` | Unary `+`, `parseFloat`, and decimal or radix-less `parseInt` |
+| `no-prototype-manipulation` | Prototype assignment and mutation APIs |
+| `no-define-property-accessors` | Descriptor accessors that hide getters/setters from TypeScript |
+| `require-assertion-rationale` | Type and non-null assertions without an adjacent safety rationale |
 
 ### Async flow
 
@@ -42,7 +71,7 @@ This plugin is the floor. The `recommended` preset bundles the agent-code-guard 
 | [`promise-type`](docs/rules/async-flow/promise-type.md) | `Promise<T>` return types that erase the error channel |
 | [`then-chain`](docs/rules/async-flow/then-chain.md) | `.then(...)` chains that hide error propagation |
 | [`bare-catch`](docs/rules/async-flow/bare-catch.md) | `try { ... } catch {}` that swallows the error silently |
-| [`no-conditional-chaining`](docs/rules/async-flow/no-conditional-chaining.md) | Optional/nullish parameters accepted outside explicit parser/normalizer boundaries (warn) |
+| [`no-conditional-chaining`](docs/rules/async-flow/no-conditional-chaining.md) | Optional/nullish parameters accepted outside explicit parser/normalizer boundaries |
 | [`no-unbounded-concurrency`](docs/rules/async-flow/no-unbounded-concurrency.md) | `Effect.*(..., { concurrency: "unbounded" })` fan-out with no visible bound |
 
 ### Effect
@@ -52,8 +81,8 @@ This plugin is the floor. The `recommended` preset bundles the agent-code-guard 
 | [`effect-promise`](docs/rules/effect/effect-promise.md) | `Effect.promise(...)` calls that turn rejections into defects |
 | [`effect-error-erasure`](docs/rules/effect/effect-error-erasure.md) | `Effect.fail(new Error(...))` and similar generic error wrapping inside the Effect channel |
 | [`either-discriminant`](docs/rules/effect/either-discriminant.md) | `Either.isLeft(...)`, `Either.isRight(...)`, and `_tag === "Left" / "Right"` |
-| [`tag-discriminant`](docs/rules/effect/tag-discriminant.md) | Manual `_tag` checks on Effect-flavored tagged unions (`Effect`, `Either`, `Option`, `Cause`, `Exit`, `Data.TaggedError`, …); type-aware, needs `parserOptions.project` |
-| [`no-effect-error-coalescing`](docs/rules/effect/no-effect-error-coalescing.md) | `Effect.mapError` / `catchAll` wrappers that collapse typed error variants into one broad error (warn) |
+| [`tag-discriminant`](docs/rules/effect/tag-discriminant.md) | Manual `_tag` checks on Effect-flavored tagged unions (`Effect`, `Either`, `Option`, `Cause`, `Exit`, `Data.TaggedError`, …); type-aware through the main presets |
+| [`no-effect-error-coalescing`](docs/rules/effect/no-effect-error-coalescing.md) | `Effect.mapError` / `catchAll` wrappers that collapse typed error variants into one broad error |
 
 ### Manual algebra
 
@@ -62,9 +91,9 @@ This plugin is the floor. The `recommended` preset bundles the agent-code-guard 
 | [`manual-result`](docs/rules/manual-algebra/manual-result.md) | Reusable hand-rolled `Result` / `Either` algebras instead of `Either` / `Effect` |
 | [`manual-option`](docs/rules/manual-algebra/manual-option.md) | Reusable hand-rolled `Option` / `Maybe` algebras instead of `Option` |
 | [`manual-tagged-error`](docs/rules/manual-algebra/manual-tagged-error.md) | Hand-rolled tagged error classes and error unions that should use `Data.TaggedError(...)` |
-| [`manual-brand`](docs/rules/manual-algebra/manual-brand.md) | Hand-rolled nominal brands that should use `Brand.nominal(...)` or `Schema.brand(...)` (warn) |
-| [`no-manual-brand-constructor`](docs/rules/manual-algebra/no-manual-brand-constructor.md) | Cast helpers such as `asUserId` / `makeUserId` that manually construct branded values (warn) |
-| [`no-exported-brand-constructor`](docs/rules/manual-algebra/no-exported-brand-constructor.md) | Exported brand or schema constructors instead of local constructors plus exported boundary functions/types (warn) |
+| [`manual-brand`](docs/rules/manual-algebra/manual-brand.md) | Hand-rolled nominal brands that should use `Brand.nominal(...)` or `Schema.brand(...)` |
+| [`no-manual-brand-constructor`](docs/rules/manual-algebra/no-manual-brand-constructor.md) | Cast helpers such as `asUserId` / `makeUserId` that manually construct branded values |
+| [`no-exported-brand-constructor`](docs/rules/manual-algebra/no-exported-brand-constructor.md) | Exported brand or schema constructors instead of local constructors plus exported boundary functions/types |
 | [`no-manual-enum-cast`](docs/rules/manual-algebra/no-manual-enum-cast.md) | `as "a" \| "b"` string-union casts that should be generated unions |
 
 ### Safety
@@ -83,9 +112,9 @@ This plugin is the floor. The `recommended` preset bundles the agent-code-guard 
 | Rule | Catches |
 |---|---|
 | [`no-test-skip-only`](docs/rules/testing/no-test-skip-only.md) | `.skip` / `.only` / `xit` / `xdescribe` in committed test files |
-| [`no-example-only-tests`](docs/rules/testing/no-example-only-tests.md) | Test scopes with multiple examples but no property/generative invariant test (warn) |
-| [`no-coverage-threshold-gate`](docs/rules/testing/no-coverage-threshold-gate.md) | `coverageThreshold` gates in jest/vitest/vite configs (warn) |
-| [`no-hardcoded-assertion-literals`](docs/rules/testing/no-hardcoded-assertion-literals.md) | Hardcoded string/number literals in test assertions (warn) |
+| [`no-example-only-tests`](docs/rules/testing/no-example-only-tests.md) | Test scopes with multiple examples but no property/generative invariant test |
+| [`no-coverage-threshold-gate`](docs/rules/testing/no-coverage-threshold-gate.md) | `coverageThreshold` gates in jest/vitest/vite configs |
+| [`no-hardcoded-assertion-literals`](docs/rules/testing/no-hardcoded-assertion-literals.md) | Hardcoded string/number literals in test assertions |
 | [`no-vitest-mocks`](docs/rules/testing/no-vitest-mocks.md) | `vi.mock(...)` inside files that match the integration-tests glob |
 
 ### Tooling
@@ -93,22 +122,19 @@ This plugin is the floor. The `recommended` preset bundles the agent-code-guard 
 | Rule | Catches |
 |---|---|
 | [`require-knip-in-lint`](docs/rules/tooling/require-knip-in-lint.md) | `package.json` default quality scripts that omit Knip |
+| `require-typescript-quality-gate` | Default quality scripts that omit type checking, omit project-wide `eslint .`, or weaken the required compiler-option floor |
 
 ### Documentation
 
-JSDoc lint comes from bundled [`eslint-plugin-jsdoc`](https://github.com/gajus/eslint-plugin-jsdoc); consumers do not install it separately. `recommended` and `strict` turn on the logical and contents rule sets — these validate JSDoc *content* (`check-types`, `valid-types`, `no-types`, `informative-docs`, etc.) and only fire if JSDoc is present and broken. `strict` additionally enables the stylistic rules. `jsdoc/no-undefined-types` is dropped because TypeScript resolves type names; pairing it with `no-types: error` would emit duplicate diagnostics on every `@param {T}` line.
-
-A separate `documentation` preset enforces that JSDoc must exist on every exported declaration — every interface, type alias, enum, function, class, and exported `const` needs a doc comment, with `@param`, `@property`, and `@returns` all filled in. Because forcing JSDoc on every internal helper is noise, this preset is meant to be scoped to your folder barrels:
-
-```js
-{
-  files: ["src/**/index.ts", "src/index.ts"],
-  plugins: guard.configs.documentation.plugins,
-  rules: guard.configs.documentation.rules,
-}
-```
-
-That keeps the public boundary fully documented while leaving file-internal code free to skip JSDoc.
+JSDoc lint comes from bundled
+[`eslint-plugin-jsdoc`](https://github.com/gajus/eslint-plugin-jsdoc);
+consumers do not install it separately. `recommended` and `strict` require
+JSDoc on every top-level exported interface, type alias, enum, function, class,
+and variable, including parameter, property, return, and description content.
+Type annotations in JSDoc remain forbidden because TypeScript already supplies
+the types. The standalone `documentation` preset exposes that same contract for
+special composition needs. No JSDoc indentation, alignment, tag-line, or other
+formatter rule is enabled.
 
 Rule IDs in your config are namespaced as `agent-code-guard/<rule>`. Each rule ships a Before/After doc at the link above and locally at `node_modules/eslint-plugin-agent-code-guard/docs/rules/<family>/<rule-name>.md`.
 
@@ -120,75 +146,58 @@ This plugin uses **ESLint flat config** (required; ESLint ≥ 9). If you have a 
 
 ```js
 // eslint.config.js
-import guard from "eslint-plugin-agent-code-guard";
-import tsParser from "@typescript-eslint/parser";
+import { plugin as guard } from "eslint-plugin-agent-code-guard";
 
 export default [
-  // Application source - prod rules, SonarJS, and strict complexity budgets
+  // Application source: typed Google Style, ACG doctrine, and complexity.
   {
-    files: ["src/**/*.ts"],
+    files: ["**/*.{ts,tsx,mts,cts}"],
     ignores: ["**/*.test.ts", "**/*.spec.ts"],
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
-    },
-    plugins: guard.configs.strict.plugins,
-    settings: guard.configs.strict.settings,
-    rules: guard.configs.strict.rules,
+    ...guard.configs.strict,
   },
 
-  // Test files - same complexity bar, with test-specific guard rules
+  // Test files: the same blocking contract.
   {
     files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts", "**/test-support/**/*.ts"],
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
-    },
-    plugins: guard.configs.strict.plugins,
-    settings: guard.configs.strict.settings,
+    ...guard.configs.strict,
     rules: {
       ...guard.configs.strict.rules,
       "agent-code-guard/no-test-skip-only": "error",
-      "agent-code-guard/no-hardcoded-assertion-literals": "warn",
+      "agent-code-guard/no-hardcoded-assertion-literals": "error",
     },
   },
 
-  // Config files — coverage-gate lint (warn)
-  {
-    files: ["**/jest.config.*", "**/vitest.config.*", "**/vite.config.*"],
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
-    },
-    plugins: { "agent-code-guard": guard },
-    rules: {
-      "agent-code-guard/no-coverage-threshold-gate": "warn",
-    },
-  },
-
-  // Integration tests: no mocks allowed
+  // Matching flat-config blocks merge, so integration tests also forbid mocks.
   {
     files: ["**/*.integration.test.ts"],
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
-    },
-    plugins: { "agent-code-guard": guard },
-    rules: guard.configs.integrationTests.rules,
+    ...guard.configs.integrationTests,
   },
 ];
 ```
 
-Peer dependencies: `eslint` ≥ 9, `typescript` ≥ 5. SonarJS and `eslint-plugin-jsdoc` are runtime dependencies of this package, so users of `guard.configs.recommended` / `strict` / `documentation` do not install them separately. Knip is also bundled and exposed as the `agent-code-guard-knip` bin, so downstream repos can put `agent-code-guard-knip` (or plain `knip` if they have it installed directly) in their lint scripts and the `require-knip-in-lint` rule will accept either.
+Peer dependencies are `eslint` ≥ 9 and TypeScript `>=5 <6.1.0`. `typescript-eslint`,
+SonarJS, JSDoc, Import-X, and ESLint directive-comment enforcement are runtime
+dependencies of this package, so preset consumers do not install them
+separately. Knip is bundled as the `agent-code-guard-knip` bin.
 
 ## Presets
 
 The import alias (e.g., `guard` in the example above) is your choice; adjust the `<import>.configs.*` path accordingly. Access presets via your import identifier:
 
-- `<import>.configs.recommended` — application source. Flat-config fragment with `plugins`, `settings`, and `rules`. Bundles the agent-code-guard rules with the full SonarJS recommended set (~270 SonarJS rules covering bug catches, security, regex correctness). Excludes `no-vitest-mocks` (lives in the integration-tests preset).
-- `<import>.configs.strict` — flat-config fragment with `plugins`, `settings`, and `rules`. `recommended` plus strict complexity budgets (`complexity`, `max-depth`, `max-lines`, `max-lines-per-function`, `max-statements`, cognitive complexity, nested control flow, and related limits).
+- `<import>.configs.recommended` — type-aware application source. Flat-config fragment with bundled parser, `projectService`, plugins, settings, and blocking rules. Enforces Google TypeScript Style, stricter Agent Code Guard rules, export JSDoc, and SonarJS.
+- `<import>.configs.strict` — `recommended` plus strict complexity budgets (`complexity`, `max-depth`, `max-lines`, `max-lines-per-function`, `max-statements`, cognitive complexity, nested control flow, and related limits).
 - `<import>.configs.integrationTests.rules` — integration-test glob only. Enforces `no-vitest-mocks` so integration tests actually hit real dependencies.
-- `<import>.configs.documentation` — barrel files only. Flat-config fragment with `plugins` and `rules`. Enforces `jsdoc/require-jsdoc` plus the full `require-*` family (param descriptions, property descriptions, returns) on every exported declaration. Apply to `**/index.ts`.
+- `<import>.configs.documentation` — composable export-documentation fragment. The same full top-level export JSDoc contract already appears in both main presets.
+
+### Migrating from 0.0.15
+
+The package no longer has a default export. Replace
+`import guard from "eslint-plugin-agent-code-guard"` with
+`import { plugin as guard } from "eslint-plugin-agent-code-guard"`. Main
+presets now include the parser and typed language options, so remove manual
+parser wiring and spread the preset directly. Typed lint requires a
+`tsconfig.json`, and the default lint script must include `tsc`, `eslint .`,
+and Knip.
 
 ## Disabling a rule
 
@@ -236,6 +245,7 @@ pnpm add -D eslint-plugin-agent-code-guard@latest
 ```
 pnpm install
 pnpm build
+pnpm lint
 pnpm test
 ```
 

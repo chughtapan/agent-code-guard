@@ -2,10 +2,10 @@
  * @file Effect runtime sub-family registry.
  */
 
-import effectForeachRequiresConcurrency from "./effect-foreach-requires-concurrency.js";
-import noPromiseAllInEffect from "./no-promise-all-in-effect.js";
-import preferConfigRedacted from "./prefer-config-redacted.js";
-import preferEffectPlatform from "./prefer-effect-platform.js";
+import { effectForeachRequiresConcurrency } from "./effect-foreach-requires-concurrency.js";
+import { noPromiseAllInEffect } from "./no-promise-all-in-effect.js";
+import { preferConfigRedacted } from "./prefer-config-redacted.js";
+import { preferEffectPlatform } from "./prefer-effect-platform.js";
 
 /**
  * Effect runtime rules. Catches `Effect.forEach` without an explicit

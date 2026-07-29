@@ -3,13 +3,13 @@
  * plugin entry; each member rule lives in a sibling file.
  */
 
-import asUnknownAs from "./as-unknown-as.js";
-import maxNonTrivialClassesPerFile from "./max-non-trivial-classes-per-file.js";
-import noEnvNonnullAssert from "./no-env-nonnull-assert.js";
-import noProcessEnvAtRuntime from "./no-process-env-at-runtime.js";
-import noRawSql from "./no-raw-sql.js";
-import noRawThrowNewError from "./no-raw-throw-new-error.js";
-import recordCast from "./record-cast.js";
+import { asUnknownAs } from "./as-unknown-as.js";
+import { maxNonTrivialClassesPerFile } from "./max-non-trivial-classes-per-file.js";
+import { noEnvNonnullAssert } from "./no-env-nonnull-assert.js";
+import { noProcessEnvAtRuntime } from "./no-process-env-at-runtime.js";
+import { noRawSql } from "./no-raw-sql.js";
+import { noRawThrowNewError } from "./no-raw-throw-new-error.js";
+import { recordCast } from "./record-cast.js";
 
 /**
  * Safety rule family. Catches unsafe casts, raw-SQL strings, unguarded

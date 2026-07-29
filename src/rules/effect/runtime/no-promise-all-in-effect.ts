@@ -1,5 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
@@ -10,22 +9,38 @@ function importsEffect(source: string): boolean {
 }
 
 function promiseStaticName(node: TSESTree.CallExpression): string | null {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return null;
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return null;
+  }
   const callee = node.callee;
-  if (callee.computed) return null;
-  if (callee.object.type !== AST_NODE_TYPES.Identifier) return null;
-  if (callee.object.name !== "Promise") return null;
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return null;
-  if (!PROMISE_STATICS.has(callee.property.name)) return null;
+  if (callee.computed) {
+    return null;
+  }
+  if (callee.object.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (callee.object.name !== "Promise") {
+    return null;
+  }
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (!PROMISE_STATICS.has(callee.property.name)) {
+    return null;
+  }
   return callee.property.name;
 }
 
-export default createRule({
+/**
+ * Enforces the `no-promise-all-in-effect` Agent Code Guard rule.
+ */
+export const noPromiseAllInEffect = createRule({
   name: "no-promise-all-in-effect",
   meta: {
     type: "problem",
     docs: {
-      description: "`Promise.all` on Effects erases the typed error channel; use `Effect.all` so failures stay tagged.",
+      description:
+        "`Promise.all` on Effects erases the typed error channel; use `Effect.all` so failures stay tagged.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -39,7 +54,7 @@ export default createRule({
   defaultOptions: [],
   create(context) {
     let foundEffectImport = false;
-    const promiseCalls: { node: TSESTree.CallExpression; name: string }[] = [];
+    const promiseCalls: Array<{ node: TSESTree.CallExpression; name: string }> = [];
     return {
       ImportDeclaration(node) {
         if (typeof node.source.value === "string" && importsEffect(node.source.value)) {
@@ -48,11 +63,15 @@ export default createRule({
       },
       CallExpression(node) {
         const name = promiseStaticName(node);
-        if (name === null) return;
+        if (name === null) {
+          return;
+        }
         promiseCalls.push({ node, name });
       },
       "Program:exit"() {
-        if (!foundEffectImport) return;
+        if (!foundEffectImport) {
+          return;
+        }
         for (const { node, name } of promiseCalls) {
           context.report({
             node,

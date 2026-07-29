@@ -1,6 +1,7 @@
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
-import rule from "./manual-result.js";
+import { manualResult as rule } from "./manual-result.js";
+import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;
@@ -9,7 +10,7 @@ RuleTester.describe = describe;
 
 const ruleTester = new RuleTester({
   languageOptions: {
-    parser: require("@typescript-eslint/parser"),
+    parser: tsParser,
     parserOptions: { ecmaVersion: 2022, sourceType: "module" },
   },
 });
@@ -23,7 +24,7 @@ ruleTester.run("manual-result", rule, {
       code: 'type SessionState = { readonly _tag: "Left"; readonly message: string } | { readonly _tag: "Right"; readonly value: string };',
     },
     {
-      code: 'const outcome = { ok: true as const, value };',
+      code: "const outcome = { ok: true as const, value };",
     },
     {
       code: "const status = { ok: () => true, error: () => false };",
@@ -32,7 +33,7 @@ ruleTester.run("manual-result", rule, {
       code: "const Result = 1;",
     },
     {
-      code: 'const result = Either.match({ onLeft: (left) => left, onRight: (right) => right })(either);',
+      code: "const result = Either.match({ onLeft: (left) => left, onRight: (right) => right })(either);",
     },
     {
       code: "function project<T>(value: T) { return { ok: true as const, value }; }",

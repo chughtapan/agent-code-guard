@@ -1,23 +1,38 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 function isEffectForEachCall(node: TSESTree.CallExpression): boolean {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return false;
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return false;
+  }
   const callee = node.callee;
-  if (callee.computed) return false;
-  if (callee.object.type !== AST_NODE_TYPES.Identifier) return false;
-  if (callee.object.name !== "Effect") return false;
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return false;
+  if (callee.computed) {
+    return false;
+  }
+  if (callee.object.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
+  if (callee.object.name !== "Effect") {
+    return false;
+  }
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
   return callee.property.name === "forEach";
 }
 
 function objectHasConcurrencyKey(node: TSESTree.Node): boolean {
-  if (node.type !== AST_NODE_TYPES.ObjectExpression) return false;
+  if (node.type !== AST_NODE_TYPES.ObjectExpression) {
+    return false;
+  }
   return node.properties.some((property) => {
-    if (property.type !== AST_NODE_TYPES.Property) return false;
-    if (property.computed) return false;
+    if (property.type !== AST_NODE_TYPES.Property) {
+      return false;
+    }
+    if (property.computed) {
+      return false;
+    }
     if (property.key.type === AST_NODE_TYPES.Identifier) {
       return property.key.name === "concurrency";
     }
@@ -28,17 +43,21 @@ function objectHasConcurrencyKey(node: TSESTree.Node): boolean {
   });
 }
 
-export default createRule({
+/**
+ * Enforces the `effect-foreach-requires-concurrency` Agent Code Guard rule.
+ */
+export const effectForeachRequiresConcurrency = createRule({
   name: "effect-foreach-requires-concurrency",
   meta: {
     type: "problem",
     docs: {
-      description: "`Effect.forEach` over a runtime-sized input has no concurrency budget; bound it explicitly via the `concurrency` option.",
+      description:
+        "`Effect.forEach` over a runtime-sized input has no concurrency budget; bound it explicitly via the `concurrency` option.",
       url: PRINCIPLE_URL.BUDGET_GATE,
     },
     messages: {
       missingConcurrency:
-        "Effect.forEach without an explicit concurrency option; pass { concurrency: <n> } (or `\"inherit\"` if you really mean it).",
+        'Effect.forEach without an explicit concurrency option; pass { concurrency: <n> } (or `"inherit"` if you really mean it).',
     },
     schema: [],
     fixable: undefined,
@@ -48,15 +67,23 @@ export default createRule({
   create(context) {
     return {
       CallExpression(node) {
-        if (!isEffectForEachCall(node)) return;
-        if (node.arguments.length < 2) return;
+        if (!isEffectForEachCall(node)) {
+          return;
+        }
+        if (node.arguments.length < 2) {
+          return;
+        }
         const optionsArg = node.arguments[2];
         if (optionsArg === undefined) {
           context.report({ node, messageId: "missingConcurrency" });
           return;
         }
-        if (optionsArg.type === AST_NODE_TYPES.SpreadElement) return;
-        if (objectHasConcurrencyKey(optionsArg)) return;
+        if (optionsArg.type === AST_NODE_TYPES.SpreadElement) {
+          return;
+        }
+        if (objectHasConcurrencyKey(optionsArg)) {
+          return;
+        }
         context.report({ node, messageId: "missingConcurrency" });
       },
     };

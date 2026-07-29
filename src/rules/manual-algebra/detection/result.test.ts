@@ -83,7 +83,9 @@ it("keeps result helper names clean when their evidence does not match", () => {
 
 it("keeps reusable result helpers clean when only unrelated branch evidence is present", () => {
   const match = parseSubject("const match = (input: { tch?: string }) => input.tch;");
-  const outcome = parseSubject("function Outcome(input: { tcome?: string }) { return input.tcome; }");
+  const outcome = parseSubject(
+    "function Outcome(input: { tcome?: string }) { return input.tcome; }",
+  );
 
   expect(findManualResultMatch(match)).toBeNull();
   expect(findManualResultMatch(outcome)).toBeNull();

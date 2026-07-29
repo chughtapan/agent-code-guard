@@ -62,4 +62,4 @@ If your org genuinely requires a coverage floor (regulated industry, SOC 2 contr
 coverageThreshold: { global: { lines: 80 } },
 ```
 
-Severity defaults to `warn` in the `recommended` preset — the signal is advisory, not a hard stop.
+The rule is an error in both main presets.

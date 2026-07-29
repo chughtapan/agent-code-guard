@@ -4,7 +4,8 @@
 
 **Why:** handwritten brand aliases drift fast and leave the brand as nothing more than a label — a `UserEmail` brand says "this string was once called an email," not "this string is an email." Prefer a **refined brand**: a `Schema.brand` applied on top of a refinement predicate, so the branded type carries a checked invariant. Fall back to `Brand.nominal` only for opaque IDs whose validity is decided elsewhere (e.g., the database).
 
-This rule is advisory in the recommended preset (`warn`), because a repo may still be migrating older nominal helpers.
+This rule is blocking in both main presets. Migrate older nominal helpers
+before adopting the preset.
 
 ## Before (flagged)
 

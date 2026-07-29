@@ -1,25 +1,40 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const FORK_METHODS = new Set(["fork"]);
 
 function effectForkCall(node: TSESTree.CallExpression): string | null {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return null;
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return null;
+  }
   const callee = node.callee;
-  if (callee.computed) return null;
-  if (callee.object.type !== AST_NODE_TYPES.Identifier) return null;
-  if (callee.object.name !== "Effect") return null;
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return null;
-  if (!FORK_METHODS.has(callee.property.name)) return null;
+  if (callee.computed) {
+    return null;
+  }
+  if (callee.object.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (callee.object.name !== "Effect") {
+    return null;
+  }
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (!FORK_METHODS.has(callee.property.name)) {
+    return null;
+  }
   return callee.property.name;
 }
 
 function isResultDiscarded(node: TSESTree.CallExpression): boolean {
   const parent = node.parent;
-  if (parent === undefined) return false;
-  if (parent.type === AST_NODE_TYPES.ExpressionStatement) return true;
+  if (parent === undefined) {
+    return false;
+  }
+  if (parent.type === AST_NODE_TYPES.ExpressionStatement) {
+    return true;
+  }
   if (parent.type === AST_NODE_TYPES.YieldExpression) {
     const grand = parent.parent;
     return grand !== undefined && grand.type === AST_NODE_TYPES.ExpressionStatement;
@@ -31,12 +46,16 @@ function isResultDiscarded(node: TSESTree.CallExpression): boolean {
   return false;
 }
 
-export default createRule({
+/**
+ * Enforces the `fork-requires-lifecycle` Agent Code Guard rule.
+ */
+export const forkRequiresLifecycle = createRule({
   name: "fork-requires-lifecycle",
   meta: {
     type: "problem",
     docs: {
-      description: "`Effect.fork` without a tied lifecycle (interrupt, join, scope) leaks the fiber; orphan fibers escape the typed error channel.",
+      description:
+        "`Effect.fork` without a tied lifecycle (interrupt, join, scope) leaks the fiber; orphan fibers escape the typed error channel.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -52,8 +71,12 @@ export default createRule({
     return {
       CallExpression(node) {
         const method = effectForkCall(node);
-        if (method === null) return;
-        if (!isResultDiscarded(node)) return;
+        if (method === null) {
+          return;
+        }
+        if (!isResultDiscarded(node)) {
+          return;
+        }
         context.report({
           node,
           messageId: "forkResultDiscarded",

@@ -2,12 +2,16 @@ import { createRule } from "../../utils/create-rule.js";
 import { isNamedMemberCall } from "../../utils/ast-refinement/index.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
-export default createRule({
+/**
+ * Enforces the `effect-promise` Agent Code Guard rule.
+ */
+export const effectPromise = createRule({
   name: "effect-promise",
   meta: {
     type: "problem",
     docs: {
-      description: "`Promise<T>` inside an `Effect` re-introduces the erased error channel; convert at the boundary.",
+      description:
+        "`Promise<T>` inside an `Effect` re-introduces the erased error channel; convert at the boundary.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -22,7 +26,9 @@ export default createRule({
   create(context) {
     return {
       CallExpression(node) {
-        if (!isNamedMemberCall(node, "Effect", "promise")) return;
+        if (!isNamedMemberCall(node, "Effect", "promise")) {
+          return;
+        }
         context.report({ node, messageId: "effectPromise" });
       },
     };

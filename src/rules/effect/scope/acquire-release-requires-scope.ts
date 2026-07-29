@@ -1,15 +1,24 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 function isEffectAcquireReleaseCall(node: TSESTree.CallExpression): boolean {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return false;
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return false;
+  }
   const callee = node.callee;
-  if (callee.computed) return false;
-  if (callee.object.type !== AST_NODE_TYPES.Identifier) return false;
-  if (callee.object.name !== "Effect") return false;
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return false;
+  if (callee.computed) {
+    return false;
+  }
+  if (callee.object.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
+  if (callee.object.name !== "Effect") {
+    return false;
+  }
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
   return callee.property.name === "acquireRelease" || callee.property.name === "acquireUseRelease";
 }
 
@@ -31,12 +40,16 @@ function mentionsScopeFrame(node: TSESTree.Node): boolean {
   return false;
 }
 
-export default createRule({
+/**
+ * Enforces the `acquire-release-requires-scope` Agent Code Guard rule.
+ */
+export const acquireReleaseRequiresScope = createRule({
   name: "acquire-release-requires-scope",
   meta: {
     type: "problem",
     docs: {
-      description: "`Effect.acquireRelease` outside a `Scope` leaks the resource silently; the finalizer needs a scope to attach to or it never runs.",
+      description:
+        "`Effect.acquireRelease` outside a `Scope` leaks the resource silently; the finalizer needs a scope to attach to or it never runs.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -50,23 +63,35 @@ export default createRule({
   defaultOptions: [],
   create(context) {
     let foundScopeFrame = false;
-    const acquireCalls: { node: TSESTree.CallExpression; method: string }[] = [];
+    const acquireCalls: Array<{ node: TSESTree.CallExpression; method: string }> = [];
     return {
       MemberExpression(node) {
-        if (mentionsScopeFrame(node)) foundScopeFrame = true;
+        if (mentionsScopeFrame(node)) {
+          foundScopeFrame = true;
+        }
       },
       Identifier(node) {
-        if (mentionsScopeFrame(node)) foundScopeFrame = true;
+        if (mentionsScopeFrame(node)) {
+          foundScopeFrame = true;
+        }
       },
       CallExpression(node) {
-        if (!isEffectAcquireReleaseCall(node)) return;
+        if (!isEffectAcquireReleaseCall(node)) {
+          return;
+        }
         const callee = node.callee;
-        if (callee.type !== AST_NODE_TYPES.MemberExpression) return;
-        if (callee.property.type !== AST_NODE_TYPES.Identifier) return;
+        if (callee.type !== AST_NODE_TYPES.MemberExpression) {
+          return;
+        }
+        if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+          return;
+        }
         acquireCalls.push({ node, method: callee.property.name });
       },
       "Program:exit"() {
-        if (foundScopeFrame) return;
+        if (foundScopeFrame) {
+          return;
+        }
         for (const { node, method } of acquireCalls) {
           context.report({
             node,

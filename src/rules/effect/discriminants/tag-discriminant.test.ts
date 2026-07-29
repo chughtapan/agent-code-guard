@@ -1,5 +1,5 @@
 import { createTypedRuleTester } from "../../utils/typed-linter/test-support/rule-tester.js";
-import rule from "./tag-discriminant.js";
+import { tagDiscriminant as rule } from "./tag-discriminant.js";
 
 const ruleTester = createTypedRuleTester();
 

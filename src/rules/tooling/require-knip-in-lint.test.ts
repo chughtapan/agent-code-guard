@@ -3,7 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
-import rule from "./require-knip-in-lint.js";
+import { requireKnipInLint as rule } from "./require-knip-in-lint.js";
+import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;
@@ -12,7 +13,7 @@ RuleTester.describe = describe;
 
 const ruleTester = new RuleTester({
   languageOptions: {
-    parser: require("@typescript-eslint/parser"),
+    parser: tsParser,
     parserOptions: { ecmaVersion: 2022, sourceType: "module" },
   },
 });
@@ -57,6 +58,19 @@ ruleTester.run("require-knip-in-lint", rule, {
         },
       ],
     },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: {
+              knip: "pnpm exec knip",
+              lint: "eslint . && pnpm run knip",
+            },
+          }),
+        },
+      ],
+    },
   ],
   invalid: [
     {
@@ -80,6 +94,72 @@ ruleTester.run("require-knip-in-lint", rule, {
         },
       ],
       errors: [{ messageId: "missingScript" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: { lint: "eslint . && echo knip" },
+          }),
+        },
+      ],
+      errors: [{ messageId: "missingKnip" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: { lint: "eslint . && true || knip" },
+          }),
+        },
+      ],
+      errors: [{ messageId: "missingKnip" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: { lint: "eslint . && knip || true" },
+          }),
+        },
+      ],
+      errors: [{ messageId: "missingKnip" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: { lint: "eslint . && knip &" },
+          }),
+        },
+      ],
+      errors: [{ messageId: "missingKnip" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: { lint: "eslint . && knip --no-exit-code" },
+          }),
+        },
+      ],
+      errors: [{ messageId: "missingKnip" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: { lint: "eslint . && knip --version" },
+          }),
+        },
+      ],
+      errors: [{ messageId: "missingKnip" }],
     },
   ],
 });

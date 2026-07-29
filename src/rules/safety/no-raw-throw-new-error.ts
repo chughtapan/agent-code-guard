@@ -6,12 +6,16 @@ import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const ERROR_CTORS = new Set(["Error", "TypeError", "RangeError"]);
 
-export default createRule({
+/**
+ * Enforces the `no-raw-throw-new-error` Agent Code Guard rule.
+ */
+export const noRawThrowNewError = createRule({
   name: "no-raw-throw-new-error",
   meta: {
     type: "problem",
     docs: {
-      description: "`throw new Error(\"bad\")` has no type, no handling contract, no receipt for the caller; tagged errors do.",
+      description:
+        '`throw new Error("bad")` has no type, no handling contract, no receipt for the caller; tagged errors do.',
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -24,16 +28,26 @@ export default createRule({
   },
   defaultOptions: [],
   create(context) {
-    if (isTestFile(context.filename)) return {};
+    if (isTestFile(context.filename)) {
+      return {};
+    }
     return {
       ThrowStatement(node) {
         const arg = node.argument;
-        if (arg.type !== AST_NODE_TYPES.NewExpression) return;
-        if (arg.callee.type !== AST_NODE_TYPES.Identifier) return;
+        if (arg.type !== AST_NODE_TYPES.NewExpression) {
+          return;
+        }
+        if (arg.callee.type !== AST_NODE_TYPES.Identifier) {
+          return;
+        }
         const ctor = arg.callee.name;
-        if (!ERROR_CTORS.has(ctor)) return;
+        if (!ERROR_CTORS.has(ctor)) {
+          return;
+        }
         const fnName = getEnclosingFunctionName(node);
-        if (fnName && fnName.startsWith("absurd")) return;
+        if (fnName?.startsWith("absurd")) {
+          return;
+        }
         context.report({
           node,
           messageId: "rawThrow",

@@ -1,6 +1,8 @@
 # `agent-code-guard/runpromise-requires-scoped`
 
-> **Typed rule.** Requires `parserOptions.project` to be set in your ESLint config so the parser can build a TypeScript program. The rule gracefully skips files that aren't in any project.
+> **Typed rule.** The `recommended` and `strict` presets provide the parser and
+> `projectService` configuration. The linted file must belong to a
+> `tsconfig.json`.
 
 **What it flags:** A call to `Effect.runPromise`, `Effect.runPromiseExit`, `Effect.runSync`, or `Effect.runSyncExit` where the input Effect's `R` (requirements) parameter contains a `Scope`. Detected via the type checker.
 
@@ -46,19 +48,9 @@ False positive in theory: a custom service literally named `Scope` would also tr
 
 ## Setup
 
-Your ESLint config needs `parserOptions.project` so the parser can resolve types:
-
-```jsonc
-{
-  "languageOptions": {
-    "parserOptions": {
-      "project": "./tsconfig.json"
-    }
-  }
-}
-```
-
-If the project setting isn't present, the rule reports nothing on that file (graceful skip).
+Spread `guard.configs.recommended` or `guard.configs.strict` into the matching
+flat-config block. If a file is outside every TypeScript project, typed rules
+cannot analyze it.
 
 ## Pairing
 

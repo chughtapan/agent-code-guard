@@ -8,12 +8,16 @@ const VARIABLE_SURFACE_SELECTOR =
   "VariableDeclarator[init.type='ArrowFunctionExpression'], " +
   "VariableDeclarator[init.type='ClassExpression']";
 
-export default createRule({
+/**
+ * Enforces the `manual-result` Agent Code Guard rule.
+ */
+export const manualResult = createRule({
   name: "manual-result",
   meta: {
     type: "problem",
     docs: {
-      description: "Hand-rolled `Result`-shaped types miss the discriminant guarantees; use the project's `Result` so error tags stay structural.",
+      description:
+        "Hand-rolled `Result`-shaped types miss the discriminant guarantees; use the project's `Result` so error tags stay structural.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -28,7 +32,9 @@ export default createRule({
   create(context) {
     function maybeReport(node: Parameters<typeof findManualResultMatch>[0]): void {
       const result = findManualResultMatch(node);
-      if (result === null) return;
+      if (result === null) {
+        return;
+      }
       context.report({
         node: result.node,
         messageId: "manualResult",

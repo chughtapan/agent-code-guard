@@ -1,6 +1,7 @@
 # `agent-code-guard/require-span-on-exported-effect`
 
-> **Severity: `warn`** — observability is an adoption-stage concern. The rule fires only on shapes you're explicitly exporting, so it's noisy in pre-adoption codebases. Bump to `error` once span coverage is the team norm.
+> **Severity: `error`** — exported Effect entrypoints are mandatory trace
+> boundaries in both main presets.
 
 **What it flags:** An exported `Effect.gen(...)` value (or an exported function returning `Effect.gen(...)`) whose definition does not call `Effect.withSpan` anywhere. The rule looks for the literal `withSpan` reference inside the export's subtree.
 
@@ -52,9 +53,10 @@ Any reference to `withSpan` in the subtree of the exported declaration — wheth
 - `handler-requires-span` — flags handler-shaped Effect bodies (route/message handlers) without `withSpan`.
 - `annotate-without-span` — flags `Effect.annotateCurrentSpan` outside an enclosing `withSpan` frame.
 
-## Setup tip
+## Adoption tip
 
-In a fresh codebase, enabling this as `error` will flood you with violations on day one (per the original research report: ~40-80 suppressed violations per package in pre-adoption codebases). Ship the rule as `warn`, run a tracing-adoption pass, then promote to `error`.
+Run a tracing-adoption pass before enabling the main preset in an existing
+Effect codebase; the rule is intentionally blocking.
 
 ## Exceptions
 

@@ -4,17 +4,20 @@ import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const MOCK_METHODS = new Set(["mock", "hoisted", "spyOn"]);
 
-export default createRule({
+/**
+ * Enforces the `no-vitest-mocks` Agent Code Guard rule.
+ */
+export const noVitestMocks = createRule({
   name: "no-vitest-mocks",
   meta: {
     type: "problem",
     docs: {
-      description: "An integration test that mocks the boundary asserts your code works against your mock, not the real thing.",
+      description:
+        "An integration test that mocks the boundary asserts your code works against your mock, not the real thing.",
       url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
-      vitestMock:
-        "vi.{{method}}() disallowed here — test against real dependencies in this scope",
+      vitestMock: "vi.{{method}}() disallowed here — test against real dependencies in this scope",
     },
     schema: [],
     fixable: undefined,
@@ -25,15 +28,16 @@ export default createRule({
     return {
       CallExpression(node) {
         const callee = getStaticMemberExpression(node.callee);
-        if (callee === null) return;
-        if (
-          callee.object.type !== "Identifier" ||
-          callee.object.name !== "vi"
-        ) {
+        if (callee === null) {
+          return;
+        }
+        if (callee.object.type !== "Identifier" || callee.object.name !== "vi") {
           return;
         }
         const method = callee.property.name;
-        if (!MOCK_METHODS.has(method)) return;
+        if (!MOCK_METHODS.has(method)) {
+          return;
+        }
         context.report({
           node,
           messageId: "vitestMock",

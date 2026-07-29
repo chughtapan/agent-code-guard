@@ -1,6 +1,7 @@
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
-import rule from "./manual-brand.js";
+import { manualBrand as rule } from "./manual-brand.js";
+import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;
@@ -9,7 +10,7 @@ RuleTester.describe = describe;
 
 const ruleTester = new RuleTester({
   languageOptions: {
-    parser: require("@typescript-eslint/parser"),
+    parser: tsParser,
     parserOptions: { ecmaVersion: 2022, sourceType: "module" },
   },
 });
@@ -29,7 +30,7 @@ ruleTester.run("manual-brand", rule, {
       code: "interface UserProps { readonly brand: string; readonly label: string; }",
     },
     {
-      code: 'const UserId = Brand.nominal<UserId>();',
+      code: "const UserId = Brand.nominal<UserId>();",
     },
     {
       code: 'type UserIdPayload = string & { readonly __brand: "UserIdPayload" };',
@@ -47,22 +48,22 @@ ruleTester.run("manual-brand", rule, {
       code: "function asUserId(value: string): UserId { const next = value as UserId; return next; }",
     },
     {
-      code: 'const asUserId = (value: string): UserId => value as UserId;',
+      code: "const asUserId = (value: string): UserId => value as UserId;",
     },
     {
-      code: 'function asUserId(value: string): UserId { return value as UserId; }',
+      code: "function asUserId(value: string): UserId { return value as UserId; }",
     },
     {
-      code: 'const asUserId = function (value: string): UserId { return value as UserId; };',
+      code: "const asUserId = function (value: string): UserId { return value as UserId; };",
     },
     {
-      code: 'const UserId = (value: string): UserId => value as UserId;',
+      code: "const UserId = (value: string): UserId => value as UserId;",
     },
     {
-      code: 'const makeUserId = (value: string): UserId => value as UserId;',
+      code: "const makeUserId = (value: string): UserId => value as UserId;",
     },
     {
-      code: 'const toUserId = (value: string): UserId => value as UserId;',
+      code: "const toUserId = (value: string): UserId => value as UserId;",
     },
     {
       code: 'type ParseFailure = { readonly label: "ParseFailure"; readonly message: string };',

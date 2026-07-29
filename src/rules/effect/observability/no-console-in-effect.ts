@@ -1,22 +1,10 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
-const CLI_FILE_PATTERNS = [
-  /(^|[\\/])cli[\\/]/,
-  /(^|[\\/])bin[\\/]/,
-  /(^|[\\/])cli\.[cm]?[jt]sx?$/,
-];
+const CLI_FILE_PATTERNS = [/(^|[\\/])cli[\\/]/, /(^|[\\/])bin[\\/]/, /(^|[\\/])cli\.[cm]?[jt]sx?$/];
 
-const CONSOLE_METHODS = new Set([
-  "log",
-  "error",
-  "warn",
-  "info",
-  "debug",
-  "trace",
-]);
+const CONSOLE_METHODS = new Set(["log", "error", "warn", "info", "debug", "trace"]);
 
 function isCliFile(filename: string): boolean {
   return CLI_FILE_PATTERNS.some((p) => p.test(filename));
@@ -27,22 +15,38 @@ function importsEffect(source: string): boolean {
 }
 
 function consoleMethodFromCall(node: TSESTree.CallExpression): string | null {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return null;
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return null;
+  }
   const callee = node.callee;
-  if (callee.computed) return null;
-  if (callee.object.type !== AST_NODE_TYPES.Identifier) return null;
-  if (callee.object.name !== "console") return null;
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return null;
-  if (!CONSOLE_METHODS.has(callee.property.name)) return null;
+  if (callee.computed) {
+    return null;
+  }
+  if (callee.object.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (callee.object.name !== "console") {
+    return null;
+  }
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (!CONSOLE_METHODS.has(callee.property.name)) {
+    return null;
+  }
   return callee.property.name;
 }
 
-export default createRule({
+/**
+ * Enforces the `no-console-in-effect` Agent Code Guard rule.
+ */
+export const noConsoleInEffect = createRule({
   name: "no-console-in-effect",
   meta: {
     type: "problem",
     docs: {
-      description: "`console.*` bypasses the Effect log channel; route through `Effect.log` so logs stay inside the typed runtime.",
+      description:
+        "`console.*` bypasses the Effect log channel; route through `Effect.log` so logs stay inside the typed runtime.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -55,9 +59,11 @@ export default createRule({
   },
   defaultOptions: [],
   create(context) {
-    if (isCliFile(context.filename)) return {};
+    if (isCliFile(context.filename)) {
+      return {};
+    }
     let foundEffectImport = false;
-    const consoleCalls: { node: TSESTree.CallExpression; method: string }[] = [];
+    const consoleCalls: Array<{ node: TSESTree.CallExpression; method: string }> = [];
     return {
       ImportDeclaration(node) {
         if (typeof node.source.value === "string" && importsEffect(node.source.value)) {
@@ -66,11 +72,15 @@ export default createRule({
       },
       CallExpression(node) {
         const method = consoleMethodFromCall(node);
-        if (method === null) return;
+        if (method === null) {
+          return;
+        }
         consoleCalls.push({ node, method });
       },
       "Program:exit"() {
-        if (!foundEffectImport) return;
+        if (!foundEffectImport) {
+          return;
+        }
         for (const { node, method } of consoleCalls) {
           context.report({
             node,

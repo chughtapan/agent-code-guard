@@ -1,5 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
@@ -27,12 +26,16 @@ function isTagAccess(node: TSESTree.Node): boolean {
   );
 }
 
-export default createRule({
+/**
+ * Enforces the `either-discriminant` Agent Code Guard rule.
+ */
+export const eitherDiscriminant = createRule({
   name: "either-discriminant",
   meta: {
     type: "problem",
     docs: {
-      description: "`Either<L, R>` matches must discriminate on the tag, never on truthiness; truthy-checking conflates error with falsy data.",
+      description:
+        "`Either<L, R>` matches must discriminate on the tag, never on truthiness; truthy-checking conflates error with falsy data.",
       url: PRINCIPLE_URL.EXHAUSTIVENESS,
     },
     messages: {
@@ -55,10 +58,7 @@ export default createRule({
         if (callee.type !== AST_NODE_TYPES.MemberExpression || callee.computed) {
           return;
         }
-        if (
-          callee.object.type !== AST_NODE_TYPES.Identifier ||
-          callee.object.name !== "Either"
-        ) {
+        if (callee.object.type !== AST_NODE_TYPES.Identifier || callee.object.name !== "Either") {
           return;
         }
         if (
@@ -70,15 +70,23 @@ export default createRule({
         report(node);
       },
       BinaryExpression(node) {
-        if (!EQUALITY_OPERATORS.has(node.operator)) return;
+        if (!EQUALITY_OPERATORS.has(node.operator)) {
+          return;
+        }
         const leftIsTag = isTagAccess(node.left);
         const rightIsTag = isTagAccess(node.right);
-        if (leftIsTag === rightIsTag) return;
-        if (!resolveEitherTagLiteral(leftIsTag ? node.right : node.left)) return;
+        if (leftIsTag === rightIsTag) {
+          return;
+        }
+        if (!resolveEitherTagLiteral(leftIsTag ? node.right : node.left)) {
+          return;
+        }
         report(node);
       },
       SwitchStatement(node) {
-        if (!isTagAccess(node.discriminant)) return;
+        if (!isTagAccess(node.discriminant)) {
+          return;
+        }
         if (!node.cases.some((caseNode) => resolveEitherTagLiteral(caseNode.test))) {
           return;
         }

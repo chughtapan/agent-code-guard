@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import plugin from "../src/index.js";
+import { plugin } from "../src/index.js";
 import { SAFER_PRINCIPLES_URL } from "../src/rules/utils/principles.js";
 
 const URL_PREFIX = `${SAFER_PRINCIPLES_URL}#`;
@@ -40,7 +40,8 @@ const PRINCIPLES_MD_HEADING_SLUGS: ReadonlySet<string> = new Set([
 describe("plugin rule meta.docs", () => {
   const ruleEntries = Object.entries(plugin.rules);
 
-  it.each(ruleEntries)("%s carries a non-empty description", (_name, rule) => {
+  it.each(ruleEntries)("%s carries a non-empty description", (ruleName, rule) => {
+    expect(ruleName.length).toBeGreaterThan(0);
     const description = rule.meta.docs?.description;
     expect(typeof description).toBe("string");
     expect((description ?? "").trim().length).toBeGreaterThan(0);
@@ -48,7 +49,8 @@ describe("plugin rule meta.docs", () => {
 
   it.each(ruleEntries)(
     "%s url points at PRINCIPLES.md with a known fragment",
-    (_name, rule) => {
+    (ruleName, rule) => {
+      expect(ruleName.length).toBeGreaterThan(0);
       const url = rule.meta.docs?.url ?? "";
       expect(url.startsWith(URL_PREFIX)).toBe(true);
       const fragment = url.slice(URL_PREFIX.length);

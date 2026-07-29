@@ -1,6 +1,7 @@
 # `agent-code-guard/handler-requires-span`
 
-> **Severity: `warn`** — same observability-adoption posture as `require-span-on-exported-effect`. Bumping to `error` is a follow-up after span coverage is the team norm.
+> **Severity: `error`** — handlers are mandatory trace boundaries in both main
+> presets.
 
 **What it flags:** An `Effect.gen(...)` body inside a **handler-shaped file** (any of: under `handlers/` or `routes/`, or named `*-handler.*` / `*.handler.*` / `*-route.*` / `*.route.*`) that doesn't reference `Effect.withSpan` in its enclosing pipe-chain. Handlers are trace boundaries — a request comes in, a handler runs, a span should bracket the work.
 

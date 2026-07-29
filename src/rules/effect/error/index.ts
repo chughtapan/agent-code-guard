@@ -2,9 +2,9 @@
  * @file Effect error-handling sub-family registry.
  */
 
-import effectErrorErasure from "./effect-error-erasure.js";
-import effectPromise from "./effect-promise.js";
-import noEffectErrorCoalescing from "./no-effect-error-coalescing.js";
+import { effectErrorErasure } from "./effect-error-erasure.js";
+import { effectPromise } from "./effect-promise.js";
+import { noEffectErrorCoalescing } from "./no-effect-error-coalescing.js";
 
 /**
  * Effect error-handling rules. Catches generic `Error` wrapping in

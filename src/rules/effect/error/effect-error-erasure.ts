@@ -1,14 +1,11 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { isNamedMemberCall } from "../../utils/ast-refinement/index.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const GENERIC_ERROR_CTORS = new Set(["Error", "TypeError", "RangeError"]);
 
-function resolveGenericErrorCtor(
-  node: TSESTree.Node | null,
-): node is TSESTree.NewExpression {
+function resolveGenericErrorCtor(node: TSESTree.Node | null): node is TSESTree.NewExpression {
   return (
     node?.type === AST_NODE_TYPES.NewExpression &&
     node.callee.type === AST_NODE_TYPES.Identifier &&
@@ -20,9 +17,7 @@ function isEffectCall(node: TSESTree.CallExpression, name: string): boolean {
   return isNamedMemberCall(node, "Effect", name);
 }
 
-function functionReturnsGenericError(
-  node: TSESTree.Expression,
-): boolean {
+function functionReturnsGenericError(node: TSESTree.Expression): boolean {
   if (
     node.type !== AST_NODE_TYPES.ArrowFunctionExpression &&
     node.type !== AST_NODE_TYPES.FunctionExpression
@@ -41,12 +36,16 @@ function functionReturnsGenericError(
   );
 }
 
-export default createRule({
+/**
+ * Enforces the `effect-error-erasure` Agent Code Guard rule.
+ */
+export const effectErrorErasure = createRule({
   name: "effect-error-erasure",
   meta: {
     type: "problem",
     docs: {
-      description: "`Effect<T, never, R>` claims no error channel; if the effect can fail, name the error tag, don't erase it.",
+      description:
+        "`Effect<T, never, R>` claims no error channel; if the effect can fail, name the error tag, don't erase it.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -62,15 +61,14 @@ export default createRule({
     return {
       CallExpression(node) {
         const firstArgument = node.arguments[0] ?? null;
-        if (
-          isEffectCall(node, "fail") &&
-          resolveGenericErrorCtor(firstArgument)
-        ) {
+        if (isEffectCall(node, "fail") && resolveGenericErrorCtor(firstArgument)) {
           context.report({ node, messageId: "effectErrorErasure" });
           return;
         }
 
-        if (!isEffectCall(node, "mapError")) return;
+        if (!isEffectCall(node, "mapError")) {
+          return;
+        }
         const mapper = node.arguments[0];
         if (mapper === undefined || mapper.type === AST_NODE_TYPES.SpreadElement) {
           return;
