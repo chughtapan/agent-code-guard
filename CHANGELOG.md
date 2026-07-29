@@ -47,13 +47,14 @@
 
 - Quality-gate rules now prove that `tsc`, ESLint, and Knip actually execute:
   delegated scripts are followed safely, command impersonation and shell
-  masking are rejected, forwarded TypeScript project overrides cannot evade
-  the configured compiler floor, and package/extended-config changes invalidate
-  cached results.
+  masking and ESLint no-op or non-project targets are rejected, forwarded
+  TypeScript project overrides cannot evade the configured compiler floor, and
+  package or extended-config changes invalidate cached results.
 - Google-style semantic rules now preserve binding and return scope when
-  classifying TSX components, respect shadowed globals, and cover aliased or
-  destructured numeric, prototype, and descriptor APIs. Generated setup also
-  covers `.ts`, `.tsx`, `.mts`, and `.cts` files.
+  classifying TSX components, resolve aliased React imports and JSX-producing
+  mapped returns, respect shadowed globals, and cover aliased, destructured, or
+  computed-constant numeric, prototype, and descriptor APIs. Generated setup
+  also covers `.ts`, `.tsx`, `.mts`, and `.cts` files.
 
 ## [0.0.15] - 2026-07-26
 

@@ -4,7 +4,10 @@
  */
 
 import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { getStaticStringKey } from "./ast-refinement/index.js";
+import {
+  getStaticStringKey,
+  resolveStringLiteralValue,
+} from "./ast-refinement/index.js";
 import { isUnshadowedGlobal } from "./unshadowed-global.js";
 
 /** A statically resolved builtin namespace and its global root identifier. */
@@ -50,6 +53,39 @@ function constVariableDefinition(
   return null;
 }
 
+function resolvedStaticString(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.Expression,
+  seen: ReadonlySet<string>,
+): string | null {
+  const unwrapped = unwrapExpression(node);
+  const direct = resolveStringLiteralValue(unwrapped);
+  if (direct !== null || unwrapped.type !== AST_NODE_TYPES.Identifier) {
+    return direct;
+  }
+  if (seen.has(unwrapped.name)) {
+    return null;
+  }
+  const definition = constVariableDefinition(sourceCode, unwrapped);
+  if (definition === null || definition.node.init === null) {
+    return null;
+  }
+  const nextSeen = new Set(seen);
+  nextSeen.add(unwrapped.name);
+  return resolvedStaticString(sourceCode, definition.node.init, nextSeen);
+}
+
+function staticMemberName(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.MemberExpression,
+): string | null {
+  const direct = getStaticStringKey(node.property, node.computed);
+  if (direct !== null || !node.computed) {
+    return direct;
+  }
+  return resolvedStaticString(sourceCode, node.property, new Set());
+}
+
 function directNamespace(
   sourceCode: Readonly<TSESLint.SourceCode>,
   node: TSESTree.Expression,
@@ -78,7 +114,7 @@ function globalThisNamespace(
   if (!isUnshadowedGlobal(sourceCode, node.object)) {
     return null;
   }
-  const name = getStaticStringKey(node.property, node.computed);
+  const name = staticMemberName(sourceCode, node);
   return name !== null && names.has(name)
     ? { globalIdentifier: node.object, name }
     : null;
@@ -113,8 +149,31 @@ function resolvedNamespace(
   return resolvedNamespace(sourceCode, definition.node.init, names, nextSeen);
 }
 
-function staticMemberName(node: TSESTree.MemberExpression): string | null {
-  return getStaticStringKey(node.property, node.computed);
+function matchingIdentifierProperty(
+  pattern: TSESTree.ObjectPattern,
+  name: string,
+): TSESTree.Property | null {
+  for (const candidate of pattern.properties) {
+    if (
+      candidate.type === AST_NODE_TYPES.Property &&
+      candidate.value.type === AST_NODE_TYPES.Identifier &&
+      candidate.value.name === name
+    ) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function destructuredStaticMethodName(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  property: TSESTree.Property,
+): string | null {
+  const direct = getStaticStringKey(property.key, property.computed);
+  if (direct !== null || !property.computed) {
+    return direct;
+  }
+  return resolvedStaticString(sourceCode, property.key, new Set());
 }
 
 function destructuredMethod(
@@ -130,17 +189,12 @@ function destructuredMethod(
   ) {
     return null;
   }
-  const property = definition.node.id.properties.find(
-    (candidate) =>
-      candidate.type === AST_NODE_TYPES.Property &&
-      candidate.value.type === AST_NODE_TYPES.Identifier &&
-      candidate.value.name === identifier.name,
-  );
-  if (property?.type !== AST_NODE_TYPES.Property) {
+  const property = matchingIdentifierProperty(definition.node.id, identifier.name);
+  if (property === null) {
     return null;
   }
   const namespace = resolvedNamespace(sourceCode, definition.node.init, names, new Set());
-  const method = getStaticStringKey(property.key, property.computed);
+  const method = destructuredStaticMethodName(sourceCode, property);
   return namespace === null || method === null
     ? null
     : { method, owner: namespace.name };
@@ -152,7 +206,7 @@ function memberStaticCall(
   names: ReadonlySet<string>,
 ): GlobalStaticCallReference | null {
   const namespace = resolvedNamespace(sourceCode, node.object, names, new Set());
-  const method = staticMemberName(node);
+  const method = staticMemberName(sourceCode, node);
   return namespace === null || method === null
     ? null
     : { method, owner: namespace.name };

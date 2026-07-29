@@ -26,8 +26,8 @@ export default [
 
 Then run your default lint script. The preset bundles its TypeScript parser,
 maintained rule plugins, and type-aware `projectService` setup; the project
-must have a `tsconfig.json`, and its lint script must run `tsc`, ESLint, and
-Knip.
+must have a `tsconfig.json`, and its lint script must run `tsc`, `eslint .`,
+and Knip.
 
 ## What it catches
 
@@ -122,7 +122,7 @@ another formatter independently.
 | Rule | Catches |
 |---|---|
 | [`require-knip-in-lint`](docs/rules/tooling/require-knip-in-lint.md) | `package.json` default quality scripts that omit Knip |
-| `require-typescript-quality-gate` | Default quality scripts that omit type checking or weaken the required compiler-option floor |
+| `require-typescript-quality-gate` | Default quality scripts that omit type checking, omit project-wide `eslint .`, or weaken the required compiler-option floor |
 
 ### Documentation
 
@@ -196,7 +196,8 @@ The package no longer has a default export. Replace
 `import { plugin as guard } from "eslint-plugin-agent-code-guard"`. Main
 presets now include the parser and typed language options, so remove manual
 parser wiring and spread the preset directly. Typed lint requires a
-`tsconfig.json`, and the default lint script must include `tsc` and Knip.
+`tsconfig.json`, and the default lint script must include `tsc`, `eslint .`,
+and Knip.
 
 ## Disabling a rule
 

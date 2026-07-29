@@ -29,6 +29,7 @@ ruleTester.run("no-unsafe-numeric-coercion", noUnsafeNumericCoercion, {
     "const Number = { parseInt: (value: string) => value }; const parsed = Number.parseInt(input);",
     "const Number = { parseInt: (value: string, radix: number) => value }; const parse = Number.parseInt; const parsed = parse(input, 10);",
     "const Number = { parseFloat: (value: string) => value }; const { parseFloat: parse } = Number; const parsed = parse(input);",
+    "const method = 'parseInt' as const; const Number = { parseInt: (value: string, radix: number) => value }; const parsed = Number[method](input, 10);",
     "const globalThis = { parseFloat: (value: string) => value }; const parsed = globalThis.parseFloat(input);",
     "const globalThis = { Number: { parseInt: (value: string) => value } }; const parsed = globalThis.Number.parseInt(input, 10);",
   ],
@@ -55,6 +56,10 @@ ruleTester.run("no-unsafe-numeric-coercion", noUnsafeNumericCoercion, {
     },
     {
       code: "const value = Number['parseInt'](input);",
+      errors: [{ messageId: "parseInt" }],
+    },
+    {
+      code: "const method = 'parseInt' as const; const value = Number[method](input, 10);",
       errors: [{ messageId: "parseInt" }],
     },
     {
@@ -102,6 +107,10 @@ ruleTester.run("no-prototype-manipulation", noPrototypeManipulation, {
     },
     {
       code: "Object.setPrototypeOf(target, parent);",
+      errors: [{ messageId: "prototype" }],
+    },
+    {
+      code: "const method = 'setPrototypeOf' as const; Object[method](target, parent);",
       errors: [{ messageId: "prototype" }],
     },
     {
@@ -187,6 +196,10 @@ ruleTester.run("no-define-property-accessors", noDefinePropertyAccessors, {
     },
     {
       code: "Object['defineProperty'](target, 'value', { ['set']: (value) => { target.value = value; } });",
+      errors: [{ messageId: "descriptorAccessor" }],
+    },
+    {
+      code: "const method = 'defineProperty' as const; Object[method](target, 'value', { get: () => 1 });",
       errors: [{ messageId: "descriptorAccessor" }],
     },
     {

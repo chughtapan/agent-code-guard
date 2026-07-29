@@ -23,7 +23,7 @@ Next:
   1. Paste the snippet into your project's \`eslint.config.js\` (or merge
      into an existing config).
   2. Make sure the project has a strict \`tsconfig.json\` and its default
-     lint script runs \`tsc\`, ESLint, and Knip.
+     lint script runs \`tsc\`, \`eslint .\`, and Knip.
   3. Run your package lint script.
 `;
 

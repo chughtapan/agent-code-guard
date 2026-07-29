@@ -105,7 +105,7 @@ deliberately ships no formatter rules or formatter gate.
 
 | Google clause family | Status | Enforcement or limitation |
 |---|---|---|
-| Every TypeScript file passes standard type checking | **Compiler + Rule** | `agent-code-guard/require-typescript-quality-gate` requires the default quality script to run `tsc`; strict compiler options are validated explicitly. |
+| Every TypeScript file passes standard type checking | **Compiler + Rule** | `agent-code-guard/require-typescript-quality-gate` requires the default quality script to run `tsc` and project-wide `eslint .`; strict compiler options are validated explicitly. |
 | No `@ts-ignore`, `@ts-expect-error`, or `@ts-nocheck` | **Rule** | `@typescript-eslint/ban-ts-comment` rejects all variants. This is stricter than the guide’s discouraged unit-test exception. |
 | Applicable global/framework conformance rules | **Review-only** | A portable package cannot discover private framework conformance systems; repository-local rules can extend the preset. |
 | JSDoc for every top-level export | **Rule** | Both main presets include export-scoped `jsdoc/require-jsdoc`; the standalone `documentation` preset remains available for composition. |

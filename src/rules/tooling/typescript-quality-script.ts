@@ -14,16 +14,50 @@ import { missingCompilerOptions } from "./typescript-compiler-floor.js";
 const TSC_BINARY_NAMES: ReadonlySet<string> = new Set(["tsc"]);
 const ESLINT_BINARY_NAMES: ReadonlySet<string> = new Set(["eslint"]);
 const NON_LINTING_ESLINT_ARGUMENTS: ReadonlySet<string> = new Set([
+  "--config",
   "--env-info",
   "--help",
   "--init",
+  "--ignore-pattern",
   "--inspect-config",
   "--mcp",
+  "--no-config-lookup",
+  "--no-error-on-unmatched-pattern",
+  "--pass-on-no-patterns",
   "--print-config",
+  "--rule",
+  "--stdin",
   "--version",
+  "-c",
   "-h",
   "-v",
 ]);
+const NON_LINTING_ESLINT_ARGUMENT_PREFIXES = [
+  "--config=",
+  "--ignore-pattern=",
+  "--print-config=",
+  "--rule=",
+] as const;
+const ESLINT_ARGUMENTS_WITH_VALUE: ReadonlySet<string> = new Set([
+  "--cache-location",
+  "--cache-strategy",
+  "--concurrency",
+  "--ext",
+  "--flag",
+  "--format",
+  "--global",
+  "--max-warnings",
+  "--output-file",
+  "--parser",
+  "--parser-options",
+  "--plugin",
+  "--report-unused-disable-directives-severity",
+  "--resolve-plugins-relative-to",
+  "--stdin-filename",
+  "-f",
+  "-o",
+]);
+const ESLINT_PROJECT_TARGETS: ReadonlySet<string> = new Set([".", "./"]);
 const NON_CHECKING_OPTIONS = [
   "help",
   "init",
@@ -109,9 +143,38 @@ function directCommandRunsEslint(tokens: readonly string[]): boolean {
   if (binaryIndex === null) {
     return false;
   }
-  return !tokens.slice(binaryIndex + 1).some((argument) =>
-    NON_LINTING_ESLINT_ARGUMENTS.has(argument)
-  );
+  const argumentsAfterBinary = tokens.slice(binaryIndex + 1);
+  return !argumentsAfterBinary.some(isNonLintingEslintArgument) &&
+    eslintHasProjectTarget(argumentsAfterBinary);
+}
+
+function isNonLintingEslintArgument(argument: string): boolean {
+  return NON_LINTING_ESLINT_ARGUMENTS.has(argument) ||
+    NON_LINTING_ESLINT_ARGUMENT_PREFIXES.some((prefix) =>
+      argument.startsWith(prefix)
+    );
+}
+
+function eslintHasProjectTarget(
+  argumentsAfterBinary: readonly string[],
+  index = 0,
+): boolean {
+  const argument = argumentsAfterBinary[index];
+  if (argument === undefined) {
+    return false;
+  }
+  if (argument === "--") {
+    return argumentsAfterBinary.slice(index + 1).some((target) =>
+      ESLINT_PROJECT_TARGETS.has(target)
+    );
+  }
+  if (ESLINT_PROJECT_TARGETS.has(argument)) {
+    return true;
+  }
+  const nextIndex = ESLINT_ARGUMENTS_WITH_VALUE.has(argument)
+    ? index + 2
+    : index + 1;
+  return eslintHasProjectTarget(argumentsAfterBinary, nextIndex);
 }
 
 /**
