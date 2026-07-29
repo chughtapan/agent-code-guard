@@ -1,6 +1,7 @@
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
-import rule from "./no-env-nonnull-assert.js";
+import { noEnvNonnullAssert as rule } from "./no-env-nonnull-assert.js";
+import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;
@@ -9,7 +10,7 @@ RuleTester.describe = describe;
 
 const ruleTester = new RuleTester({
   languageOptions: {
-    parser: require("@typescript-eslint/parser"),
+    parser: tsParser,
     parserOptions: { ecmaVersion: 2022, sourceType: "module" },
   },
 });
@@ -50,10 +51,7 @@ ruleTester.run("no-env-nonnull-assert", rule, {
     // Multiple assertions in one file
     {
       code: "const a = process.env.A!; const b = process.env.B!;",
-      errors: [
-        { messageId: "envNonNullAssert" },
-        { messageId: "envNonNullAssert" },
-      ],
+      errors: [{ messageId: "envNonNullAssert" }, { messageId: "envNonNullAssert" }],
     },
   ],
 });

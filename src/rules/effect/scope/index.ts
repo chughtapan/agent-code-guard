@@ -2,10 +2,10 @@
  * @file Effect scope sub-family registry.
  */
 
-import acquireReleaseRequiresScope from "./acquire-release-requires-scope.js";
-import finalizerRequiresScope from "./finalizer-requires-scope.js";
-import forkRequiresLifecycle from "./fork-requires-lifecycle.js";
-import runpromiseRequiresScoped from "./runpromise-requires-scoped.js";
+import { acquireReleaseRequiresScope } from "./acquire-release-requires-scope.js";
+import { finalizerRequiresScope } from "./finalizer-requires-scope.js";
+import { forkRequiresLifecycle } from "./fork-requires-lifecycle.js";
+import { runpromiseRequiresScoped } from "./runpromise-requires-scoped.js";
 
 /**
  * Effect scope rules. Catches `Effect.acquireRelease` and

@@ -1,5 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 import {
@@ -24,18 +23,24 @@ function hasUnboundedConcurrencyOption(
         return false;
       }
       const key = getStaticStringKey(property.key, property.computed);
-      if (key !== "concurrency") return false;
+      if (key !== "concurrency") {
+        return false;
+      }
       return resolveStringLiteralValue(property.value) === "unbounded";
     })
   );
 }
 
-export default createRule({
+/**
+ * Enforces the `no-unbounded-concurrency` Agent Code Guard rule.
+ */
+export const noUnboundedConcurrency = createRule({
   name: "no-unbounded-concurrency",
   meta: {
     type: "problem",
     docs: {
-      description: "Unbounded `Promise.all` over a runtime-sized input has no concurrency budget; bound it explicitly.",
+      description:
+        "Unbounded `Promise.all` over a runtime-sized input has no concurrency budget; bound it explicitly.",
       url: PRINCIPLE_URL.DISCIPLINE,
     },
     messages: {

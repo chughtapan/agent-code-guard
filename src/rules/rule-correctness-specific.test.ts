@@ -1,6 +1,6 @@
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
-import plugin from "../index.js";
+import { plugin } from "../index.js";
 import {
   baseConfig,
   FIXABLE_RULE_IDS,
@@ -10,8 +10,8 @@ import {
   lintOne,
   messageDetails,
   safeStringArb,
-  SEEDS,
 } from "./test-support/rule-correctness-fixtures.js";
+import { SEEDS } from "./test-support/rule-correctness-seeds.js";
 
 it("Property 3: fixer idempotence is guarded once fixable rules exist", () => {
   if (FIXABLE_RULE_IDS.length === 0) {
@@ -30,7 +30,9 @@ it("Property 4: structural assertions are not hardcoded assertion literals", () 
   fc.assert(
     fc.property(identArb, identArb, matcherArb, (actual, expected, matcher) => {
       const code = `expect(${actual}).${matcher}(${expected});`;
-      if (!isSyntacticallyValid(code)) return;
+      if (!isSyntacticallyValid(code)) {
+        return;
+      }
       expectMessagesCleanInFile(code, ruleId, "src/foo.test.ts");
     }),
     { numRuns: 100 },
@@ -50,9 +52,10 @@ it("Property 6: no-process-env-at-runtime ignores shadowed process bindings", ()
   fc.assert(
     fc.property(identArb, safeStringArb, (key, value) => {
       const code =
-        `const process = { env: { ${key}: ${value} } };\n` +
-        `const current = process.env.${key};`;
-      if (!isSyntacticallyValid(code)) return;
+        `const process = { env: { ${key}: ${value} } };\n` + `const current = process.env.${key};`;
+      if (!isSyntacticallyValid(code)) {
+        return;
+      }
       expectMessagesClean(code, ruleId);
     }),
     { numRuns: 100 },
@@ -66,7 +69,9 @@ it("Property 7: no-unbounded-concurrency ignores bounded Effect fan-out", () => 
   fc.assert(
     fc.property(methodArb, fc.integer({ min: 1, max: 64 }), (method, concurrency) => {
       const code = boundedConcurrencySource(method, concurrency);
-      if (!isSyntacticallyValid(code)) return;
+      if (!isSyntacticallyValid(code)) {
+        return;
+      }
       expectMessagesClean(code, ruleId);
     }),
     { numRuns: 100 },
@@ -74,22 +79,19 @@ it("Property 7: no-unbounded-concurrency ignores bounded Effect fan-out", () => 
 });
 
 it("recommended preset wires sonarjs/no-hardcoded-secrets so secret-detection still ships", () => {
-  expect(plugin.configs.recommended.rules).toHaveProperty(
-    "sonarjs/no-hardcoded-secrets",
-    "error",
-  );
+  expect(plugin.configs.recommended.rules).toHaveProperty("sonarjs/no-hardcoded-secrets", "error");
   expect(plugin.configs.recommended.plugins).toHaveProperty("sonarjs");
 });
 
 function assertFixerIdempotence(ruleId: string): void {
   const entry = SEEDS.find((seed) => seed.ruleId === ruleId);
-  if (entry === undefined) return;
+  if (entry === undefined) {
+    return;
+  }
   const filename = entry.filename ?? "test.ts";
-  const { output } = linter.verifyAndFix(
-    entry.seed,
-    baseConfig({ [ruleId]: "error" }),
-    { filename },
-  );
+  const { output } = linter.verifyAndFix(entry.seed, baseConfig({ [ruleId]: "error" }), {
+    filename,
+  });
   expect(lintOne(output, ruleId, filename)).toHaveLength(0);
 }
 
@@ -102,29 +104,33 @@ function expectMessagesCleanInFile(code: string, ruleId: string, filename: strin
   expect(messages, `${code}\n${messageDetails(messages)}`).toHaveLength(0);
 }
 
-function expectMatchersFlagLiterals(ruleId: string): fc.IPropertyWithHooks<[string, string, string, string]> {
+function expectMatchersFlagLiterals(
+  ruleId: string,
+): fc.IPropertyWithHooks<[string, string, string, string]> {
   const matcherArb = fc.constantFrom("toBe", "toEqual", "toStrictEqual", "toContain", "toMatch");
   return fc.property(
     identArb,
     identArb,
     matcherArb,
     stringLiteralArb(),
-    (actual, _expected, matcher, literal) => {
-      const code = `expect(${actual}).${matcher}(${literal});`;
+    (actual, expected, matcher, literal) => {
+      const code = `expect(${actual} /* ${expected} */).${matcher}(${literal});`;
       expect(lintOne(code, ruleId, "src/foo.test.ts")).not.toHaveLength(0);
     },
   );
 }
 
-function assertMembersFlagLiterals(ruleId: string): fc.IPropertyWithHooks<[string, string, string, string]> {
+function assertMembersFlagLiterals(
+  ruleId: string,
+): fc.IPropertyWithHooks<[string, string, string, string]> {
   const memberAssertArb = fc.constantFrom("equal", "strictEqual", "deepEqual");
   return fc.property(
     identArb,
     identArb,
     memberAssertArb,
     stringLiteralArb(),
-    (actual, _expected, matcher, literal) => {
-      const code = `assert.${matcher}(${actual}, ${literal});`;
+    (actual, expected, matcher, literal) => {
+      const code = `assert.${matcher}(${actual} /* ${expected} */, ${literal});`;
       expect(lintOne(code, ruleId, "src/foo.test.ts")).not.toHaveLength(0);
     },
   );
@@ -148,4 +154,3 @@ function boundedConcurrencySource(method: string, concurrency: number): string {
 function stringLiteralArb(): fc.Arbitrary<string> {
   return fc.stringMatching(/^[a-z]{4,12}$/).map((value) => JSON.stringify(value));
 }
-

@@ -5,35 +5,43 @@
  * consumers do not install them separately.
  */
 
-import { createRequire } from "node:module";
 import type { TSESLint } from "@typescript-eslint/utils";
+import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
+import { createTypeScriptImportResolver } from "eslint-import-resolver-typescript";
+import importX from "eslint-plugin-import-x";
 import jsdoc from "eslint-plugin-jsdoc";
 import sonarjs from "eslint-plugin-sonarjs";
+import tseslint from "typescript-eslint";
+import packageJson from "../package.json" with { type: "json" };
 import {
   integrationTestRuleEntries,
   recommendedSyntaxRuleEntries,
   syntaxRules,
 } from "./rules/registry.js";
+import {
+  googleCoreRuleEntries,
+  googleDirectiveCommentRuleEntries,
+  googleImportRuleEntries,
+} from "./rules/google-style/rule-entries.js";
+import { googleTypeScriptRuleEntries } from "./rules/google-style/typescript-rule-entries.js";
 
 const rules = {
   ...syntaxRules,
 } as const;
 
-const require = createRequire(import.meta.url);
-const pkg = require("../package.json") as { name: string; version: string };
-
 const meta = {
-  name: pkg.name,
-  version: pkg.version,
+  name: packageJson.name,
+  version: packageJson.version,
 };
 
 interface PluginConfig {
+  languageOptions?: TSESLint.FlatConfig.Config["languageOptions"];
   plugins: Record<string, unknown>;
   rules: Record<string, TSESLint.Linter.RuleEntry>;
   settings?: Record<string, unknown>;
 }
 
-interface Plugin {
+interface AgentCodeGuardPlugin {
   meta: typeof meta;
   rules: typeof rules;
   configs: {
@@ -44,11 +52,9 @@ interface Plugin {
   };
 }
 
-const jsdocLogicalRules = jsdoc.configs["flat/logical-typescript-error"]?.rules ?? {};
-const jsdocContentsRules = jsdoc.configs["flat/contents-typescript-error"]?.rules ?? {};
-const jsdocStylisticRules = jsdoc.configs["flat/stylistic-typescript-error"]?.rules ?? {};
-const jsdocRequirementsRules =
-  jsdoc.configs["flat/requirements-typescript-error"]?.rules ?? {};
+const jsdocLogicalRules = jsdoc.configs["flat/logical-typescript-error"].rules ?? {};
+const jsdocContentsRules = jsdoc.configs["flat/contents-typescript-error"].rules ?? {};
+const jsdocRequirementsRules = jsdoc.configs["flat/requirements-typescript-error"].rules ?? {};
 
 const pickEnabled = (
   src: Record<string, TSESLint.Linter.RuleEntry | undefined>,
@@ -59,7 +65,7 @@ const pickEnabled = (
     ),
   );
 
-const jsdocRequireRuleForBarrelExports: TSESLint.Linter.RuleEntry = [
+const jsdocRequireRuleForTopLevelExports: TSESLint.Linter.RuleEntry = [
   "error",
   {
     publicOnly: { ancestorsOnly: true, esm: true, cjs: false, window: false },
@@ -77,6 +83,7 @@ const jsdocRequireRuleForBarrelExports: TSESLint.Linter.RuleEntry = [
       "ExportNamedDeclaration > VariableDeclaration",
       "ExportNamedDeclaration > FunctionDeclaration",
       "ExportNamedDeclaration > ClassDeclaration",
+      "ExportNamedDeclaration[declaration=null]",
     ],
     enableFixer: false,
   },
@@ -90,29 +97,17 @@ const jsdocRecommendedRuleEntries: Record<string, TSESLint.Linter.RuleEntry> = {
   "jsdoc/no-undefined-types": "off",
 };
 
-const jsdocStrictRuleEntries: Record<string, TSESLint.Linter.RuleEntry> = {
-  ...jsdocRecommendedRuleEntries,
-  ...pickEnabled(jsdocStylisticRules),
-};
-
 const documentationPresetRuleEntries: Record<string, TSESLint.Linter.RuleEntry> = {
   ...jsdocRecommendedRuleEntries,
   ...pickEnabled(jsdocRequirementsRules),
-  ...pickEnabled(jsdocStylisticRules),
-  "jsdoc/require-jsdoc": jsdocRequireRuleForBarrelExports,
-  "jsdoc/require-file-overview": "error",
+  "jsdoc/require-jsdoc": jsdocRequireRuleForTopLevelExports,
   "jsdoc/require-description": "error",
   "jsdoc/require-description-complete-sentence": "error",
   "jsdoc/require-hyphen-before-param-description": ["error", "never"],
-  "jsdoc/check-indentation": "error",
-  "jsdoc/check-line-alignment": "error",
   "jsdoc/match-description": "error",
   "jsdoc/no-bad-blocks": "error",
   "jsdoc/no-blank-block-descriptions": "error",
   "jsdoc/no-blank-blocks": "error",
-  "jsdoc/lines-before-block": "error",
-  "jsdoc/multiline-blocks": "error",
-  "jsdoc/tag-lines": "error",
   // TypeScript already provides types; @param {string} is redundant noise.
   "jsdoc/require-param-type": "off",
   "jsdoc/require-returns-type": "off",
@@ -135,6 +130,9 @@ const SONAR_RULES_DROPPED_FROM_RECOMMENDED = new Set([
   // signal we want preserved.
   "sonarjs/todo-tag",
   "sonarjs/fixme-tag",
+  // TypeScript-ESTree exposes node kinds as enum-like string unions. SonarJS
+  // misclassifies valid comparisons against AST_NODE_TYPES as unrelated enums.
+  "sonarjs/different-types-comparison",
 ]);
 const sonarRecommendedRules = Object.fromEntries(
   Object.entries(sonarRecommendedConfig.rules ?? {}).filter(
@@ -142,6 +140,19 @@ const sonarRecommendedRules = Object.fromEntries(
       entry[1] !== undefined && !SONAR_RULES_DROPPED_FROM_RECOMMENDED.has(entry[0]),
   ),
 );
+
+const importXTypeScriptSettings = {
+  "import-x/extensions": [".js", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts", ".d.ts"],
+  "import-x/parsers": {
+    "@typescript-eslint/parser": [".ts", ".tsx", ".mts", ".cts", ".d.ts"],
+  },
+  "import-x/resolver-next": [createTypeScriptImportResolver({ alwaysTryTypes: true })],
+};
+
+const bundledSettings = {
+  ...sonarRecommendedConfig.settings,
+  ...importXTypeScriptSettings,
+};
 
 const strictComplexityRuleEntries: Record<string, TSESLint.Linter.RuleEntry> = {
   complexity: ["error", { max: 8 }],
@@ -167,43 +178,67 @@ const strictComplexityRuleEntries: Record<string, TSESLint.Linter.RuleEntry> = {
   "sonarjs/too-many-break-or-continue-in-loop": "error",
 };
 
-const plugin: Plugin = {
+const typeAwareLanguageOptions: NonNullable<PluginConfig["languageOptions"]> = {
+  ecmaVersion: 2022,
+  parser: tseslint.parser,
+  parserOptions: {
+    projectService: true,
+  },
+  sourceType: "module",
+};
+
+const googleRuleEntries: Record<string, TSESLint.Linter.RuleEntry> = {
+  ...googleCoreRuleEntries,
+  ...googleTypeScriptRuleEntries,
+  ...googleImportRuleEntries,
+  ...googleDirectiveCommentRuleEntries,
+};
+
+const bundledPlugins = {
+  "@eslint-community/eslint-comments": eslintComments,
+  "@typescript-eslint": tseslint.plugin,
+  "agent-code-guard": null,
+  "import-x": importX,
+  jsdoc,
+  sonarjs,
+};
+
+/**
+ * Agent Code Guard ESLint plugin, including every rule and flat preset.
+ */
+export const plugin: AgentCodeGuardPlugin = {
   meta,
   rules,
   configs: {
     recommended: {
-      plugins: {
-        "agent-code-guard": null!,
-        jsdoc,
-        sonarjs,
-      },
+      languageOptions: typeAwareLanguageOptions,
+      plugins: bundledPlugins,
       rules: {
         ...sonarRecommendedRules,
-        ...jsdocRecommendedRuleEntries,
+        ...googleRuleEntries,
+        ...documentationPresetRuleEntries,
         ...recommendedSyntaxRuleEntries,
       },
-      settings: sonarRecommendedConfig.settings,
+      settings: bundledSettings,
     },
     strict: {
-      plugins: {
-        "agent-code-guard": null!,
-        jsdoc,
-        sonarjs,
-      },
+      languageOptions: typeAwareLanguageOptions,
+      plugins: bundledPlugins,
       rules: {
         ...sonarRecommendedRules,
-        ...jsdocStrictRuleEntries,
+        ...googleRuleEntries,
+        ...documentationPresetRuleEntries,
         ...recommendedSyntaxRuleEntries,
         ...strictComplexityRuleEntries,
       },
-      settings: sonarRecommendedConfig.settings,
+      settings: bundledSettings,
     },
     integrationTests: {
-      plugins: { "agent-code-guard": null! },
+      plugins: { "agent-code-guard": null },
       rules: integrationTestRuleEntries,
     },
     documentation: {
-      plugins: { "agent-code-guard": null!, jsdoc },
+      plugins: { "agent-code-guard": null, jsdoc },
       rules: documentationPresetRuleEntries,
     },
   },
@@ -213,5 +248,3 @@ plugin.configs.recommended.plugins["agent-code-guard"] = plugin;
 plugin.configs.strict.plugins["agent-code-guard"] = plugin;
 plugin.configs.integrationTests.plugins["agent-code-guard"] = plugin;
 plugin.configs.documentation.plugins["agent-code-guard"] = plugin;
-
-export default plugin;

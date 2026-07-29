@@ -5,40 +5,42 @@
  * member expressions, tag accesses, and the related extractor helpers.
  */
 
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-
-type NonEmptyArray<T> = readonly [T, ...T[]];
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 
 // Each brand uses its own `unique symbol` so the brand cannot be forged
 // from outside this module (no string property is sufficient) and so two
 // brands can intersect without TypeScript collapsing a shared key to
 // `never` (the symbols differ at the type level).
-declare const StaticStringBrand: unique symbol;
-declare const NodeWithParentBrand: unique symbol;
-declare const StaticMemberExpressionBrand: unique symbol;
-declare const TagAccessBrand: unique symbol;
+declare const STATIC_STRING_BRAND: unique symbol;
+declare const NODE_WITH_PARENT_BRAND: unique symbol;
+declare const STATIC_MEMBER_EXPRESSION_BRAND: unique symbol;
+declare const TAG_ACCESS_BRAND: unique symbol;
 
 /** A string value the analyzer has proven to be statically known. */
-export type StaticString = string & { readonly [StaticStringBrand]: "StaticString" };
+export type StaticString = string & { readonly [STATIC_STRING_BRAND]: "StaticString" };
 
-const staticString = (value: string): StaticString => value as StaticString;
+const staticString = (value: string): StaticString => {
+  return (
+    // Safe because this private constructor receives only statically resolved text.
+    value as StaticString
+  );
+};
 
 /** An AST node whose parent reference has been proven non-null. */
 export type NodeWithParent = TSESTree.Node & {
   readonly parent: TSESTree.Node;
-} & { readonly [NodeWithParentBrand]: "NodeWithParent" };
+} & { readonly [NODE_WITH_PARENT_BRAND]: "NodeWithParent" };
 
 /** A non-computed member expression with an `Identifier` property. */
 export type StaticMemberExpression = TSESTree.MemberExpression & {
   readonly computed: false;
   readonly property: TSESTree.Identifier;
-} & { readonly [StaticMemberExpressionBrand]: "StaticMemberExpression" };
+} & { readonly [STATIC_MEMBER_EXPRESSION_BRAND]: "StaticMemberExpression" };
 
 /** A static member expression whose property name is `_tag`. */
 export type TagAccess = StaticMemberExpression & {
   readonly property: TSESTree.Identifier & { readonly name: "_tag" };
-} & { readonly [TagAccessBrand]: "TagAccess" };
+} & { readonly [TAG_ACCESS_BRAND]: "TagAccess" };
 
 /**
  * First element of `values`, or `null` when the array is empty.
@@ -56,7 +58,13 @@ export function getFirst<T>(values: readonly T[]): T | null {
  * @returns The parent node branded as non-null, or `null` for roots.
  */
 export function getParent(node: TSESTree.Node): NodeWithParent | null {
-  return node.parent ? (node.parent as NodeWithParent) : null;
+  if (node.parent === undefined) {
+    return null;
+  }
+  return (
+    // Safe because the branch proves that the parent reference is present.
+    node.parent as NodeWithParent
+  );
 }
 
 /**
@@ -89,21 +97,17 @@ export function getStaticStringKey(
  * @returns The branded static string, or `null` if `node` is not a
  * recognized literal form.
  */
-export function resolveStringLiteralValue(
-  node: TSESTree.Node | null,
-): StaticString | null {
+export function resolveStringLiteralValue(node: TSESTree.Node | null): StaticString | null {
   if (node?.type === AST_NODE_TYPES.Literal && typeof node.value === "string") {
     return staticString(node.value);
   }
-  return node?.type === AST_NODE_TYPES.TemplateLiteral
-    ? getStaticTemplateValue(node)
-    : null;
+  return node?.type === AST_NODE_TYPES.TemplateLiteral ? getStaticTemplateValue(node) : null;
 }
 
-function getStaticTemplateValue(
-  node: TSESTree.TemplateLiteral,
-): StaticString | null {
-  if (node.expressions.length > 0) return null;
+function getStaticTemplateValue(node: TSESTree.TemplateLiteral): StaticString | null {
+  if (node.expressions.length > 0) {
+    return null;
+  }
   const head = getFirst(node.quasis);
   return head === null ? null : staticString(head.value.cooked ?? head.value.raw);
 }
@@ -137,16 +141,18 @@ export function getNumericLiteralValue(node: TSESTree.Node): number | null {
  * @returns The branded static member expression, or `null` if `node`
  * is dynamic or not a member expression.
  */
-export function getStaticMemberExpression(
-  node: TSESTree.Node,
-): StaticMemberExpression | null {
-  const unwrapped =
-    node.type === AST_NODE_TYPES.ChainExpression ? node.expression : node;
+export function getStaticMemberExpression(node: TSESTree.Node): StaticMemberExpression | null {
+  const unwrapped = node.type === AST_NODE_TYPES.ChainExpression ? node.expression : node;
   if (unwrapped.type !== AST_NODE_TYPES.MemberExpression || unwrapped.computed) {
     return null;
   }
-  if (unwrapped.property.type !== AST_NODE_TYPES.Identifier) return null;
-  return unwrapped as StaticMemberExpression;
+  if (unwrapped.property.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  return (
+    // Safe because both the static shape and identifier property are proven above.
+    unwrapped as StaticMemberExpression
+  );
 }
 
 /**
@@ -155,9 +161,7 @@ export function getStaticMemberExpression(
  * @param node The AST node to inspect.
  * @returns The branded property name, or `null` when `node` is dynamic.
  */
-export function getStaticMemberPropertyName(
-  node: TSESTree.Node,
-): StaticString | null {
+export function getStaticMemberPropertyName(node: TSESTree.Node): StaticString | null {
   const member = getStaticMemberExpression(node);
   return member ? staticString(member.property.name) : null;
 }
@@ -170,8 +174,13 @@ export function getStaticMemberPropertyName(
  */
 export function getTagAccess(node: TSESTree.Node): TagAccess | null {
   const member = getStaticMemberExpression(node);
-  if (member === null || member.property.name !== "_tag") return null;
-  return member as TagAccess;
+  if (member === null || member.property.name !== "_tag") {
+    return null;
+  }
+  return (
+    // Safe because the static property name is proven to be `_tag`.
+    member as TagAccess
+  );
 }
 
 /**
@@ -203,25 +212,25 @@ export function isNamedMemberCall(
  * @returns The branded function name, or `null` if no named enclosing
  * function is found.
  */
-export function getEnclosingFunctionName(
-  node: TSESTree.Node,
-): StaticString | null {
+export function getEnclosingFunctionName(node: TSESTree.Node): StaticString | null {
   let current = getParent(node);
   while (current) {
     const name = getFunctionNameAtNode(current);
-    if (name !== undefined) return name;
+    if (name !== undefined) {
+      return name;
+    }
     current = getParent(current);
   }
   return null;
 }
 
-type FunctionNameLookup = StaticString | null | undefined;
-
-function getFunctionNameAtNode(node: NodeWithParent): FunctionNameLookup {
+function getFunctionNameAtNode(node: NodeWithParent): StaticString | null | undefined {
   if (node.type === AST_NODE_TYPES.FunctionDeclaration) {
     return node.id ? staticString(node.id.name) : null;
   }
-  if (!isFunctionExpressionLike(node)) return undefined;
+  if (!isFunctionExpressionLike(node)) {
+    return undefined;
+  }
   const parent = getParent(node);
   return parent === null ? null : getFunctionNameFromParent(parent);
 }
@@ -229,8 +238,10 @@ function getFunctionNameAtNode(node: NodeWithParent): FunctionNameLookup {
 function isFunctionExpressionLike(
   node: TSESTree.Node,
 ): node is TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression {
-  return node.type === AST_NODE_TYPES.FunctionExpression ||
-    node.type === AST_NODE_TYPES.ArrowFunctionExpression;
+  return (
+    node.type === AST_NODE_TYPES.FunctionExpression ||
+    node.type === AST_NODE_TYPES.ArrowFunctionExpression
+  );
 }
 
 function getFunctionNameFromParent(node: NodeWithParent): StaticString | null {
@@ -240,19 +251,14 @@ function getFunctionNameFromParent(node: NodeWithParent): StaticString | null {
   return isPropertyNameCarrier(node) ? getPropertyCarrierName(node) : null;
 }
 
-function getVariableDeclaratorName(
-  node: TSESTree.VariableDeclarator,
-): StaticString | null {
-  return node.id.type === AST_NODE_TYPES.Identifier
-    ? staticString(node.id.name)
-    : null;
+function getVariableDeclaratorName(node: TSESTree.VariableDeclarator): StaticString | null {
+  return node.id.type === AST_NODE_TYPES.Identifier ? staticString(node.id.name) : null;
 }
 
 function isPropertyNameCarrier(
   node: TSESTree.Node,
 ): node is TSESTree.Property | TSESTree.MethodDefinition {
-  return node.type === AST_NODE_TYPES.Property ||
-    node.type === AST_NODE_TYPES.MethodDefinition;
+  return node.type === AST_NODE_TYPES.Property || node.type === AST_NODE_TYPES.MethodDefinition;
 }
 
 function getPropertyCarrierName(
@@ -280,9 +286,7 @@ const FUNCTION_RETURN_TYPE_OWNER_TYPES = new Set<string>([
   AST_NODE_TYPES.TSEmptyBodyFunctionExpression,
 ]);
 
-function isFunctionReturnTypeOwner(
-  node: TSESTree.Node,
-): node is FunctionReturnTypeOwner {
+function isFunctionReturnTypeOwner(node: TSESTree.Node): node is FunctionReturnTypeOwner {
   return FUNCTION_RETURN_TYPE_OWNER_TYPES.has(node.type);
 }
 
@@ -293,14 +297,14 @@ function isFunctionReturnTypeOwner(
  * @param node The TS type reference to inspect.
  * @returns `true` when `node` is the function's declared return type.
  */
-export function isFunctionReturnTypeReference(
-  node: TSESTree.TSTypeReference,
-): boolean {
+export function isFunctionReturnTypeReference(node: TSESTree.TSTypeReference): boolean {
   const annotation = getParent(node);
   if (annotation === null || annotation.type !== AST_NODE_TYPES.TSTypeAnnotation) {
     return false;
   }
   const owner = getParent(annotation);
-  if (owner === null) return false;
+  if (owner === null) {
+    return false;
+  }
   return isFunctionReturnTypeOwner(owner) && owner.returnType === annotation;
 }

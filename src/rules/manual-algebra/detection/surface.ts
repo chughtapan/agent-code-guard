@@ -1,9 +1,9 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { getStaticStringKey, resolveStringLiteralValue } from "../../utils/ast-refinement/index.js";
 
 type SurfaceKind = "type" | "interface" | "class" | "object" | "function";
 
+/** Normalized facts collected from one declaration surface. */
 export interface Surface {
   readonly kind: SurfaceKind;
   readonly node: TSESTree.Node;
@@ -52,37 +52,53 @@ function finalizeSurface(surface: MutableSurface): Surface {
   };
 }
 
+/**
+ * Normalizes a surface name for semantic comparison.
+ * @param value The source spelling.
+ * @returns A lowercase, trimmed spelling.
+ */
 export function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
 
-export function hasNormalized(
-  values: ReadonlySet<string>,
-  candidates: Iterable<string>,
-): boolean {
+/**
+ * Tests whether a set contains any normalized candidate.
+ * @param values The collected source values.
+ * @param candidates The candidate spellings.
+ * @returns Whether any normalized candidate is present.
+ */
+export function hasNormalized(values: ReadonlySet<string>, candidates: Iterable<string>): boolean {
   const normalized = new Set([...values].map(normalize));
   for (const candidate of candidates) {
-    if (normalized.has(normalize(candidate))) return true;
+    if (normalized.has(normalize(candidate))) {
+      return true;
+    }
   }
   return false;
 }
 
-export function hasLiteralPair(
-  surface: Surface,
-  left: string,
-  right: string,
-): boolean {
-  return hasNormalized(surface.stringLiterals, [left]) &&
-    hasNormalized(surface.stringLiterals, [right]);
+/**
+ * Tests whether both literal spellings occur on a surface.
+ * @param surface The surface to inspect.
+ * @param left The first literal.
+ * @param right The second literal.
+ * @returns Whether the literal pair is present.
+ */
+export function hasLiteralPair(surface: Surface, left: string, right: string): boolean {
+  return (
+    hasNormalized(surface.stringLiterals, [left]) && hasNormalized(surface.stringLiterals, [right])
+  );
 }
 
-export function hasKeyPair(
-  surface: Surface,
-  left: string,
-  right: string,
-): boolean {
-  return hasNormalized(surface.keys, [left]) &&
-    hasNormalized(surface.keys, [right]);
+/**
+ * Tests whether both key spellings occur on a surface.
+ * @param surface The surface to inspect.
+ * @param left The first key.
+ * @param right The second key.
+ * @returns Whether the key pair is present.
+ */
+export function hasKeyPair(surface: Surface, left: string, right: string): boolean {
+  return hasNormalized(surface.keys, [left]) && hasNormalized(surface.keys, [right]);
 }
 
 function addKey(
@@ -91,15 +107,16 @@ function addKey(
   computed: boolean,
 ): void {
   const name = getStaticStringKey(key, computed);
-  if (name === null) return;
+  if (name === null) {
+    return;
+  }
   surface.keys.add(name);
-  if (name === "_tag") surface.hasTagKey = true;
+  if (name === "_tag") {
+    surface.hasTagKey = true;
+  }
 }
 
-function resolveLiteralIntoSurface(
-  surface: MutableSurface,
-  node: TSESTree.Node | null,
-): void {
+function resolveLiteralIntoSurface(surface: MutableSurface, node: TSESTree.Node | null): void {
   const literal = resolveStringLiteralValue(node);
   if (literal !== null) {
     surface.stringLiterals.add(literal);
@@ -110,23 +127,19 @@ function resolveLiteralIntoSurface(
   }
 }
 
-function addTypeLiterals(
-  surface: MutableSurface,
-  node: TSESTree.TypeNode,
-): void {
+function addTypeLiterals(surface: MutableSurface, node: TSESTree.TypeNode): void {
   if (node.type === AST_NODE_TYPES.TSLiteralType) {
     resolveLiteralIntoSurface(surface, node.literal);
     return;
   }
   if (node.type === AST_NODE_TYPES.TSUnionType) {
-    for (const type of node.types) addTypeLiterals(surface, type);
+    for (const type of node.types) {
+      addTypeLiterals(surface, type);
+    }
   }
 }
 
-function addTypeElement(
-  surface: MutableSurface,
-  member: TSESTree.TypeElement,
-): void {
+function addTypeElement(surface: MutableSurface, member: TSESTree.TypeElement): void {
   if (member.type === AST_NODE_TYPES.TSPropertySignature) {
     addKey(surface, member.key, member.computed);
     if (member.typeAnnotation) {
@@ -139,26 +152,21 @@ function addTypeElement(
   }
 }
 
-function addTypeNode(
-  surface: MutableSurface,
-  node: TSESTree.TypeNode,
-): void {
+function addTypeNode(surface: MutableSurface, node: TSESTree.TypeNode): void {
   if (node.type === AST_NODE_TYPES.TSTypeLiteral) {
-    for (const member of node.members) addTypeElement(surface, member);
+    for (const member of node.members) {
+      addTypeElement(surface, member);
+    }
     return;
   }
-  if (
-    node.type === AST_NODE_TYPES.TSUnionType ||
-    node.type === AST_NODE_TYPES.TSIntersectionType
-  ) {
-    for (const type of node.types) addTypeNode(surface, type);
+  if (node.type === AST_NODE_TYPES.TSUnionType || node.type === AST_NODE_TYPES.TSIntersectionType) {
+    for (const type of node.types) {
+      addTypeNode(surface, type);
+    }
   }
 }
 
-function addClassMember(
-  surface: MutableSurface,
-  member: TSESTree.ClassElement,
-): void {
+function addClassMember(surface: MutableSurface, member: TSESTree.ClassElement): void {
   if (member.type === AST_NODE_TYPES.PropertyDefinition) {
     addKey(surface, member.key, member.computed);
     resolveLiteralIntoSurface(surface, member.value);
@@ -169,11 +177,10 @@ function addClassMember(
   }
 }
 
-function addObjectMember(
-  surface: MutableSurface,
-  member: TSESTree.ObjectLiteralElement,
-): void {
-  if (member.type !== AST_NODE_TYPES.Property) return;
+function addObjectMember(surface: MutableSurface, member: TSESTree.ObjectLiteralElement): void {
+  if (member.type !== AST_NODE_TYPES.Property) {
+    return;
+  }
   addKey(surface, member.key, member.computed);
   resolveLiteralIntoSurface(surface, member.value);
 }
@@ -182,25 +189,27 @@ function isNode(value: unknown): value is TSESTree.Node {
   return typeof value === "object" && value !== null && "type" in value;
 }
 
-function walkNodeValue(
-  value: unknown,
-  visit: (node: TSESTree.Node) => void,
-): void {
+function walkNodeValue(value: unknown, visit: (node: TSESTree.Node) => void): void {
   if (Array.isArray(value)) {
-    for (const child of value) walkNodeValue(child, visit);
+    for (const child of value) {
+      walkNodeValue(child, visit);
+    }
     return;
   }
-  if (isNode(value)) resolveNodeWalk(value, visit);
+  if (isNode(value)) {
+    resolveNodeWalk(value, visit);
+  }
 }
 
-function resolveNodeWalk(
-  node: TSESTree.Node | null,
-  visit: (node: TSESTree.Node) => void,
-): void {
-  if (node === null) return;
+function resolveNodeWalk(node: TSESTree.Node | null, visit: (node: TSESTree.Node) => void): void {
+  if (node === null) {
+    return;
+  }
   visit(node);
   for (const [key, value] of Object.entries(node)) {
-    if (key !== "parent") walkNodeValue(value, visit);
+    if (key !== "parent") {
+      walkNodeValue(value, visit);
+    }
   }
 }
 
@@ -242,7 +251,9 @@ function addFunctionBody(
       addKey(surface, child.property, child.computed);
       return;
     }
-    if (child.type === AST_NODE_TYPES.Literal) resolveLiteralIntoSurface(surface, child);
+    if (child.type === AST_NODE_TYPES.Literal) {
+      resolveLiteralIntoSurface(surface, child);
+    }
   });
 }
 
@@ -258,7 +269,9 @@ function typeAliasSurface(node: TSESTree.TSTypeAliasDeclaration): Surface {
 
 function interfaceSurface(node: TSESTree.TSInterfaceDeclaration): Surface {
   const surface = fromSurfaceParts("interface", node, node.id.name);
-  for (const member of node.body.body) addTypeElement(surface, member);
+  for (const member of node.body.body) {
+    addTypeElement(surface, member);
+  }
   return finalizeSurface(surface);
 }
 
@@ -267,7 +280,9 @@ function fromClassSurface(
   displayName: string | null,
 ): Surface {
   const surface = fromSurfaceParts("class", node, displayName);
-  for (const member of node.body.body) addClassMember(surface, member);
+  for (const member of node.body.body) {
+    addClassMember(surface, member);
+  }
   return finalizeSurface(surface);
 }
 
@@ -289,13 +304,17 @@ function objectSurface(
   init: TSESTree.ObjectExpression,
 ): Surface {
   const surface = fromSurfaceParts("object", node, displayName);
-  for (const member of init.properties) addObjectMember(surface, member);
+  for (const member of init.properties) {
+    addObjectMember(surface, member);
+  }
   return finalizeSurface(surface);
 }
 
 function variableSurface(node: TSESTree.VariableDeclarator): Surface | null {
   const displayName = getPatternName(node.id);
-  if (displayName === null || node.init === null) return null;
+  if (displayName === null || node.init === null) {
+    return null;
+  }
   if (node.init.type === AST_NODE_TYPES.ObjectExpression) {
     return objectSurface(node, displayName, node.init);
   }
@@ -311,27 +330,42 @@ function variableSurface(node: TSESTree.VariableDeclarator): Surface | null {
   return null;
 }
 
-const SURFACE_READERS = new Map<string, (node: TSESTree.Node) => Surface | null>([
-  [AST_NODE_TYPES.TSTypeAliasDeclaration, (node) =>
-    typeAliasSurface(node as TSESTree.TSTypeAliasDeclaration)],
-  [AST_NODE_TYPES.TSInterfaceDeclaration, (node) =>
-    interfaceSurface(node as TSESTree.TSInterfaceDeclaration)],
-  [AST_NODE_TYPES.ClassDeclaration, (node) => {
-    const classNode = node as TSESTree.ClassDeclaration;
-    return fromClassSurface(classNode, classNode.id?.name ?? null);
-  }],
-  [AST_NODE_TYPES.ClassExpression, (node) => {
-    const classNode = node as TSESTree.ClassExpression;
-    return fromClassSurface(classNode, classNode.id?.name ?? null);
-  }],
-  [AST_NODE_TYPES.FunctionDeclaration, (node) => {
-    const functionNode = node as TSESTree.FunctionDeclaration;
-    return fromFunctionSurface(functionNode, functionNode.id?.name ?? null);
-  }],
-  [AST_NODE_TYPES.VariableDeclarator, (node) =>
-    variableSurface(node as TSESTree.VariableDeclarator)],
-]);
+function typeSurfaceFromNode(node: TSESTree.Node): Surface | null {
+  if (node.type === AST_NODE_TYPES.TSTypeAliasDeclaration) {
+    return typeAliasSurface(node);
+  }
+  return node.type === AST_NODE_TYPES.TSInterfaceDeclaration ? interfaceSurface(node) : null;
+}
 
+function classSurfaceFromNode(node: TSESTree.Node): Surface | null {
+  if (node.type === AST_NODE_TYPES.ClassDeclaration) {
+    return fromClassSurface(node, node.id?.name ?? null);
+  }
+  if (node.type === AST_NODE_TYPES.ClassExpression) {
+    return fromClassSurface(node, node.id?.name ?? null);
+  }
+  return null;
+}
+
+function valueSurfaceFromNode(node: TSESTree.Node): Surface | null {
+  const classSurface = classSurfaceFromNode(node);
+  if (classSurface !== null) {
+    return classSurface;
+  }
+  if (node.type === AST_NODE_TYPES.FunctionDeclaration) {
+    return fromFunctionSurface(node, node.id?.name ?? null);
+  }
+  if (node.type === AST_NODE_TYPES.VariableDeclarator) {
+    return variableSurface(node);
+  }
+  return null;
+}
+
+/**
+ * Reads the manual-algebra surface represented by a supported declaration.
+ * @param node The declaration node to inspect.
+ * @returns Its normalized surface, or `null` for unsupported nodes.
+ */
 export function surfaceFromNode(node: TSESTree.Node): Surface | null {
-  return SURFACE_READERS.get(node.type)?.(node) ?? null;
+  return typeSurfaceFromNode(node) ?? valueSurfaceFromNode(node);
 }

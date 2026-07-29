@@ -7,12 +7,16 @@ const VARIABLE_FUNCTION_SELECTOR =
   "VariableDeclarator[init.type='FunctionExpression'], " +
   "VariableDeclarator[init.type='ArrowFunctionExpression']";
 
-export default createRule({
+/**
+ * Enforces the `no-manual-brand-constructor` Agent Code Guard rule.
+ */
+export const noManualBrandConstructor = createRule({
   name: "no-manual-brand-constructor",
   meta: {
     type: "problem",
     docs: {
-      description: "Manually constructing a branded value bypasses the validation that earned the brand; use the smart constructor.",
+      description:
+        "Manually constructing a branded value bypasses the validation that earned the brand; use the smart constructor.",
       url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
@@ -27,7 +31,9 @@ export default createRule({
   create(context) {
     function maybeReport(node: TSESTree.Node): void {
       const match = findManualBrandConstructorMatch(node);
-      if (match === null) return;
+      if (match === null) {
+        return;
+      }
       context.report({
         node: match.node,
         messageId: "manualBrandConstructor",

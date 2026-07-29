@@ -1,5 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isFunctionReturnTypeReference } from "../utils/ast-refinement/index.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
@@ -12,12 +11,16 @@ function isPromiseTypeReference(node: TSESTree.Node): boolean {
   );
 }
 
-export default createRule({
+/**
+ * Enforces the `promise-type` Agent Code Guard rule.
+ */
+export const promiseType = createRule({
   name: "promise-type",
   meta: {
     type: "problem",
     docs: {
-      description: "`Promise<T>` erases the error channel; tagged-error or `Effect<T, E, R>` keep it visible.",
+      description:
+        "`Promise<T>` erases the error channel; tagged-error or `Effect<T, E, R>` keep it visible.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -31,8 +34,12 @@ export default createRule({
   create(context) {
     return {
       TSTypeReference(node) {
-        if (!isPromiseTypeReference(node)) return;
-        if (!isFunctionReturnTypeReference(node)) return;
+        if (!isPromiseTypeReference(node)) {
+          return;
+        }
+        if (!isFunctionReturnTypeReference(node)) {
+          return;
+        }
         context.report({ node, messageId: "promiseReturn" });
       },
     };

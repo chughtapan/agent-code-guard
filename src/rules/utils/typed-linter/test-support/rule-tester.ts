@@ -1,18 +1,20 @@
 import { RuleTester } from "@typescript-eslint/rule-tester";
-import { createRequire } from "node:module";
 import { afterAll, describe, it } from "vitest";
-
-const require = createRequire(import.meta.url);
+import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;
 RuleTester.itOnly = it.only;
 RuleTester.describe = describe;
 
+/**
+ * Creates a RuleTester backed by the typed fixture TypeScript project.
+ * @returns A RuleTester configured with the repository test project.
+ */
 export function createTypedRuleTester(): RuleTester {
   return new RuleTester({
     languageOptions: {
-      parser: require("@typescript-eslint/parser"),
+      parser: tsParser,
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: "module",

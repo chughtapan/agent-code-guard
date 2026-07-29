@@ -2,7 +2,7 @@ import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
-import plugin from "../../index.js";
+import { plugin } from "../../index.js";
 
 const parser: Linter.Parser = tsParser;
 const pluginEntry: NonNullable<Linter.Config["plugins"]>[string] = plugin;
@@ -27,19 +27,13 @@ const transportSuffixArb = fc.constantFrom("Response", "Payload", "State", "Conf
 const paddingArb = fc.constantFrom("", " ", "\n", "  ", "\n\n", "\t");
 const renameArb = fc.stringMatching(/^[a-z][a-zA-Z0-9]{1,8}$/);
 
-function lintOne(
-  code: string,
-  ruleId: string,
-  filename: string = "src/test.ts",
-): Linter.LintMessage[] {
+function lintOne(code: string, ruleId: string, filename = "src/test.ts"): Linter.LintMessage[] {
   return linter.verify(code, configFor(ruleId), { filename });
 }
 
 function mutate(seed: string, pad: string, ident: string, rename: string): string {
   const renamed =
-    ident.length > 0
-      ? seed.replace(new RegExp(`\\b${escapeRegex(ident)}\\b`, "g"), rename)
-      : seed;
+    ident.length > 0 ? seed.replace(new RegExp(`\\b${escapeRegex(ident)}\\b`, "g"), rename) : seed;
   return `${pad}${renamed}${pad}`;
 }
 

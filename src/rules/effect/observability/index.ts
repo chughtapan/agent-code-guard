@@ -2,12 +2,12 @@
  * @file Effect observability sub-family registry.
  */
 
-import annotateWithoutSpan from "./annotate-without-span.js";
-import handlerRequiresSpan from "./handler-requires-span.js";
-import loggerConfigAtBoot from "./logger-config-at-boot.js";
-import noConsoleInEffect from "./no-console-in-effect.js";
-import preferAnnotateLogs from "./prefer-annotate-logs.js";
-import requireSpanOnExportedEffect from "./require-span-on-exported-effect.js";
+import { annotateWithoutSpan } from "./annotate-without-span.js";
+import { handlerRequiresSpan } from "./handler-requires-span.js";
+import { loggerConfigAtBoot } from "./logger-config-at-boot.js";
+import { noConsoleInEffect } from "./no-console-in-effect.js";
+import { preferAnnotateLogs } from "./prefer-annotate-logs.js";
+import { requireSpanOnExportedEffect } from "./require-span-on-exported-effect.js";
 
 /**
  * Effect observability rules. Catches missing `Effect.withSpan` on

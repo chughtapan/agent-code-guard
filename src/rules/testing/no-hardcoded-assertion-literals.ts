@@ -1,5 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
@@ -9,13 +8,7 @@ import {
   resolveStringLiteralValue,
 } from "../utils/ast-refinement/index.js";
 
-const FIRST_ARG_MATCHERS = new Set([
-  "toBe",
-  "toEqual",
-  "toStrictEqual",
-  "toContain",
-  "toMatch",
-]);
+const FIRST_ARG_MATCHERS = new Set(["toBe", "toEqual", "toStrictEqual", "toContain", "toMatch"]);
 
 const ASSERT_MEMBER_MATCHERS = new Set(["equal", "strictEqual", "deepEqual"]);
 
@@ -29,20 +22,14 @@ type MessageIds = "hardcodedLiteral";
 
 function flaggedRepr(arg: TSESTree.Node, minLen: number): string | null {
   const str = resolveStringLiteralValue(arg);
-  if (str !== null) return str.length >= minLen ? JSON.stringify(str) : null;
-  const num = getNumericLiteralValue(arg);
-  if (num === null) return null;
-  return BOUNDARY_NUMBERS.has(num) ? null : String(num);
-}
-
-function assertionArgument(
-  node: TSESTree.CallExpression,
-): TSESTree.CallExpressionArgument | null {
-  for (const readArgument of ASSERTION_ARGUMENT_READERS) {
-    const argument = readArgument(node);
-    if (argument !== undefined) return argument;
+  if (str !== null) {
+    return str.length >= minLen ? JSON.stringify(str) : null;
   }
-  return null;
+  const num = getNumericLiteralValue(arg);
+  if (num === null) {
+    return null;
+  }
+  return BOUNDARY_NUMBERS.has(num) ? null : String(num);
 }
 
 type AssertionArgumentReader = (
@@ -60,7 +47,7 @@ function firstArgMatcherArgument(
 ): TSESTree.CallExpressionArgument | null | undefined {
   const propertyName = memberPropertyName(node.callee);
   return propertyName !== null && isFirstArgMatcherCall(node.callee, propertyName)
-    ? node.arguments[0] ?? null
+    ? (node.arguments[0] ?? null)
     : undefined;
 }
 
@@ -69,51 +56,64 @@ function assertMemberMatcherArgument(
 ): TSESTree.CallExpressionArgument | null | undefined {
   const propertyName = memberPropertyName(node.callee);
   return propertyName !== null && isAssertMemberMatcherCall(node.callee, propertyName)
-    ? node.arguments[1] ?? null
+    ? (node.arguments[1] ?? null)
     : undefined;
 }
 
 function topLevelAssertArgument(
   node: TSESTree.CallExpression,
 ): TSESTree.CallExpressionArgument | null | undefined {
-  return isTopLevelAssertCall(node.callee) ? node.arguments[1] ?? null : undefined;
+  return isTopLevelAssertCall(node.callee) ? (node.arguments[1] ?? null) : undefined;
+}
+
+function assertionArgument(node: TSESTree.CallExpression): TSESTree.CallExpressionArgument | null {
+  for (const readArgument of ASSERTION_ARGUMENT_READERS) {
+    const argument = readArgument(node);
+    if (argument !== undefined) {
+      return argument;
+    }
+  }
+  return null;
 }
 
 function memberPropertyName(node: TSESTree.CallExpression["callee"]): string | null {
-  return node.type === AST_NODE_TYPES.MemberExpression
-    ? getStaticMemberPropertyName(node)
-    : null;
+  return node.type === AST_NODE_TYPES.MemberExpression ? getStaticMemberPropertyName(node) : null;
 }
 
 function isFirstArgMatcherCall(
   callee: TSESTree.CallExpression["callee"],
   propertyName: string,
 ): boolean {
-  return callee.type === AST_NODE_TYPES.MemberExpression &&
-    FIRST_ARG_MATCHERS.has(propertyName);
+  return callee.type === AST_NODE_TYPES.MemberExpression && FIRST_ARG_MATCHERS.has(propertyName);
 }
 
 function isAssertMemberMatcherCall(
   callee: TSESTree.CallExpression["callee"],
   propertyName: string,
 ): boolean {
-  if (callee.type !== AST_NODE_TYPES.MemberExpression) return false;
-  if (!ASSERT_MEMBER_MATCHERS.has(propertyName)) return false;
-  return callee.object.type === AST_NODE_TYPES.Identifier &&
-    callee.object.name === "assert";
+  if (callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return false;
+  }
+  if (!ASSERT_MEMBER_MATCHERS.has(propertyName)) {
+    return false;
+  }
+  return callee.object.type === AST_NODE_TYPES.Identifier && callee.object.name === "assert";
 }
 
 function isTopLevelAssertCall(callee: TSESTree.CallExpression["callee"]): boolean {
-  return callee.type === AST_NODE_TYPES.Identifier &&
-    TOP_LEVEL_ASSERT_FNS.has(callee.name);
+  return callee.type === AST_NODE_TYPES.Identifier && TOP_LEVEL_ASSERT_FNS.has(callee.name);
 }
 
-export default createRule<Options, MessageIds>({
+/**
+ * Enforces the `no-hardcoded-assertion-literals` Agent Code Guard rule.
+ */
+export const noHardcodedAssertionLiterals = createRule<Options, MessageIds>({
   name: "no-hardcoded-assertion-literals",
   meta: {
     type: "suggestion",
     docs: {
-      description: "Assertions hardcoding a literal (e.g., `expect(...).toBe(42)` where 42 is the implementation's output) compress the same information as a property; the property has higher coverage.",
+      description:
+        "Assertions hardcoding a literal (e.g., `expect(...).toBe(42)` where 42 is the implementation's output) compress the same information as a property; the property has higher coverage.",
       url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
@@ -126,8 +126,7 @@ export default createRule<Options, MessageIds>({
         properties: {
           allowShorterThan: {
             type: "integer",
-            description:
-              "Allow string literals with fewer than this many characters. Default: 4.",
+            description: "Allow string literals with fewer than this many characters. Default: 4.",
           },
         },
         additionalProperties: false,
@@ -138,7 +137,9 @@ export default createRule<Options, MessageIds>({
   },
   defaultOptions: [{ allowShorterThan: 4 }],
   create(context, [options]) {
-    if (!isTestFile(context.filename)) return {};
+    if (!isTestFile(context.filename)) {
+      return {};
+    }
 
     const minLen = options.allowShorterThan ?? 4;
 
@@ -152,7 +153,9 @@ export default createRule<Options, MessageIds>({
     return {
       CallExpression(node) {
         const arg = assertionArgument(node);
-        if (arg) checkArg(arg);
+        if (arg) {
+          checkArg(arg);
+        }
       },
     };
   },

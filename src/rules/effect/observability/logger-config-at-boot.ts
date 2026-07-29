@@ -1,5 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
@@ -21,22 +20,38 @@ function isBootFile(filename: string): boolean {
 }
 
 function loggerConfigCall(node: TSESTree.CallExpression): string | null {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return null;
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return null;
+  }
   const callee = node.callee;
-  if (callee.computed) return null;
-  if (callee.object.type !== AST_NODE_TYPES.Identifier) return null;
-  if (callee.object.name !== "Logger") return null;
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return null;
-  if (!LOGGER_CONFIG_METHODS.has(callee.property.name)) return null;
+  if (callee.computed) {
+    return null;
+  }
+  if (callee.object.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (callee.object.name !== "Logger") {
+    return null;
+  }
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (!LOGGER_CONFIG_METHODS.has(callee.property.name)) {
+    return null;
+  }
   return callee.property.name;
 }
 
-export default createRule({
+/**
+ * Enforces the `logger-config-at-boot` Agent Code Guard rule.
+ */
+export const loggerConfigAtBoot = createRule({
   name: "logger-config-at-boot",
   meta: {
     type: "problem",
     docs: {
-      description: "Logger configuration is boundary state; configure once at boot, never per-call inside the program.",
+      description:
+        "Logger configuration is boundary state; configure once at boot, never per-call inside the program.",
       url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
@@ -49,11 +64,15 @@ export default createRule({
   },
   defaultOptions: [],
   create(context) {
-    if (isBootFile(context.filename)) return {};
+    if (isBootFile(context.filename)) {
+      return {};
+    }
     return {
       CallExpression(node) {
         const method = loggerConfigCall(node);
-        if (method === null) return;
+        if (method === null) {
+          return;
+        }
         context.report({
           node,
           messageId: "loggerConfigAwayFromBoot",

@@ -3,13 +3,13 @@
  * for the plugin entry; each member rule lives in a sibling file.
  */
 
-import manualBrand from "./manual-brand.js";
-import noManualBrandConstructor from "./no-manual-brand-constructor.js";
-import manualOption from "./manual-option.js";
-import manualResult from "./manual-result.js";
-import manualTaggedError from "./manual-tagged-error.js";
-import noExportedBrandConstructor from "./no-exported-brand-constructor.js";
-import noManualEnumCast from "./no-manual-enum-cast.js";
+import { manualBrand } from "./manual-brand.js";
+import { noManualBrandConstructor } from "./no-manual-brand-constructor.js";
+import { manualOption } from "./manual-option.js";
+import { manualResult } from "./manual-result.js";
+import { manualTaggedError } from "./manual-tagged-error.js";
+import { noExportedBrandConstructor } from "./no-exported-brand-constructor.js";
+import { noManualEnumCast } from "./no-manual-enum-cast.js";
 
 /**
  * Manual-algebra rule family. Catches hand-rolled `Result` / `Option` /

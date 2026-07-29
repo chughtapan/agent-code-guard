@@ -24,7 +24,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "pnpm clean && tsc",
-    "lint": "eslint . && knip",
+    "lint": "tsc --noEmit && eslint . && knip",
     "test": "vitest run --changed",
     "test:all": "vitest run",
     "bench": "tsx bench/lint-bench.ts",
@@ -52,10 +52,14 @@
     "url": "https://github.com/chughtapan/agent-code-guard/issues"
   },
   "dependencies": {
-    "@typescript-eslint/utils": "^8.0.0",
+    "@eslint-community/eslint-plugin-eslint-comments": "4.7.2",
+    "@typescript-eslint/utils": "8.65.0",
+    "eslint-import-resolver-typescript": "4.4.5",
+    "eslint-plugin-import-x": "4.17.1",
     "eslint-plugin-jsdoc": "^62.9.0",
     "eslint-plugin-sonarjs": "^4.0.3",
-    "knip": "^6.12.1"
+    "knip": "^6.12.1",
+    "typescript-eslint": "8.65.0"
   },
   "peerDependencies": {
     "eslint": ">=9",
@@ -66,8 +70,8 @@
     "@stryker-mutator/typescript-checker": "^9.6.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
     "@types/node": "^22.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "@typescript-eslint/rule-tester": "^8.0.0",
+    "@typescript-eslint/parser": "8.65.0",
+    "@typescript-eslint/rule-tester": "8.65.0",
     "eslint": "^9.0.0",
     "fast-check": "^4.7.0",
     "tsx": "^4.21.0",

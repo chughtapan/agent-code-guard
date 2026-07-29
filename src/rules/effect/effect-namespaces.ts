@@ -79,6 +79,6 @@ const EFFECT_TAGGED_TYPE_NAMES: readonly string[] = [
  * type-name string emitted by the TypeScript checker for Effect-flavored
  * values.
  */
-export const EFFECT_TAGGED_TYPE_PATTERN: RegExp = new RegExp(
+export const EFFECT_TAGGED_TYPE_PATTERN = new RegExp(
   `\\b(?:${EFFECT_TAGGED_TYPE_NAMES.join("|")})\\b`,
 );

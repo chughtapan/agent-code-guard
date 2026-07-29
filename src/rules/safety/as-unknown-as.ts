@@ -1,5 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
@@ -11,18 +10,21 @@ function isCastToUnknown(
   node: TSESTree.Expression,
 ): node is TSESTree.TSAsExpression | TSESTree.TSTypeAssertion {
   return (
-    (node.type === AST_NODE_TYPES.TSAsExpression ||
-      node.type === AST_NODE_TYPES.TSTypeAssertion) &&
+    (node.type === AST_NODE_TYPES.TSAsExpression || node.type === AST_NODE_TYPES.TSTypeAssertion) &&
     isUnknownKeyword(node.typeAnnotation)
   );
 }
 
-export default createRule({
+/**
+ * Enforces the `as-unknown-as` Agent Code Guard rule.
+ */
+export const asUnknownAs = createRule({
   name: "as-unknown-as",
   meta: {
     type: "problem",
     docs: {
-      description: "`as unknown as T` is a double-cast that bypasses the type system at the boundary; decode through a schema.",
+      description:
+        "`as unknown as T` is a double-cast that bypasses the type system at the boundary; decode through a schema.",
       url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
@@ -35,10 +37,10 @@ export default createRule({
   },
   defaultOptions: [],
   create(context) {
-    function maybeReport(
-      node: TSESTree.TSAsExpression | TSESTree.TSTypeAssertion,
-    ): void {
-      if (!isCastToUnknown(node.expression)) return;
+    function maybeReport(node: TSESTree.TSAsExpression | TSESTree.TSTypeAssertion): void {
+      if (!isCastToUnknown(node.expression)) {
+        return;
+      }
       context.report({ node, messageId: "asUnknownAs" });
     }
 

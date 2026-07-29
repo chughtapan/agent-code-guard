@@ -3,10 +3,10 @@ import path from "node:path";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
-type Options = {
+interface Options {
   readonly packageJsonPath?: string;
   readonly scriptNames?: readonly string[];
-};
+}
 
 type MessageId = "invalidPackageJson" | "missingScript" | "missingKnip";
 
@@ -17,6 +17,16 @@ interface PackageScripts {
   readonly scripts?: Record<string, unknown>;
 }
 
+function isPackageScripts(value: unknown): value is PackageScripts {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  if (!("scripts" in value) || value.scripts === undefined) {
+    return true;
+  }
+  return typeof value.scripts === "object" && value.scripts !== null;
+}
+
 type PackageJsonRead =
   | { readonly _tag: "Read"; readonly packageJson: PackageScripts }
   | { readonly _tag: "Unreadable"; readonly cause: unknown };
@@ -24,28 +34,23 @@ type PackageJsonRead =
 type PackageCheckResult =
   | { readonly _tag: "Configured"; readonly scriptNames: string }
   | {
-    readonly _tag: "Missing";
-    readonly messageId: MessageId;
-    readonly scriptNames: string;
-    readonly cause?: string;
-  };
+      readonly _tag: "Missing";
+      readonly messageId: MessageId;
+      readonly scriptNames: string;
+      readonly cause?: string;
+    };
 
 const cwdFor = (context: Readonly<{ cwd?: string }>): string =>
-  typeof context.cwd === "string" && context.cwd.length > 0
-    ? context.cwd
-    : process.cwd();
+  typeof context.cwd === "string" && context.cwd.length > 0 ? context.cwd : process.cwd();
 
-const packagePathFor = (
-  context: Readonly<{ cwd?: string }>,
-  option: Options,
-): string =>
+const packagePathFor = (context: Readonly<{ cwd?: string }>, option: Options): string =>
   path.resolve(option.packageJsonPath ?? path.join(cwdFor(context), "package.json"));
 
 const parsePackageJson = (filePath: string): PackageJsonRead => {
   try {
-    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
-    return parsed && typeof parsed === "object"
-      ? { _tag: "Read", packageJson: parsed as PackageScripts }
+    const parsed: unknown = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    return isPackageScripts(parsed)
+      ? { _tag: "Read", packageJson: parsed }
       : { _tag: "Unreadable", cause: "package.json did not contain an object" };
   } catch (cause) {
     return { _tag: "Unreadable", cause };
@@ -76,10 +81,7 @@ const checkPackageScripts = (
   return { _tag: "Missing", messageId: "missingKnip", scriptNames: scriptList };
 };
 
-const invalidPackageJson = (
-  scriptNames: readonly string[],
-  cause: unknown,
-): PackageCheckResult => {
+const invalidPackageJson = (scriptNames: readonly string[], cause: unknown): PackageCheckResult => {
   return {
     _tag: "Missing",
     messageId: "invalidPackageJson",
@@ -88,8 +90,9 @@ const invalidPackageJson = (
   };
 };
 
-const errorSummary = (cause: unknown): string =>
-  cause instanceof Error ? cause.message : String(cause);
+function errorSummary(cause: unknown): string {
+  return cause instanceof Error ? cause.message : String(cause);
+}
 
 function absurd(value: never): never {
   throw new Error(`unreachable tag: ${JSON.stringify(value)}`);
@@ -109,12 +112,24 @@ function resolvePackageCheck(
   }
 }
 
-export default createRule<[Options], MessageId>({
+/**
+ * Enforces the `require-knip-in-lint` Agent Code Guard rule.
+ */
+export const requireKnipInLint = createRule<
+  [
+    {
+      readonly packageJsonPath?: string;
+      readonly scriptNames?: readonly string[];
+    },
+  ],
+  MessageId
+>({
   name: "require-knip-in-lint",
   meta: {
     type: "problem",
     docs: {
-      description: "Dead-code detection (`knip`) running in lint catches drifted exports before they accumulate; the linter checks structure, not just syntax.",
+      description:
+        "Dead-code detection (`knip`) running in lint catches drifted exports before they accumulate; the linter checks structure, not just syntax.",
       url: PRINCIPLE_URL.DISCIPLINE,
     },
     messages: {
@@ -149,13 +164,12 @@ export default createRule<[Options], MessageId>({
     return {
       Program(node) {
         const packageJsonPath = packagePathFor(context, options);
-        if (!fs.existsSync(packageJsonPath)) return;
+        if (!fs.existsSync(packageJsonPath)) {
+          return;
+        }
 
         const scriptNames = options.scriptNames ?? DEFAULT_SCRIPT_NAMES;
-        const result = resolvePackageCheck(
-          parsePackageJson(packageJsonPath),
-          scriptNames,
-        );
+        const result = resolvePackageCheck(parsePackageJson(packageJsonPath), scriptNames);
 
         switch (result._tag) {
           case "Configured":

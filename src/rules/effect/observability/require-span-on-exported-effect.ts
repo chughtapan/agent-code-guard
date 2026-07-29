@@ -1,26 +1,27 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
-function functionExportName(
-  declaration: TSESTree.FunctionDeclaration,
-): string | null {
+function functionExportName(declaration: TSESTree.FunctionDeclaration): string | null {
   return declaration.id?.name ?? null;
 }
 
-function variableExportName(
-  declaration: TSESTree.VariableDeclaration,
-): string | null {
+function variableExportName(declaration: TSESTree.VariableDeclaration): string | null {
   const first = declaration.declarations[0];
-  if (first === undefined) return null;
-  if (first.id.type !== AST_NODE_TYPES.Identifier) return null;
+  if (first === undefined) {
+    return null;
+  }
+  if (first.id.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
   return first.id.name;
 }
 
 function exportName(node: TSESTree.ExportNamedDeclaration): string | null {
   const declaration = node.declaration;
-  if (declaration === null || declaration === undefined) return null;
+  if (declaration === null || declaration === undefined) {
+    return null;
+  }
   if (declaration.type === AST_NODE_TYPES.FunctionDeclaration) {
     return functionExportName(declaration);
   }
@@ -37,17 +38,79 @@ interface PendingExport {
   hasWithSpan: boolean;
 }
 
-export default createRule({
+interface ExportScan {
+  pending: PendingExport | null;
+}
+
+function inspectExportMember(scan: ExportScan, node: TSESTree.MemberExpression): void {
+  if (scan.pending === null || node.computed) {
+    return;
+  }
+  if (node.property.type !== AST_NODE_TYPES.Identifier) {
+    return;
+  }
+  if (node.property.name === "withSpan") {
+    scan.pending.hasWithSpan = true;
+    return;
+  }
+  if (
+    node.property.name === "gen" &&
+    node.object.type === AST_NODE_TYPES.Identifier &&
+    node.object.name === "Effect"
+  ) {
+    scan.pending.hasEffectGen = true;
+  }
+}
+
+function finishExport(context: TSESLint.RuleContext<"missingSpan", []>, scan: ExportScan): void {
+  const facts = scan.pending;
+  scan.pending = null;
+  if (facts === null || !facts.hasEffectGen || facts.hasWithSpan) {
+    return;
+  }
+  context.report({
+    node: facts.node,
+    messageId: "missingSpan",
+    data: { name: facts.name },
+  });
+}
+
+function spanListeners(
+  context: TSESLint.RuleContext<"missingSpan", []>,
+  scan: ExportScan,
+): TSESLint.RuleListener {
+  return {
+    ExportNamedDeclaration(node) {
+      const name = exportName(node);
+      if (name === null || node.declaration == null) {
+        return;
+      }
+      scan.pending = { node: node.declaration, name, hasEffectGen: false, hasWithSpan: false };
+    },
+    "ExportNamedDeclaration MemberExpression"(node: TSESTree.MemberExpression) {
+      inspectExportMember(scan, node);
+    },
+    "ExportNamedDeclaration:exit"() {
+      finishExport(context, scan);
+    },
+  };
+}
+
+/**
+ * Enforces the `require-span-on-exported-effect` Agent Code Guard rule.
+ */
+export const requireSpanOnExportedEffect = createRule({
   name: "require-span-on-exported-effect",
   meta: {
     type: "problem",
     docs: {
-      description: "Public Effect entrypoints must carry a span so the diagnostic chain survives across the boundary.",
+      description:
+        "Public Effect entrypoints must carry a span so the diagnostic chain survives across the boundary.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
       missingSpan:
-        "Exported Effect `{{name}}` defines an Effect.gen body without Effect.withSpan; add `Effect.withSpan(\"{{name}}\")` so the trace shows up under its name.",
+        'Exported Effect `{{name}}` defines an Effect.gen body without Effect.withSpan; add `Effect.withSpan("{{name}}")` so the trace shows up under its name.',
     },
     schema: [],
     fixable: undefined,
@@ -55,43 +118,6 @@ export default createRule({
   },
   defaultOptions: [],
   create(context) {
-    let pending: PendingExport | null = null;
-
-    return {
-      ExportNamedDeclaration(node) {
-        const name = exportName(node);
-        if (name === null) return;
-        if (node.declaration === null || node.declaration === undefined) return;
-        pending = { node: node.declaration, name, hasEffectGen: false, hasWithSpan: false };
-      },
-      "ExportNamedDeclaration MemberExpression"(node: TSESTree.MemberExpression) {
-        if (pending === null) return;
-        if (node.computed) return;
-        if (node.property.type !== AST_NODE_TYPES.Identifier) return;
-        if (node.property.name === "withSpan") {
-          pending.hasWithSpan = true;
-          return;
-        }
-        if (
-          node.property.name === "gen" &&
-          node.object.type === AST_NODE_TYPES.Identifier &&
-          node.object.name === "Effect"
-        ) {
-          pending.hasEffectGen = true;
-        }
-      },
-      "ExportNamedDeclaration:exit"() {
-        if (pending === null) return;
-        const facts = pending;
-        pending = null;
-        if (!facts.hasEffectGen) return;
-        if (facts.hasWithSpan) return;
-        context.report({
-          node: facts.node,
-          messageId: "missingSpan",
-          data: { name: facts.name },
-        });
-      },
-    };
+    return spanListeners(context, { pending: null });
   },
 });

@@ -2,12 +2,16 @@ import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
-export default createRule({
+/**
+ * Enforces the `bare-catch` Agent Code Guard rule.
+ */
+export const bareCatch = createRule({
   name: "bare-catch",
   meta: {
     type: "problem",
     docs: {
-      description: "A silent catch hides both the error AND the branch; exhaustiveness cannot apply.",
+      description:
+        "A silent catch hides both the error AND the branch; exhaustiveness cannot apply.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -32,19 +36,13 @@ export default createRule({
               {
                 messageId: "bindError",
                 fix: (fixer) =>
-                  fixer.insertTextAfterRange(
-                    [node.range[0], catchKeywordEnd],
-                    " (err)",
-                  ),
+                  fixer.insertTextAfterRange([node.range[0], catchKeywordEnd], " (err)"),
               },
             ],
           });
           return;
         }
-        if (
-          param.type === AST_NODE_TYPES.Identifier &&
-          param.name.startsWith("_")
-        ) {
+        if (param.type === AST_NODE_TYPES.Identifier && param.name.startsWith("_")) {
           context.report({
             node,
             messageId: "bareCatch",

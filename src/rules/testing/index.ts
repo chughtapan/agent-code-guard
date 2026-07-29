@@ -3,11 +3,11 @@
  * plugin entry; each member rule lives in a sibling file.
  */
 
-import noCoverageThresholdGate from "./no-coverage-threshold-gate.js";
-import noExampleOnlyTests from "./no-example-only-tests.js";
-import noHardcodedAssertionLiterals from "./no-hardcoded-assertion-literals.js";
-import noTestSkipOnly from "./no-test-skip-only.js";
-import noVitestMocks from "./no-vitest-mocks.js";
+import { noCoverageThresholdGate } from "./no-coverage-threshold-gate.js";
+import { noExampleOnlyTests } from "./no-example-only-tests.js";
+import { noHardcodedAssertionLiterals } from "./no-hardcoded-assertion-literals.js";
+import { noTestSkipOnly } from "./no-test-skip-only.js";
+import { noVitestMocks } from "./no-vitest-mocks.js";
 
 /**
  * Testing rule family. Catches mocks in integration tests, focused/skipped

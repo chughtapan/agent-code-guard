@@ -1,5 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
@@ -14,13 +13,25 @@ const LOG_METHODS = new Set([
 ]);
 
 function effectLogCall(node: TSESTree.CallExpression): string | null {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return null;
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return null;
+  }
   const callee = node.callee;
-  if (callee.computed) return null;
-  if (callee.object.type !== AST_NODE_TYPES.Identifier) return null;
-  if (callee.object.name !== "Effect") return null;
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return null;
-  if (!LOG_METHODS.has(callee.property.name)) return null;
+  if (callee.computed) {
+    return null;
+  }
+  if (callee.object.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (callee.object.name !== "Effect") {
+    return null;
+  }
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (!LOG_METHODS.has(callee.property.name)) {
+    return null;
+  }
   return callee.property.name;
 }
 
@@ -28,12 +39,16 @@ function isObjectLiteralArgument(arg: TSESTree.CallExpressionArgument): boolean 
   return arg.type === AST_NODE_TYPES.ObjectExpression;
 }
 
-export default createRule({
+/**
+ * Enforces the `prefer-annotate-logs` Agent Code Guard rule.
+ */
+export const preferAnnotateLogs = createRule({
   name: "prefer-annotate-logs",
   meta: {
     type: "problem",
     docs: {
-      description: "`Effect.log` with extra arguments drops them silently; `Effect.annotateLogs` is the typed channel for structured fields.",
+      description:
+        "`Effect.log` with extra arguments drops them silently; `Effect.annotateLogs` is the typed channel for structured fields.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -49,11 +64,19 @@ export default createRule({
     return {
       CallExpression(node) {
         const method = effectLogCall(node);
-        if (method === null) return;
-        if (node.arguments.length < 2) return;
+        if (method === null) {
+          return;
+        }
+        if (node.arguments.length < 2) {
+          return;
+        }
         const second = node.arguments[1];
-        if (second === undefined) return;
-        if (!isObjectLiteralArgument(second)) return;
+        if (second === undefined) {
+          return;
+        }
+        if (!isObjectLiteralArgument(second)) {
+          return;
+        }
         context.report({
           node,
           messageId: "preferAnnotateLogs",

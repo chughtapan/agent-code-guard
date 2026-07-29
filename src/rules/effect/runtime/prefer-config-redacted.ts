@@ -1,5 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
@@ -20,26 +19,42 @@ function looksLikeSecretName(name: string): boolean {
 }
 
 function isConfigStringCall(node: TSESTree.CallExpression): boolean {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return false;
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return false;
+  }
   const callee = node.callee;
-  if (callee.computed) return false;
-  if (callee.object.type !== AST_NODE_TYPES.Identifier) return false;
-  if (callee.object.name !== "Config") return false;
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return false;
+  if (callee.computed) {
+    return false;
+  }
+  if (callee.object.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
+  if (callee.object.name !== "Config") {
+    return false;
+  }
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
   return callee.property.name === "string";
 }
 
 function literalStringValue(node: TSESTree.Node): string | null {
-  if (node.type !== AST_NODE_TYPES.Literal) return null;
+  if (node.type !== AST_NODE_TYPES.Literal) {
+    return null;
+  }
   return typeof node.value === "string" ? node.value : null;
 }
 
-export default createRule({
+/**
+ * Enforces the `prefer-config-redacted` Agent Code Guard rule.
+ */
+export const preferConfigRedacted = createRule({
   name: "prefer-config-redacted",
   meta: {
     type: "problem",
     docs: {
-      description: "Sensitive configuration crosses the env boundary as a Redacted value; `Config.string` for secrets leaks them through the schema.",
+      description:
+        "Sensitive configuration crosses the env boundary as a Redacted value; `Config.string` for secrets leaks them through the schema.",
       url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
@@ -54,12 +69,20 @@ export default createRule({
   create(context) {
     return {
       CallExpression(node) {
-        if (!isConfigStringCall(node)) return;
+        if (!isConfigStringCall(node)) {
+          return;
+        }
         const first = node.arguments[0];
-        if (first === undefined) return;
+        if (first === undefined) {
+          return;
+        }
         const name = literalStringValue(first);
-        if (name === null) return;
-        if (!looksLikeSecretName(name)) return;
+        if (name === null) {
+          return;
+        }
+        if (!looksLikeSecretName(name)) {
+          return;
+        }
         context.report({
           node,
           messageId: "preferRedacted",

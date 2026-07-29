@@ -8,19 +8,12 @@
 const RECOMMENDED_CONFIG_SNIPPET = `
 // agent-code-guard recommended setup.
 
-import guard from "eslint-plugin-agent-code-guard";
-import tsParser from "@typescript-eslint/parser";
+import { plugin as guard } from "eslint-plugin-agent-code-guard";
 
 export default [
   {
     files: ["src/**/*.ts"],
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
-    },
-    plugins: guard.configs.recommended.plugins,
-    settings: guard.configs.recommended.settings,
-    rules: guard.configs.recommended.rules,
+    ...guard.configs.recommended,
   },
 ];
 `;
@@ -29,7 +22,9 @@ const NEXT_STEPS = `
 Next:
   1. Paste the snippet into your project's \`eslint.config.js\` (or merge
      into an existing config).
-  2. Run your usual lint: \`eslint .\` or your package script.
+  2. Make sure the project has a strict \`tsconfig.json\` and its default
+     lint script runs \`tsc\`, ESLint, and Knip.
+  3. Run your package lint script.
 `;
 
 function main(): void {

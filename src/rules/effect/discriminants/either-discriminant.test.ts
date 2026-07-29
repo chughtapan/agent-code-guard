@@ -1,6 +1,7 @@
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
-import rule from "./either-discriminant.js";
+import { eitherDiscriminant as rule } from "./either-discriminant.js";
+import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;
@@ -9,7 +10,7 @@ RuleTester.describe = describe;
 
 const ruleTester = new RuleTester({
   languageOptions: {
-    parser: require("@typescript-eslint/parser"),
+    parser: tsParser,
     parserOptions: { ecmaVersion: 2022, sourceType: "module" },
   },
 });
@@ -35,7 +36,7 @@ ruleTester.run("either-discriminant", rule, {
       code: 'switch (event._tag) { case "LeftTurn": return; default: return; }',
     },
     {
-      code: 'if (result._tag === other._tag) return;',
+      code: "if (result._tag === other._tag) return;",
     },
     {
       code: 'if (result._tag > "Left") return;',

@@ -1,6 +1,7 @@
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
-import rule from "./manual-tagged-error.js";
+import { manualTaggedError as rule } from "./manual-tagged-error.js";
+import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;
@@ -9,7 +10,7 @@ RuleTester.describe = describe;
 
 const ruleTester = new RuleTester({
   languageOptions: {
-    parser: require("@typescript-eslint/parser"),
+    parser: tsParser,
     parserOptions: { ecmaVersion: 2022, sourceType: "module" },
   },
 });
@@ -89,7 +90,7 @@ ruleTester.run("manual-tagged-error", rule, {
       code: 'const make = () => ({ _tag: "Player", id });',
     },
     {
-      code: 'const err = new PlannedHarnessIngressError({ cause: ParseFailure({ path, message }) });',
+      code: "const err = new PlannedHarnessIngressError({ cause: ParseFailure({ path, message }) });",
     },
     {
       code: "// eslint-disable-next-line @rule-tester/manual-tagged-error -- suppression test\ntype RpcFailure = { readonly _tag: 'RpcFailure'; readonly message: string };",
@@ -106,159 +107,107 @@ ruleTester.run("manual-tagged-error", rule, {
     },
     {
       code: 'class SpawnFailed extends Error { readonly _tag = "SpawnFailed" as const; }',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "SpawnFailed" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "SpawnFailed" } }],
     },
     {
       code: 'class BadToken extends AppError { readonly _tag = "BadToken" as const; }',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "BadToken" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "BadToken" } }],
     },
     {
       code: 'class Session extends errors.AppError { readonly _tag = "BadToken" as const; }',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "Session" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "Session" } }],
     },
     {
       code: "type MoltAmountError = { readonly _tag: 'NotInteger'; readonly value: number } | { readonly _tag: 'Negative'; readonly value: number };",
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "MoltAmountError" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "MoltAmountError" } }],
     },
     {
       code: "interface RpcFailure { readonly _tag: 'RpcFailure'; readonly message: string; }",
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "RpcFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "RpcFailure" } }],
     },
     {
       code: "interface RpcFailure { readonly '_tag': 'RpcFailure'; readonly message: string; }",
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "RpcFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "RpcFailure" } }],
     },
     {
       code: 'const ErrorCtor = class extends Error { readonly "_tag" = "RunError" as const; };',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "(anonymous class)" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "(anonymous class)" } }],
     },
     {
       code: 'class Session extends errors.AppError { readonly ["_tag"] = "BadToken" as const; }',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "Session" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "Session" } }],
     },
     {
       code: "type RpcFailure = { readonly '_tag': 'RpcFailure'; readonly message: string } & { readonly cause: unknown };",
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "RpcFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "RpcFailure" } }],
     },
     {
       code: "type RpcFailure = { readonly '_tag': 'RpcFailure'; readonly message: string } | { readonly cause: unknown };",
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "RpcFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "RpcFailure" } }],
     },
     {
       code: 'function parse() { return { _tag: "ParseFailure", path, message }; }',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'const parse = () => ({ _tag: "ParseFailure", path, message });',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'const parse = () => ({ _tag: "ParseFailure", path, message } as const);',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'function parse() { return { ["_tag"]: "ParseFailure", path, message }; }',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'const parse = () => new PlannedHarnessIngressError({ cause: { _tag: "ParseFailure", path, message } });',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'const parse = () => new Error({ cause: { _tag: "ParseFailure", path, message } });',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'const parse = () => new RunError({ cause: { _tag: "ParseFailure", path, message } });',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'const err = new errors.PlannedHarnessIngressError({ cause: { _tag: "ParseFailure", path, message } });',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'const parse = () => new errors.RunError({ cause: { _tag: "ParseFailure", path, message } });',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'const parse = () => Effect.fail({ _tag: "ParseFailure", path, message });',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
-      code: 'const parse = () => Effect.fail({ _tag, path, message });',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "tagged value" } },
-      ],
+      code: "const parse = () => Effect.fail({ _tag, path, message });",
+      errors: [{ messageId: "manualTaggedError", data: { name: "tagged value" } }],
     },
     {
       code: 'const parse = () => Effect.fail(() => ({ _tag: "ParseFailure", path, message }));',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'const parse = () => Effect.fail({ ["_tag"]: "ParseFailure", path, message });',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'function parse() { Effect.fail({ _tag: "ParseFailure", path, message }); }',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'function parse() { return new PlannedHarnessIngressError({ cause: wrap({ _tag: "ParseFailure", path, message }) }); }',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
     {
       code: 'const parse = () => Effect.fail(wrap({ _tag: "ParseFailure", path, message }));',
-      errors: [
-        { messageId: "manualTaggedError", data: { name: "ParseFailure" } },
-      ],
+      errors: [{ messageId: "manualTaggedError", data: { name: "ParseFailure" } }],
     },
   ],
 });

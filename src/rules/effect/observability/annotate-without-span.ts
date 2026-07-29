@@ -1,23 +1,31 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
-function isMemberCallToEffectMethod(
-  node: TSESTree.CallExpression,
-  method: string,
-): boolean {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return false;
+function isMemberCallToEffectMethod(node: TSESTree.CallExpression, method: string): boolean {
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return false;
+  }
   const callee = node.callee;
-  if (callee.computed) return false;
-  if (callee.object.type !== AST_NODE_TYPES.Identifier) return false;
-  if (callee.object.name !== "Effect") return false;
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return false;
+  if (callee.computed) {
+    return false;
+  }
+  if (callee.object.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
+  if (callee.object.name !== "Effect") {
+    return false;
+  }
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
   return callee.property.name === method;
 }
 
 function mentionsWithSpan(node: TSESTree.Node): boolean {
-  if (node.type === AST_NODE_TYPES.Identifier && node.name === "withSpan") return true;
+  if (node.type === AST_NODE_TYPES.Identifier && node.name === "withSpan") {
+    return true;
+  }
   if (
     node.type === AST_NODE_TYPES.MemberExpression &&
     !node.computed &&
@@ -29,12 +37,16 @@ function mentionsWithSpan(node: TSESTree.Node): boolean {
   return false;
 }
 
-export default createRule({
+/**
+ * Enforces the `annotate-without-span` Agent Code Guard rule.
+ */
+export const annotateWithoutSpan = createRule({
   name: "annotate-without-span",
   meta: {
     type: "problem",
     docs: {
-      description: "`Effect.annotateCurrentSpan` outside a span has no carrier; annotations attach to the span scope or vanish.",
+      description:
+        "`Effect.annotateCurrentSpan` outside a span has no carrier; annotations attach to the span scope or vanish.",
       url: PRINCIPLE_URL.ERRORS_ARE_TYPED,
     },
     messages: {
@@ -51,10 +63,14 @@ export default createRule({
     const annotateCalls: TSESTree.CallExpression[] = [];
     return {
       Identifier(node) {
-        if (mentionsWithSpan(node)) foundWithSpan = true;
+        if (mentionsWithSpan(node)) {
+          foundWithSpan = true;
+        }
       },
       MemberExpression(node) {
-        if (mentionsWithSpan(node)) foundWithSpan = true;
+        if (mentionsWithSpan(node)) {
+          foundWithSpan = true;
+        }
       },
       CallExpression(node) {
         if (isMemberCallToEffectMethod(node, "annotateCurrentSpan")) {
@@ -62,7 +78,9 @@ export default createRule({
         }
       },
       "Program:exit"() {
-        if (foundWithSpan) return;
+        if (foundWithSpan) {
+          return;
+        }
         for (const call of annotateCalls) {
           context.report({ node: call, messageId: "annotateWithoutSpan" });
         }

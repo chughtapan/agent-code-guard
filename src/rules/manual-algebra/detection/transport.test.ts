@@ -127,7 +127,9 @@ it("treats mixed tagged error literals as tagged-error collisions", () => {
 });
 
 it("requires a real tag key before treating a surface as a tagged-error collision", () => {
-  const node = parseSubject('type ParseFailure = { readonly label: "ParseFailure"; readonly message: string };');
+  const node = parseSubject(
+    'type ParseFailure = { readonly label: "ParseFailure"; readonly message: string };',
+  );
 
   expect(isTaggedErrorCollision(node)).toBe(false);
 });
@@ -167,13 +169,17 @@ it("Property: neutral discriminant unions stay transport/data shapes", () => {
 });
 
 function resultTransportAlias(name: string): string {
-  return `type ${name}<T, E> = ` +
+  return (
+    `type ${name}<T, E> = ` +
     "{ readonly ok: true; readonly value: T } | " +
-    "{ readonly ok: false; readonly error: E };";
+    "{ readonly ok: false; readonly error: E };"
+  );
 }
 
 function discriminantUnion(name: string, discriminantKey: string): string {
-  return `type ${name} = ` +
+  return (
+    `type ${name} = ` +
     `{ readonly ${discriminantKey}: "Loading" } | ` +
-    `{ readonly ${discriminantKey}: "Loaded"; readonly value: string };`;
+    `{ readonly ${discriminantKey}: "Loaded"; readonly value: string };`
+  );
 }

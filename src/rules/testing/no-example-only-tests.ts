@@ -1,19 +1,20 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
 import { getStaticMemberPropertyName } from "../utils/ast-refinement/index.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type MessageIds = "exampleOnly";
-type Options = [{
-  readonly minExamplesBeforeWarning?: number;
-  readonly testFunctionNames?: readonly string[];
-  readonly describeFunctionNames?: readonly string[];
-  readonly propertyCallNames?: readonly string[];
-  readonly ignoreFilenamePatterns?: readonly string[];
-  readonly regressionOnlyCommentPattern?: string;
-}];
+type Options = [
+  {
+    readonly minExamplesBeforeWarning?: number;
+    readonly testFunctionNames?: readonly string[];
+    readonly describeFunctionNames?: readonly string[];
+    readonly propertyCallNames?: readonly string[];
+    readonly ignoreFilenamePatterns?: readonly string[];
+    readonly regressionOnlyCommentPattern?: string;
+  },
+];
 
 interface NormalizedOptions {
   readonly minExamplesBeforeWarning: number;
@@ -36,12 +37,16 @@ const DEFAULT_IGNORED_FILENAMES = [
   String.raw`\.snapshot\.[cm]?[jt]sx?$`,
 ];
 
-export default createRule<Options, MessageIds>({
+/**
+ * Enforces the `no-example-only-tests` Agent Code Guard rule.
+ */
+export const noExampleOnlyTests = createRule<Options, MessageIds>({
   name: "no-example-only-tests",
   meta: {
     type: "suggestion",
     docs: {
-      description: "A test that asserts one hand-picked input is a compression of a property the type system or `fast-check` could verify; promote to property when one exists.",
+      description:
+        "A test that asserts one hand-picked input is a compression of a property the type system or `fast-check` could verify; promote to property when one exists.",
       url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
@@ -67,10 +72,16 @@ export default createRule<Options, MessageIds>({
   },
   defaultOptions: [{}],
   create(context, [rawOptions]) {
-    if (!isTestFile(context.filename)) return {};
+    if (!isTestFile(context.filename)) {
+      return {};
+    }
     const options = normalizeOptions(rawOptions);
-    if (ignoredFilename(context.filename, options)) return {};
-    if (hasRegressionOnlyComment(context.sourceCode.getAllComments(), options)) return {};
+    if (ignoredFilename(context.filename, options)) {
+      return {};
+    }
+    if (hasRegressionOnlyComment(context.sourceCode.getAllComments(), options)) {
+      return {};
+    }
 
     const scopes: SuiteScope[] = [];
 
@@ -82,13 +93,21 @@ export default createRule<Options, MessageIds>({
         reportAndPopScope(context, scopes, options);
       },
       CallExpression(node) {
-        if (isDescribeCall(node, options)) scopes.push(createScope(node));
-        if (isPropertyEvidenceCall(node, options)) markCurrentScopeProperty(scopes);
-        if (isExampleTestCall(node, options)) addCurrentScopeExample(scopes, node);
+        if (isDescribeCall(node, options)) {
+          scopes.push(createScope(node));
+        }
+        if (isPropertyEvidenceCall(node, options)) {
+          markCurrentScopeProperty(scopes);
+        }
+        if (isExampleTestCall(node, options)) {
+          addCurrentScopeExample(scopes, node);
+        }
       },
       "CallExpression:exit"(node) {
         const scope = lastScope(scopes);
-        if (scope !== null && scope.owner === node) reportAndPopScope(context, scopes, options);
+        if (scope !== null && scope.owner === node) {
+          reportAndPopScope(context, scopes, options);
+        }
       },
     };
   },
@@ -99,12 +118,9 @@ function normalizeOptions(rawOptions: Options[number]): NormalizedOptions {
     minExamplesBeforeWarning: rawOptions.minExamplesBeforeWarning ?? 4,
     testFunctionNames: new Set(rawOptions.testFunctionNames ?? ["it", "test"]),
     describeFunctionNames: new Set(rawOptions.describeFunctionNames ?? ["describe"]),
-    propertyCallNames: new Set(rawOptions.propertyCallNames ?? [
-      "fc.property",
-      "fc.asyncProperty",
-      "it.prop",
-      "test.prop",
-    ]),
+    propertyCallNames: new Set(
+      rawOptions.propertyCallNames ?? ["fc.property", "fc.asyncProperty", "it.prop", "test.prop"],
+    ),
     ignoreFilenamePatterns: compilePatterns(
       rawOptions.ignoreFilenamePatterns ?? DEFAULT_IGNORED_FILENAMES,
     ),
@@ -116,13 +132,17 @@ function normalizeOptions(rawOptions: Options[number]): NormalizedOptions {
 
 function isDescribeCall(node: TSESTree.CallExpression, options: NormalizedOptions): boolean {
   const pathName = callPath(node);
-  if (pathName === null) return false;
+  if (pathName === null) {
+    return false;
+  }
   return options.describeFunctionNames.has(rootName(pathName)) && hasFunctionArgument(node);
 }
 
 function isExampleTestCall(node: TSESTree.CallExpression, options: NormalizedOptions): boolean {
   const pathName = callPath(node);
-  if (pathName === null || isPropertyPath(pathName, options)) return false;
+  if (pathName === null || isPropertyPath(pathName, options)) {
+    return false;
+  }
   return options.testFunctionNames.has(rootName(pathName)) && hasFunctionArgument(node);
 }
 
@@ -139,27 +159,44 @@ function callPath(node: TSESTree.CallExpression): string | null {
 }
 
 function calleePath(node: TSESTree.CallExpression["callee"]): string | null {
-  if (node.type === AST_NODE_TYPES.Identifier) return node.name;
-  if (node.type === AST_NODE_TYPES.CallExpression) return callPath(node);
-  if (node.type === AST_NODE_TYPES.ChainExpression) return calleePath(node.expression);
-  if (node.type !== AST_NODE_TYPES.MemberExpression) return null;
+  if (node.type === AST_NODE_TYPES.Identifier) {
+    return node.name;
+  }
+  if (node.type === AST_NODE_TYPES.CallExpression) {
+    return callPath(node);
+  }
+  if (node.type === AST_NODE_TYPES.ChainExpression) {
+    return calleePath(node.expression);
+  }
+  if (node.type !== AST_NODE_TYPES.MemberExpression) {
+    return null;
+  }
   const objectPath = expressionPath(node.object);
   const propertyName = getStaticMemberPropertyName(node);
   return objectPath !== null && propertyName !== null ? `${objectPath}.${propertyName}` : null;
 }
 
 function expressionPath(node: TSESTree.Expression | TSESTree.Super): string | null {
-  if (node.type === AST_NODE_TYPES.Identifier) return node.name;
-  if (node.type === AST_NODE_TYPES.CallExpression) return callPath(node);
-  if (node.type === AST_NODE_TYPES.ChainExpression) return expressionPath(node.expression);
-  if (node.type !== AST_NODE_TYPES.MemberExpression) return null;
+  if (node.type === AST_NODE_TYPES.Identifier) {
+    return node.name;
+  }
+  if (node.type === AST_NODE_TYPES.CallExpression) {
+    return callPath(node);
+  }
+  if (node.type === AST_NODE_TYPES.ChainExpression) {
+    return expressionPath(node.expression);
+  }
+  if (node.type !== AST_NODE_TYPES.MemberExpression) {
+    return null;
+  }
   return calleePath(node);
 }
 
 function hasFunctionArgument(node: TSESTree.CallExpression): boolean {
-  return node.arguments.some((argument) =>
-    argument.type === AST_NODE_TYPES.ArrowFunctionExpression ||
-    argument.type === AST_NODE_TYPES.FunctionExpression
+  return node.arguments.some(
+    (argument) =>
+      argument.type === AST_NODE_TYPES.ArrowFunctionExpression ||
+      argument.type === AST_NODE_TYPES.FunctionExpression,
   );
 }
 
@@ -177,10 +214,14 @@ function reportAndPopScope(
   options: NormalizedOptions,
 ): void {
   const scope = scopes.pop();
-  if (scope === undefined || scope.hasProperty) return;
-  if (scope.examples.length < options.minExamplesBeforeWarning) return;
+  if (scope === undefined || scope.hasProperty) {
+    return;
+  }
+  if (scope.examples.length < options.minExamplesBeforeWarning) {
+    return;
+  }
   context.report({
-    node: scope.examples[0]!,
+    node: scope.examples[0],
     messageId: "exampleOnly",
     data: { count: String(scope.examples.length) },
   });
@@ -188,7 +229,9 @@ function reportAndPopScope(
 
 function markCurrentScopeProperty(scopes: readonly SuiteScope[]): void {
   const scope = lastScope(scopes);
-  if (scope !== null) scope.hasProperty = true;
+  if (scope !== null) {
+    scope.hasProperty = true;
+  }
 }
 
 function addCurrentScopeExample(
@@ -196,7 +239,9 @@ function addCurrentScopeExample(
   node: TSESTree.CallExpression,
 ): void {
   const scope = lastScope(scopes);
-  if (scope !== null) scope.examples.push(node);
+  if (scope !== null) {
+    scope.examples.push(node);
+  }
 }
 
 function lastScope(scopes: readonly SuiteScope[]): SuiteScope | null {
@@ -227,8 +272,8 @@ function compilePattern(pattern: string): RegExp {
   return new RegExp(pattern);
 }
 
-type ReportDescriptor = {
+interface ReportDescriptor {
   readonly node: TSESTree.Node;
   readonly messageId: MessageIds;
   readonly data: Readonly<Record<string, string>>;
-};
+}

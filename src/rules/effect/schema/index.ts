@@ -2,9 +2,9 @@
  * @file Effect schema sub-family registry.
  */
 
-import noSchemaTypeCast from "./no-schema-type-cast.js";
-import parseIntoSchemaRequiresEffect from "./parse-into-schema-requires-effect.js";
-import preferDecodeEffectAtBoundary from "./prefer-decode-effect-at-boundary.js";
+import { noSchemaTypeCast } from "./no-schema-type-cast.js";
+import { parseIntoSchemaRequiresEffect } from "./parse-into-schema-requires-effect.js";
+import { preferDecodeEffectAtBoundary } from "./prefer-decode-effect-at-boundary.js";
 
 /**
  * Effect schema rules. Catches `Schema.decodeUnknownSync` calls that

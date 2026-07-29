@@ -13,26 +13,32 @@ function isConfigFile(filename: string): boolean {
   return CONFIG_FILE_PATTERN.test(filename);
 }
 
-function keyName(
-  key: TSESTree.Expression | TSESTree.PrivateIdentifier,
-): string | null {
+function keyName(key: TSESTree.Expression | TSESTree.PrivateIdentifier): string | null {
   return getStaticStringKey(key, false);
 }
 
 function parentCoverageKey(node: TSESTree.Property): boolean {
   const obj = getParent(node);
-  if (obj === null || obj.type !== "ObjectExpression") return false;
+  if (obj === null || obj.type !== "ObjectExpression") {
+    return false;
+  }
   const prop = getParent(obj);
-  if (prop === null || prop.type !== "Property" || prop.computed) return false;
+  if (prop === null || prop.type !== "Property" || prop.computed) {
+    return false;
+  }
   return keyName(prop.key) === "coverage";
 }
 
-export default createRule({
+/**
+ * Enforces the `no-coverage-threshold-gate` Agent Code Guard rule.
+ */
+export const noCoverageThresholdGate = createRule({
   name: "no-coverage-threshold-gate",
   meta: {
     type: "suggestion",
     docs: {
-      description: "Coverage % is a diagnostic, never a CI gate (Inozemtseva & Holmes ICSE 2014). Acts on the wrong signal.",
+      description:
+        "Coverage % is a diagnostic, never a CI gate (Inozemtseva & Holmes ICSE 2014). Acts on the wrong signal.",
       url: PRINCIPLE_URL.TYPES_BEAT_TESTS,
     },
     messages: {
@@ -45,10 +51,14 @@ export default createRule({
   },
   defaultOptions: [],
   create(context) {
-    if (!isConfigFile(context.filename)) return {};
+    if (!isConfigFile(context.filename)) {
+      return {};
+    }
     return {
       Property(node) {
-        if (node.computed) return;
+        if (node.computed) {
+          return;
+        }
         const name = getStaticStringKey(node.key, node.computed);
         if (name === "coverageThreshold") {
           context.report({ node, messageId: "coverageGate", data: { key: name } });

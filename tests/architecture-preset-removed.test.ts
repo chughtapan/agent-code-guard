@@ -5,15 +5,19 @@
  */
 
 import { describe, expect, it } from "vitest";
-import plugin from "../src/index.js";
+import { plugin } from "../src/index.js";
 
-type ConfigEntry = { readonly rules: Readonly<Record<string, unknown>> };
+interface ConfigEntry {
+  readonly rules: Readonly<Record<string, unknown>>;
+}
 
 // Runtime walker, not a typed lookup: the test must catch drift between
 // `plugin.configs`'s declared keys and the object it actually exports.
 function lookupConfig(key: string): ConfigEntry | undefined {
   for (const [name, value] of Object.entries(plugin.configs)) {
-    if (name === key) return value;
+    if (name === key) {
+      return value;
+    }
   }
   return undefined;
 }
@@ -29,8 +33,10 @@ describe("architecture preset boundary", () => {
     // regression this test guards against.
     const access = (): readonly string[] => {
       const archConfig = lookupConfig("architecture");
-      const forced = archConfig as ConfigEntry;
-      return Object.keys(forced.rules);
+      if (archConfig === undefined) {
+        throw new TypeError("architecture config is unavailable");
+      }
+      return Object.keys(archConfig.rules);
     };
     expect(access).toThrow(TypeError);
   });

@@ -22,7 +22,9 @@ it("requires a real brand marker before treating plain literals as brands", () =
 });
 
 it("detects cast helper constructors without an explicit return type", () => {
-  const missingReturnType = parseSubject("function asUserId(value: string) { return value as UserId; }");
+  const missingReturnType = parseSubject(
+    "function asUserId(value: string) { return value as UserId; }",
+  );
 
   expect(findManualBrandConstructorMatch(missingReturnType)?.displayName).toBe("asUserId");
 });

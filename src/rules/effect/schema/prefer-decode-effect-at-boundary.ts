@@ -1,13 +1,8 @@
-import type { TSESTree } from "@typescript-eslint/utils";
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
-const SYNC_DECODE_METHODS = new Set([
-  "decodeUnknownSync",
-  "decodeSync",
-  "decodeUnknownEither",
-]);
+const SYNC_DECODE_METHODS = new Set(["decodeUnknownSync", "decodeSync", "decodeUnknownEither"]);
 
 const IO_LIKE_CALLS: ReadonlyArray<readonly [string | null, string]> = [
   [null, "JSON.parse"],
@@ -19,39 +14,73 @@ const IO_LIKE_CALLS: ReadonlyArray<readonly [string | null, string]> = [
 ];
 
 function isSchemaSyncDecodeCall(node: TSESTree.CallExpression): string | null {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) return null;
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return null;
+  }
   const callee = node.callee;
-  if (callee.computed) return null;
-  if (callee.object.type !== AST_NODE_TYPES.Identifier) return null;
-  if (callee.object.name !== "Schema") return null;
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return null;
-  if (!SYNC_DECODE_METHODS.has(callee.property.name)) return null;
+  if (callee.computed) {
+    return null;
+  }
+  if (callee.object.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (callee.object.name !== "Schema") {
+    return null;
+  }
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  if (!SYNC_DECODE_METHODS.has(callee.property.name)) {
+    return null;
+  }
   return callee.property.name;
 }
 
 function isJsonParseCall(node: TSESTree.Node): boolean {
-  if (node.type !== AST_NODE_TYPES.CallExpression) return false;
+  if (node.type !== AST_NODE_TYPES.CallExpression) {
+    return false;
+  }
   const callee = node.callee;
-  if (callee.type !== AST_NODE_TYPES.MemberExpression) return false;
-  if (callee.computed) return false;
-  if (callee.object.type !== AST_NODE_TYPES.Identifier) return false;
-  if (callee.object.name !== "JSON") return false;
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return false;
+  if (callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return false;
+  }
+  if (callee.computed) {
+    return false;
+  }
+  if (callee.object.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
+  if (callee.object.name !== "JSON") {
+    return false;
+  }
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
   return callee.property.name === "parse";
 }
 
 function isFetchOrIoCall(node: TSESTree.Node): boolean {
-  if (node.type === AST_NODE_TYPES.AwaitExpression) return isFetchOrIoCall(node.argument);
-  if (node.type !== AST_NODE_TYPES.CallExpression) return false;
+  if (node.type === AST_NODE_TYPES.AwaitExpression) {
+    return isFetchOrIoCall(node.argument);
+  }
+  if (node.type !== AST_NODE_TYPES.CallExpression) {
+    return false;
+  }
   const callee = node.callee;
   if (callee.type === AST_NODE_TYPES.Identifier) {
     return callee.name === "fetch";
   }
-  if (callee.type !== AST_NODE_TYPES.MemberExpression) return false;
-  if (callee.computed) return false;
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return false;
+  if (callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return false;
+  }
+  if (callee.computed) {
+    return false;
+  }
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
   return IO_LIKE_CALLS.some(([objectName, methodName]) =>
-    matchesIoCall(callee, objectName, methodName)
+    matchesIoCall(callee, objectName, methodName),
   );
 }
 
@@ -60,32 +89,45 @@ function matchesIoCall(
   objectName: string | null,
   methodName: string,
 ): boolean {
-  if (callee.property.type !== AST_NODE_TYPES.Identifier) return false;
-  if (callee.property.name !== methodName) return false;
-  if (objectName === null) return true;
-  return (
-    callee.object.type === AST_NODE_TYPES.Identifier &&
-    callee.object.name === objectName
-  );
+  if (callee.property.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
+  if (callee.property.name !== methodName) {
+    return false;
+  }
+  if (objectName === null) {
+    return true;
+  }
+  return callee.object.type === AST_NODE_TYPES.Identifier && callee.object.name === objectName;
 }
 
-function appliedArgumentIsIoLike(
-  appliedCall: TSESTree.CallExpression,
-): boolean {
+function appliedArgumentIsIoLike(appliedCall: TSESTree.CallExpression): boolean {
   const arg = appliedCall.arguments[0];
-  if (arg === undefined) return false;
-  if (arg.type === AST_NODE_TYPES.SpreadElement) return false;
-  if (isJsonParseCall(arg)) return true;
-  if (isFetchOrIoCall(arg)) return true;
+  if (arg === undefined) {
+    return false;
+  }
+  if (arg.type === AST_NODE_TYPES.SpreadElement) {
+    return false;
+  }
+  if (isJsonParseCall(arg)) {
+    return true;
+  }
+  if (isFetchOrIoCall(arg)) {
+    return true;
+  }
   return false;
 }
 
-export default createRule({
+/**
+ * Enforces the `prefer-decode-effect-at-boundary` Agent Code Guard rule.
+ */
+export const preferDecodeEffectAtBoundary = createRule({
   name: "prefer-decode-effect-at-boundary",
   meta: {
     type: "problem",
     docs: {
-      description: "Boundary decoding belongs to the Effect-returning decoder; sync variants drop the typed failure channel and re-throw raw `ParseError`.",
+      description:
+        "Boundary decoding belongs to the Effect-returning decoder; sync variants drop the typed failure channel and re-throw raw `ParseError`.",
       url: PRINCIPLE_URL.VALIDATE_AT_BOUNDARY,
     },
     messages: {
@@ -101,12 +143,22 @@ export default createRule({
     return {
       CallExpression(node) {
         const method = isSchemaSyncDecodeCall(node);
-        if (method === null) return;
+        if (method === null) {
+          return;
+        }
         const parent = node.parent;
-        if (parent === undefined) return;
-        if (parent.type !== AST_NODE_TYPES.CallExpression) return;
-        if (parent.callee !== node) return;
-        if (!appliedArgumentIsIoLike(parent)) return;
+        if (parent === undefined) {
+          return;
+        }
+        if (parent.type !== AST_NODE_TYPES.CallExpression) {
+          return;
+        }
+        if (parent.callee !== node) {
+          return;
+        }
+        if (!appliedArgumentIsIoLike(parent)) {
+          return;
+        }
         const source = describeIoSource(parent.arguments[0]);
         context.report({
           node: parent,
@@ -118,9 +170,15 @@ export default createRule({
   },
 });
 
-function describeIoSource(node: TSESTree.CallExpressionArgument | undefined): string {
-  if (node === undefined) return "I/O";
-  if (isJsonParseCall(node)) return "JSON.parse";
-  if (isFetchOrIoCall(node)) return "an I/O call (fs.read*, fetch, etc.)";
+function describeIoSource(node?: TSESTree.CallExpressionArgument): string {
+  if (node === undefined) {
+    return "I/O";
+  }
+  if (isJsonParseCall(node)) {
+    return "JSON.parse";
+  }
+  if (isFetchOrIoCall(node)) {
+    return "an I/O call (fs.read*, fetch, etc.)";
+  }
   return "I/O";
 }
