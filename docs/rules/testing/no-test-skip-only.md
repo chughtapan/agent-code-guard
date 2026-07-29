@@ -29,28 +29,17 @@ If you're not ready to land the test, delete it. Git preserves the draft. A skip
 
 ## Install pattern
 
-This rule only fires in test files, so your flat config should include a dedicated block that *covers* test files — not one that excludes them. The `recommended` preset excludes tests from prod rules, so a second block is required:
+This rule only fires in test files, so at least one flat-config block must
+cover those files:
 
 ```js
 // eslint.config.js
-import guard from "eslint-plugin-agent-code-guard";
-import tsParser from "@typescript-eslint/parser";
+import { plugin as guard } from "eslint-plugin-agent-code-guard";
 
 export default [
-  // Prod rules — excludes test files
-  {
-    files: ["src/**/*.ts"],
-    ignores: ["**/*.test.ts", "**/*.spec.ts"],
-    languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
-    plugins: { "agent-code-guard": guard },
-    rules: guard.configs.recommended.rules,
-  },
-  // Test hygiene — covers test files
   {
     files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts", "**/test-support/**/*.ts"],
-    languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
-    plugins: { "agent-code-guard": guard },
-    rules: { "agent-code-guard/no-test-skip-only": "error" },
+    ...guard.configs.recommended,
   },
 ];
 ```

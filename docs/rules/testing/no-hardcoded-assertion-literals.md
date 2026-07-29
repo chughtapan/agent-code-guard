@@ -32,7 +32,7 @@ expect(arr.length).toBe(0);   // boundary numbers are allowed
 
 ```js
 rules: {
-  "agent-code-guard/no-hardcoded-assertion-literals": ["warn", { allowShorterThan: 6 }],
+  "agent-code-guard/no-hardcoded-assertion-literals": ["error", { allowShorterThan: 6 }],
 }
 ```
 
@@ -40,18 +40,20 @@ rules: {
 
 ```js
 // eslint.config.js
-import guard from "eslint-plugin-agent-code-guard";
-import tsParser from "@typescript-eslint/parser";
+import { plugin as guard } from "eslint-plugin-agent-code-guard";
 
 export default [
   // Test files — test-hygiene rules
   {
     files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts"],
-    languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
-    plugins: { "agent-code-guard": guard },
+    ...guard.configs.recommended,
     rules: {
+      ...guard.configs.recommended.rules,
       "agent-code-guard/no-test-skip-only": "error",
-      "agent-code-guard/no-hardcoded-assertion-literals": "warn",
+      "agent-code-guard/no-hardcoded-assertion-literals": [
+        "error",
+        { allowShorterThan: 6 },
+      ],
     },
   },
 ];

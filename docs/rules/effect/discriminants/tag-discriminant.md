@@ -4,7 +4,11 @@
 
 **Why:** if the value lives in the Effect ecosystem, dispatch should use the Effect ecosystem's combinators. `Effect.catchTag(...)` / `Effect.catchTags(...)` for tagged errors; `Match.tag(...)` / `Match.discriminator('_tag')` for tagged unions. A manual `_tag` check pulls that logic back out into ad hoc control flow and breaks type narrowing through pipelines.
 
-**Type-aware.** This rule needs TypeScript program services to identify Effect-flavored types. Apply it to files covered by a `parserOptions.project` configuration — without type info, the rule silently skips. Non-Effect tagged unions (Redux Toolkit actions, fp-ts `Either`, custom user tagged unions) are not flagged.
+**Type-aware.** This rule needs TypeScript program services to identify
+Effect-flavored types. The `recommended` and `strict` presets provide the
+parser and `projectService` configuration; files must belong to a
+`tsconfig.json`. Non-Effect tagged unions (Redux Toolkit actions, fp-ts
+`Either`, custom user tagged unions) are not flagged.
 
 ## Before (flagged)
 
