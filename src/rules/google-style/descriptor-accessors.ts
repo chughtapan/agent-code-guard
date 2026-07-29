@@ -5,55 +5,29 @@
 import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { getStaticStringKey } from "../utils/ast-refinement/index.js";
-import { getUnshadowedGlobalNamespace } from "../utils/global-namespace.js";
+import { getUnshadowedGlobalStaticCall } from "../utils/global-namespace.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type DescriptorDefinitionKind = "bulk" | "single";
 
-interface StaticCall {
-  readonly method: string;
-  readonly owner: string;
-}
-
 const DESCRIPTOR_NAMESPACES: ReadonlySet<string> = new Set(["Object", "Reflect"]);
 
-function staticMemberName(node: TSESTree.MemberExpression): string | null {
-  if (node.property.type === AST_NODE_TYPES.Identifier && !node.computed) {
-    return node.property.name;
-  }
-  if (
-    node.property.type === AST_NODE_TYPES.Literal &&
-    typeof node.property.value === "string"
-  ) {
-    return node.property.value;
-  }
-  return null;
-}
-
-function staticCall(
+function descriptorStaticCall(
   sourceCode: Readonly<TSESLint.SourceCode>,
   node: TSESTree.CallExpression,
-): StaticCall | null {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
-    return null;
-  }
-  const namespace = getUnshadowedGlobalNamespace(
+) {
+  return getUnshadowedGlobalStaticCall(
     sourceCode,
-    node.callee.object,
+    node.callee,
     DESCRIPTOR_NAMESPACES,
   );
-  if (namespace === null) {
-    return null;
-  }
-  const method = staticMemberName(node.callee);
-  return method === null ? null : { method, owner: namespace.name };
 }
 
 function descriptorDefinitionKind(
   sourceCode: Readonly<TSESLint.SourceCode>,
   node: TSESTree.CallExpression,
 ): DescriptorDefinitionKind | null {
-  const call = staticCall(sourceCode, node);
+  const call = descriptorStaticCall(sourceCode, node);
   if (call === null) {
     return null;
   }

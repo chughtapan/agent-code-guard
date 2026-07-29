@@ -2,6 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
+import {
+  directBinaryIndex,
+  packageScriptsRunCommand,
+} from "./package-script-chain.js";
 
 interface Options {
   readonly packageJsonPath?: string;
@@ -11,7 +15,18 @@ interface Options {
 type MessageId = "invalidPackageJson" | "missingScript" | "missingKnip";
 
 const DEFAULT_SCRIPT_NAMES = ["lint"] as const;
-const KNIP_COMMAND_PATTERN = /(?:^|[\s;&|])(?:agent-code-guard-)?knip(?:$|[\s;&|])/;
+const KNIP_BINARY_NAMES: ReadonlySet<string> = new Set([
+  "agent-code-guard-knip",
+  "knip",
+]);
+const NON_CHECKING_KNIP_ARGUMENTS: ReadonlySet<string> = new Set([
+  "--help",
+  "--no-exit-code",
+  "--version",
+  "--watch",
+  "-V",
+  "-h",
+]);
 
 interface PackageScripts {
   readonly scripts?: Record<string, unknown>;
@@ -40,6 +55,20 @@ type PackageCheckResult =
       readonly cause?: string;
     };
 
+function directCommandRunsKnip(tokens: readonly string[]): boolean {
+  const binaryIndex = directBinaryIndex(tokens, KNIP_BINARY_NAMES);
+  if (binaryIndex === null) {
+    return false;
+  }
+  const commandArguments = tokens.slice(binaryIndex + 1);
+  return !commandArguments.some(
+    (argument) =>
+      NON_CHECKING_KNIP_ARGUMENTS.has(argument) ||
+      argument === "--max-issues" ||
+      argument.startsWith("--max-issues="),
+  );
+}
+
 const cwdFor = (context: Readonly<{ cwd?: string }>): string =>
   typeof context.cwd === "string" && context.cwd.length > 0 ? context.cwd : process.cwd();
 
@@ -57,9 +86,6 @@ const parsePackageJson = (filePath: string): PackageJsonRead => {
   }
 };
 
-const scriptRunsKnip = (script: unknown): boolean =>
-  typeof script === "string" && KNIP_COMMAND_PATTERN.test(script);
-
 const checkPackageScripts = (
   packageJson: PackageScripts,
   scriptNames: readonly string[],
@@ -74,7 +100,7 @@ const checkPackageScripts = (
     return { _tag: "Missing", messageId: "missingScript", scriptNames: scriptList };
   }
 
-  if (configured.some(([, script]) => scriptRunsKnip(script))) {
+  if (packageScriptsRunCommand(scripts, scriptNames, directCommandRunsKnip)) {
     return { _tag: "Configured", scriptNames: scriptList };
   }
 

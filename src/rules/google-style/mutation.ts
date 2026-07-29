@@ -5,7 +5,10 @@
 
 import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
-import { getUnshadowedGlobalNamespace } from "../utils/global-namespace.js";
+import {
+  getUnshadowedGlobalStaticCall,
+  type GlobalStaticCallReference,
+} from "../utils/global-namespace.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 import { isUnshadowedGlobal } from "../utils/unshadowed-global.js";
 
@@ -28,18 +31,12 @@ function isNumberNamespaceCall(
   node: TSESTree.CallExpression,
   name: string,
 ): boolean {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
-    return false;
-  }
-  const namespace = getUnshadowedGlobalNamespace(
+  const call = getUnshadowedGlobalStaticCall(
     sourceCode,
-    node.callee.object,
+    node.callee,
     NUMBER_NAMESPACE,
   );
-  return (
-    namespace !== null &&
-    staticMemberName(node.callee) === name
-  );
+  return call?.method === name;
 }
 
 function isGlobalThisCall(
@@ -150,11 +147,6 @@ function targetsPrototype(node: TSESTree.Expression): boolean {
   return targetsPrototype(node.object);
 }
 
-interface StaticCall {
-  readonly method: string;
-  readonly owner: string;
-}
-
 const OBJECT_PROTOTYPE_MUTATION_METHODS: ReadonlySet<string> = new Set([
   "assign",
   "defineProperties",
@@ -170,32 +162,7 @@ const PROTOTYPE_MUTATION_NAMESPACES: ReadonlySet<string> = new Set([
   "Reflect",
 ]);
 
-function staticCall(
-  sourceCode: Readonly<TSESLint.SourceCode>,
-  node: TSESTree.CallExpression,
-): StaticCall | null {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression) {
-    return null;
-  }
-  const namespace = getUnshadowedGlobalNamespace(
-    sourceCode,
-    node.callee.object,
-    PROTOTYPE_MUTATION_NAMESPACES,
-  );
-  if (namespace === null) {
-    return null;
-  }
-  const method = staticMemberName(node.callee);
-  if (method === null) {
-    return null;
-  }
-  return {
-    method,
-    owner: namespace.name,
-  };
-}
-
-function isSetPrototypeOf(call: StaticCall): boolean {
+function isSetPrototypeOf(call: GlobalStaticCallReference): boolean {
   if (call.method !== "setPrototypeOf") {
     return false;
   }
@@ -207,7 +174,7 @@ function firstArgumentTargetsPrototype(node: TSESTree.CallExpression): boolean {
   return target?.type !== AST_NODE_TYPES.SpreadElement && targetsPrototype(target);
 }
 
-function supportsPrototypeTargetMutation(call: StaticCall): boolean {
+function supportsPrototypeTargetMutation(call: GlobalStaticCallReference): boolean {
   if (call.owner === "Object") {
     return OBJECT_PROTOTYPE_MUTATION_METHODS.has(call.method);
   }
@@ -218,7 +185,7 @@ function supportsPrototypeTargetMutation(call: StaticCall): boolean {
 }
 
 function isPrototypeTargetMutation(
-  call: StaticCall,
+  call: GlobalStaticCallReference,
   node: TSESTree.CallExpression,
 ): boolean {
   return supportsPrototypeTargetMutation(call) && firstArgumentTargetsPrototype(node);
@@ -228,11 +195,36 @@ function isPrototypeMutationCall(
   sourceCode: Readonly<TSESLint.SourceCode>,
   node: TSESTree.CallExpression,
 ): boolean {
-  const call = staticCall(sourceCode, node);
+  const call = getUnshadowedGlobalStaticCall(
+    sourceCode,
+    node.callee,
+    PROTOTYPE_MUTATION_NAMESPACES,
+  );
   if (call === null) {
     return false;
   }
   return isSetPrototypeOf(call) || isPrototypeTargetMutation(call, node);
+}
+
+function isObjectLiteralDataProperty(node: TSESTree.Property): boolean {
+  if (node.parent.type !== AST_NODE_TYPES.ObjectExpression) {
+    return false;
+  }
+  if (node.computed || node.method || node.shorthand) {
+    return false;
+  }
+  return node.kind === "init";
+}
+
+function isPrototypeSetterKey(node: TSESTree.Property["key"]): boolean {
+  if (node.type === AST_NODE_TYPES.Identifier) {
+    return node.name === "__proto__";
+  }
+  return node.type === AST_NODE_TYPES.Literal && node.value === "__proto__";
+}
+
+function isObjectLiteralPrototypeSetter(node: TSESTree.Property): boolean {
+  return isObjectLiteralDataProperty(node) && isPrototypeSetterKey(node.key);
 }
 
 /**
@@ -266,6 +258,11 @@ export const noPrototypeManipulation = createRule({
       },
       CallExpression(node) {
         if (isPrototypeMutationCall(sourceCode, node)) {
+          context.report({ node, messageId: "prototype" });
+        }
+      },
+      Property(node) {
+        if (isObjectLiteralPrototypeSetter(node)) {
           context.report({ node, messageId: "prototype" });
         }
       },

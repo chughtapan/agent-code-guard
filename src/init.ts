@@ -12,7 +12,7 @@ import { plugin as guard } from "eslint-plugin-agent-code-guard";
 
 export default [
   {
-    files: ["src/**/*.ts"],
+    files: ["**/*.{ts,tsx,mts,cts}"],
     ...guard.configs.recommended,
   },
 ];

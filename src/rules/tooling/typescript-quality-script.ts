@@ -5,13 +5,25 @@
 
 import path from "node:path";
 import * as ts from "typescript";
+import {
+  directBinaryIndex,
+  packageScriptsRunCommand,
+} from "./package-script-chain.js";
 import { missingCompilerOptions } from "./typescript-compiler-floor.js";
 
-const COMMAND_SEPARATOR_PATTERN = /&&/;
-const PACKAGE_RUNNERS: ReadonlySet<string> = new Set(["bun", "npm", "pnpm", "yarn"]);
-const TSC_RUNNERS: ReadonlySet<string> = new Set(["bunx", "npx"]);
-const UNSAFE_SHELL_OPERATOR_PATTERN = /(?:\|\||[;|]|(?<!&)&(?!&)|[$`#]|\r|\n)/;
-const SHELL_WORD_PATTERN = /"[^"]*"|'[^']*'|[^\s]+/gu;
+const TSC_BINARY_NAMES: ReadonlySet<string> = new Set(["tsc"]);
+const ESLINT_BINARY_NAMES: ReadonlySet<string> = new Set(["eslint"]);
+const NON_LINTING_ESLINT_ARGUMENTS: ReadonlySet<string> = new Set([
+  "--env-info",
+  "--help",
+  "--init",
+  "--inspect-config",
+  "--mcp",
+  "--print-config",
+  "--version",
+  "-h",
+  "-v",
+]);
 const NON_CHECKING_OPTIONS = [
   "help",
   "init",
@@ -25,74 +37,7 @@ const NON_CHECKING_OPTIONS = [
 interface ScriptTrace {
   readonly compilerOptions: ts.CompilerOptions;
   readonly packageDirectory: string;
-  readonly scripts: Readonly<Record<string, string>>;
   readonly tsconfigPath: string;
-}
-
-interface ReferencedScript {
-  readonly forwardedArguments: readonly string[];
-  readonly name: string;
-}
-
-function stringScripts(value: Readonly<Record<string, unknown>>): Readonly<Record<string, string>> {
-  return Object.fromEntries(
-    Object.entries(value).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string",
-    ),
-  );
-}
-
-function normalizedShellWord(word: string): string | null {
-  const quote = word[0];
-  if ((quote === "'" || quote === '"') && word.at(-1) === quote) {
-    return word.slice(1, -1);
-  }
-  return /['"\\]/u.test(word) ? null : word;
-}
-
-function commandTokens(command: string): readonly string[] | null {
-  const words = command.trim().match(SHELL_WORD_PATTERN) ?? [];
-  const tokens = words.map(normalizedShellWord);
-  if (tokens.some((token) => token === null)) {
-    return null;
-  }
-  return tokens.filter((token): token is string => token !== null);
-}
-
-function commandName(token: string): string {
-  return path.basename(token);
-}
-
-function directBinaryTscIndex(names: readonly string[]): number | null {
-  return names[0] === "tsc" ? 0 : null;
-}
-
-function standaloneRunnerTscIndex(names: readonly string[]): number | null {
-  return TSC_RUNNERS.has(names[0] ?? "") && names[1] === "tsc" ? 1 : null;
-}
-
-function packageExecTscIndex(names: readonly string[]): number | null {
-  return PACKAGE_RUNNERS.has(names[0] ?? "") &&
-    names[1] === "exec" &&
-    names[2] === "tsc"
-    ? 2
-    : null;
-}
-
-function packageBinaryTscIndex(names: readonly string[]): number | null {
-  return (names[0] === "pnpm" || names[0] === "yarn") && names[1] === "tsc"
-    ? 1
-    : null;
-}
-
-function directTscIndex(tokens: readonly string[]): number | null {
-  const names = tokens.map(commandName);
-  return (
-    directBinaryTscIndex(names) ??
-    standaloneRunnerTscIndex(names) ??
-    packageExecTscIndex(names) ??
-    packageBinaryTscIndex(names)
-  );
 }
 
 function buildProjectPath(project: string, packageDirectory: string): string {
@@ -135,9 +80,9 @@ function regularCommandRunsTypecheck(
   if (regularCommandSkipsTypecheck(parsed)) {
     return false;
   }
-  const projectPath = path.resolve(
-    trace.packageDirectory,
+  const projectPath = buildProjectPath(
     parsed.options.project ?? "tsconfig.json",
+    trace.packageDirectory,
   );
   if (projectPath !== trace.tsconfigPath) {
     return false;
@@ -149,7 +94,7 @@ function regularCommandRunsTypecheck(
 }
 
 function directCommandRunsTypecheck(tokens: readonly string[], trace: ScriptTrace): boolean {
-  const tscIndex = directTscIndex(tokens);
+  const tscIndex = directBinaryIndex(tokens, TSC_BINARY_NAMES);
   if (tscIndex === null) {
     return false;
   }
@@ -159,69 +104,13 @@ function directCommandRunsTypecheck(tokens: readonly string[], trace: ScriptTrac
     : regularCommandRunsTypecheck(commandArguments, trace);
 }
 
-function referencedScript(tokens: readonly string[]): ReferencedScript | null {
-  const runner = commandName(tokens[0] ?? "");
-  if (!PACKAGE_RUNNERS.has(runner) || tokens[1] !== "run") {
-    return null;
-  }
-  const name = tokens[2];
-  if (name === undefined) {
-    return null;
-  }
-  const argumentStart = tokens[3] === "--" ? 4 : 3;
-  return { forwardedArguments: tokens.slice(argumentStart), name };
-}
-
-function commandRunsTypecheck(
-  trace: ScriptTrace,
-  command: string,
-  ancestors: ReadonlySet<string>,
-  forwardedArguments: readonly string[],
-): boolean {
-  const commandParts = commandTokens(command);
-  if (commandParts === null) {
+function directCommandRunsEslint(tokens: readonly string[]): boolean {
+  const binaryIndex = directBinaryIndex(tokens, ESLINT_BINARY_NAMES);
+  if (binaryIndex === null) {
     return false;
   }
-  const tokens = [...commandParts, ...forwardedArguments];
-  if (directCommandRunsTypecheck(tokens, trace)) {
-    return true;
-  }
-  const reference = referencedScript(tokens);
-  return (
-    reference !== null &&
-    scriptRunsTypecheck(
-      trace,
-      reference.name,
-      ancestors,
-      reference.forwardedArguments,
-    )
-  );
-}
-
-function scriptRunsTypecheck(
-  trace: ScriptTrace,
-  scriptName: string,
-  ancestors: ReadonlySet<string>,
-  forwardedArguments: readonly string[] = [],
-): boolean {
-  if (ancestors.has(scriptName)) {
-    return false;
-  }
-  const script = trace.scripts[scriptName];
-  if (script === undefined) {
-    return false;
-  }
-  if (UNSAFE_SHELL_OPERATOR_PATTERN.test(script)) {
-    return false;
-  }
-  const commands = script.split(COMMAND_SEPARATOR_PATTERN);
-  if (forwardedArguments.length > 0 && commands.length !== 1) {
-    return false;
-  }
-  const nextAncestors = new Set(ancestors);
-  nextAncestors.add(scriptName);
-  return commands.some((command) =>
-    commandRunsTypecheck(trace, command, nextAncestors, forwardedArguments)
+  return !tokens.slice(binaryIndex + 1).some((argument) =>
+    NON_LINTING_ESLINT_ARGUMENTS.has(argument)
   );
 }
 
@@ -257,8 +146,24 @@ export function packageScriptsRunTypecheck(
   const trace: ScriptTrace = {
     compilerOptions: contract.compilerOptions,
     packageDirectory: path.dirname(contract.packageJsonPath),
-    scripts: stringScripts(scripts),
     tsconfigPath: contract.tsconfigPath,
   };
-  return scriptNames.some((name) => scriptRunsTypecheck(trace, name, new Set()));
+  return packageScriptsRunCommand(
+    scripts,
+    scriptNames,
+    (tokens) => directCommandRunsTypecheck(tokens, trace),
+  );
+}
+
+/**
+ * Resolves package-script references until an actual ESLint invocation is found.
+ * @param scripts Raw package.json scripts.
+ * @param scriptNames Entry scripts that may provide the quality gate.
+ * @returns Whether a safe script chain runs ESLint in checking mode.
+ */
+export function packageScriptsRunEslint(
+  scripts: Readonly<Record<string, unknown>>,
+  scriptNames: readonly string[],
+): boolean {
+  return packageScriptsRunCommand(scripts, scriptNames, directCommandRunsEslint);
 }

@@ -28,7 +28,7 @@ function qualityGateFixture(extended: boolean): Fixture {
   const tsconfigPath = path.join(directory, "tsconfig.json");
   fs.writeFileSync(
     packageJsonPath,
-    JSON.stringify({ scripts: { lint: "tsc --noEmit" } }),
+    JSON.stringify({ scripts: { lint: "tsc --noEmit && eslint ." } }),
   );
   if (!extended) {
     fs.writeFileSync(tsconfigPath, JSON.stringify({ compilerOptions: REQUIRED_OPTIONS }));

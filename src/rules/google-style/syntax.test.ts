@@ -157,6 +157,7 @@ ruleTester.run("component-function-naming", componentFunctionNaming, {
   valid: [
     "function readValue(): number { return 1; }",
     "const FACTORY = (): number => 1;",
+    "if (Either.isLeft(value)) return value.left;",
     {
       code: "function UserCard() { return <div />; }",
       filename: "component.tsx",
@@ -178,7 +179,7 @@ ruleTester.run("component-function-naming", componentFunctionNaming, {
       filename: "component.tsx",
     },
     {
-      code: "export function UserCard() { return null; }",
+      code: "export function UserCard(): JSX.Element | null { return null; }",
       filename: "component.tsx",
     },
   ],
@@ -221,6 +222,11 @@ ruleTester.run("component-function-naming", componentFunctionNaming, {
       errors: [{ messageId: "ordinaryLowerCamel" }],
       filename: "component.tsx",
     },
+    { code: "export function ParseValue(input: string): number | null { return input === '' ? null : Number(input); }", errors: [{ messageId: "ordinaryLowerCamel" }], filename: "component.tsx" },
+    { code: "export function FindUser(): User | null { return null; }", errors: [{ messageId: "ordinaryLowerCamel" }], filename: "component.tsx" },
+    { code: "function ReadValue() { const view = <div />; void view; return 1; }", errors: [{ messageId: "ordinaryLowerCamel" }], filename: "component.tsx" },
+    { code: "const React = { createElement: () => 1 }; export function BuildValue() { return React.createElement(); }", errors: [{ messageId: "ordinaryLowerCamel" }], filename: "component.tsx" },
+    { code: "function ReadValue() { return 1; } function Container() { const ReadValue = () => null; return <ReadValue />; }", errors: [{ messageId: "ordinaryLowerCamel" }], filename: "component.tsx" },
   ],
 });
 

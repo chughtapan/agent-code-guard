@@ -7,66 +7,82 @@ import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
-type CandidateFunction =
-  | TSESTree.ArrowFunctionExpression
-  | TSESTree.FunctionDeclaration
-  | TSESTree.FunctionExpression;
+type CandidateFunction = TSESTree.ArrowFunctionExpression |
+  TSESTree.FunctionDeclaration | TSESTree.FunctionExpression;
 
 interface FunctionCandidate {
-  readonly exported: boolean;
+  readonly binding: TSESLint.Scope.Variable | null;
   readonly functionNode: CandidateFunction;
   readonly globalVariable: boolean;
   readonly name: TSESTree.Identifier;
   readonly variable: boolean;
 }
 
+interface ClassificationState {
+  readonly jsxBindings: ReadonlySet<TSESLint.Scope.Variable>;
+  readonly recordedReturns: ReadonlyMap<
+    CandidateFunction,
+    ReadonlyArray<TSESTree.Expression | null>
+  >;
+}
+
 const CONSTANT_CASE_PATTERN = /^[A-Z][A-Z0-9_]*$/;
-const COMPONENT_RETURN_TYPE_PATTERN =
-  /\bJSX\.Element\b|\bReact(?:\.ReactElement|Element|\.JSX\.Element)\b/;
+const COMPONENT_RETURN_TYPE_PATTERN = /\bJSX\.Element\b|\bReact(?:\.ReactElement|Element|\.JSX\.Element)\b/;
 const REACT_NODE_RETURN_TYPE_PATTERN = /\bReact(?:\.ReactNode|Node)\b/;
 
 function isFunctionNode(node: TSESTree.Node | null): node is CandidateFunction {
-  return (
-    node?.type === AST_NODE_TYPES.ArrowFunctionExpression ||
+  return node?.type === AST_NODE_TYPES.ArrowFunctionExpression ||
     node?.type === AST_NODE_TYPES.FunctionDeclaration ||
-    node?.type === AST_NODE_TYPES.FunctionExpression
-  );
+    node?.type === AST_NODE_TYPES.FunctionExpression;
 }
 
 function isFunctionInitializer(node: TSESTree.Node | null): node is CandidateFunction {
-  return (
-    node?.type === AST_NODE_TYPES.ArrowFunctionExpression ||
-    node?.type === AST_NODE_TYPES.FunctionExpression
-  );
+  return node?.type === AST_NODE_TYPES.ArrowFunctionExpression ||
+    node?.type === AST_NODE_TYPES.FunctionExpression;
 }
 
-function isNode(value: unknown): value is TSESTree.Node {
-  return typeof value === "object" && value !== null && "type" in value;
+type NamedIdentifier = TSESTree.Identifier | TSESTree.JSXIdentifier;
+
+function resolveVariable(sourceCode: Readonly<TSESLint.SourceCode>, identifier: NamedIdentifier): TSESLint.Scope.Variable | null {
+  let scope: TSESLint.Scope.Scope | null = sourceCode.getScope(identifier);
+  while (scope !== null) {
+    const variable = scope.set.get(identifier.name);
+    if (variable !== undefined) {
+      return variable;
+    }
+    scope = scope.upper;
+  }
+  return null;
 }
 
-function containsJsxValue(value: unknown, root: CandidateFunction): boolean {
-  if (Array.isArray(value)) {
-    return value.some((child) => containsJsxValue(child, root));
-  }
-  if (!isNode(value)) {
-    return false;
-  }
-  return containsJsx(value, root);
+function declaredVariable(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  declaration: TSESTree.FunctionDeclaration | TSESTree.VariableDeclarator,
+  name: string,
+): TSESLint.Scope.Variable | null {
+  return sourceCode.getDeclaredVariables(declaration).find(
+    (variable) => variable.name === name,
+  ) ?? null;
 }
 
-function containsJsx(node: TSESTree.Node, root: CandidateFunction): boolean {
-  if (
-    node.type === AST_NODE_TYPES.JSXElement ||
-    node.type === AST_NODE_TYPES.JSXFragment
-  ) {
-    return true;
+function containingFunction(node: TSESTree.Node): CandidateFunction | null {
+  let current: TSESTree.Node | null | undefined = node.parent;
+  while (current != null && !isFunctionNode(current)) {
+    current = current.parent;
   }
-  if (node !== root && isFunctionNode(node)) {
-    return false;
+  const candidate = current ?? null;
+  return isFunctionNode(candidate) ? candidate : null;
+}
+
+function returnedValues(
+  node: CandidateFunction,
+  recorded: ReadonlyMap<CandidateFunction, ReadonlyArray<TSESTree.Expression | null>>,
+): ReadonlyArray<TSESTree.Expression | null> {
+  if (node.type === AST_NODE_TYPES.ArrowFunctionExpression &&
+    node.body.type !== AST_NODE_TYPES.BlockStatement) {
+    return [node.body];
   }
-  return Object.entries(node).some(
-    ([key, value]) => key !== "parent" && containsJsxValue(value, root),
-  );
+  return recorded.get(node) ?? [];
 }
 
 function topLevelVariable(node: TSESTree.VariableDeclarator): boolean {
@@ -75,30 +91,9 @@ function topLevelVariable(node: TSESTree.VariableDeclarator): boolean {
     return false;
   }
   const parent = declaration.parent;
-  return (
-    parent.type === AST_NODE_TYPES.Program ||
+  return parent.type === AST_NODE_TYPES.Program ||
     (parent.type === AST_NODE_TYPES.ExportNamedDeclaration &&
-      parent.parent.type === AST_NODE_TYPES.Program)
-  );
-}
-
-function exportedVariable(node: TSESTree.VariableDeclarator): boolean {
-  const declaration = node.parent;
-  return (
-    declaration.type === AST_NODE_TYPES.VariableDeclaration &&
-    declaration.parent.type === AST_NODE_TYPES.ExportNamedDeclaration
-  );
-}
-
-function exportedFunction(node: TSESTree.FunctionDeclaration): boolean {
-  return (
-    node.parent.type === AST_NODE_TYPES.ExportNamedDeclaration ||
-    node.parent.type === AST_NODE_TYPES.ExportDefaultDeclaration
-  );
-}
-
-function jsxTagName(node: TSESTree.JSXTagNameExpression): string | null {
-  return node.type === AST_NODE_TYPES.JSXIdentifier ? node.name : null;
+      parent.parent.type === AST_NODE_TYPES.Program);
 }
 
 function returnTypeSignalsComponent(
@@ -106,116 +101,124 @@ function returnTypeSignalsComponent(
   node: CandidateFunction,
   upperCamel: boolean,
 ): boolean {
-  if (node.returnType === undefined) {
-    return false;
-  }
-  const returnType = sourceCode.getText(node.returnType);
-  return (
-    COMPONENT_RETURN_TYPE_PATTERN.test(returnType) ||
-    (upperCamel && REACT_NODE_RETURN_TYPE_PATTERN.test(returnType))
-  );
+  const returnType = node.returnType === undefined ? "" : sourceCode.getText(node.returnType);
+  return COMPONENT_RETURN_TYPE_PATTERN.test(returnType) ||
+    (upperCamel && REACT_NODE_RETURN_TYPE_PATTERN.test(returnType));
 }
 
 function isCreateElementProperty(node: TSESTree.MemberExpression): boolean {
   const property = node.property;
-  if (property.type === AST_NODE_TYPES.Literal) {
-    return property.value === "createElement";
-  }
-  return !node.computed &&
+  return property.type === AST_NODE_TYPES.Literal
+    ? property.value === "createElement"
+    : !node.computed &&
     property.type === AST_NODE_TYPES.Identifier &&
     property.name === "createElement";
 }
 
-function isReactCreateElement(node: TSESTree.Node): boolean {
-  if (
-    node.type !== AST_NODE_TYPES.CallExpression ||
-    node.callee.type !== AST_NODE_TYPES.MemberExpression
-  ) {
+function isReactImport(definition: TSESLint.Scope.Definition): boolean {
+  return definition.type === "ImportBinding" &&
+    definition.parent.type === AST_NODE_TYPES.ImportDeclaration &&
+    definition.parent.source.value === "react";
+}
+
+function isReactReference(sourceCode: Readonly<TSESLint.SourceCode>, identifier: TSESTree.Identifier): boolean {
+  const variable = resolveVariable(sourceCode, identifier);
+  return identifier.name === "React" && (variable === null ||
+    variable.defs.length === 0 || variable.defs.some(isReactImport));
+}
+
+function isReactCreateElement(sourceCode: Readonly<TSESLint.SourceCode>, node: TSESTree.Node): boolean {
+  if (node.type !== AST_NODE_TYPES.CallExpression ||
+    node.callee.type !== AST_NODE_TYPES.MemberExpression) {
     return false;
   }
   const owner = node.callee.object;
   return owner.type === AST_NODE_TYPES.Identifier &&
-    owner.name === "React" &&
+    isReactReference(sourceCode, owner) &&
     isCreateElementProperty(node.callee);
 }
 
-function isNullLiteral(node: TSESTree.Node): boolean {
-  return node.type === AST_NODE_TYPES.Literal && node.value === null;
+function transparentExpression(node: TSESTree.Expression): TSESTree.Expression | null {
+  if (node.type === AST_NODE_TYPES.TSAsExpression ||
+    node.type === AST_NODE_TYPES.TSTypeAssertion ||
+    node.type === AST_NODE_TYPES.TSNonNullExpression) {
+    return node.expression;
+  }
+  return node.type === AST_NODE_TYPES.AwaitExpression ? node.argument : null;
 }
 
-function containsDirectReturnValue(
-  value: unknown,
-  root: CandidateFunction,
-  predicate: (node: TSESTree.Node) => boolean,
-): boolean {
-  if (Array.isArray(value)) {
-    return value.some((child) => containsDirectReturnValue(child, root, predicate));
-  }
-  if (!isNode(value)) {
-    return false;
-  }
-  if (value !== root && isFunctionNode(value)) {
-    return false;
-  }
-  if (
-    value.type === AST_NODE_TYPES.ReturnStatement &&
-    value.argument !== null &&
-    predicate(value.argument)
-  ) {
-    return true;
-  }
-  return Object.entries(value).some(
-    ([key, child]) =>
-      key !== "parent" && containsDirectReturnValue(child, root, predicate),
+function arrayExpressions(node: TSESTree.ArrayExpression): readonly TSESTree.Expression[] {
+  return node.elements.filter(
+    (element): element is TSESTree.Expression =>
+      element !== null && element.type !== AST_NODE_TYPES.SpreadElement,
   );
 }
 
-function directlyReturns(
-  node: CandidateFunction,
-  predicate: (value: TSESTree.Node) => boolean,
-): boolean {
-  if (
-    node.type === AST_NODE_TYPES.ArrowFunctionExpression &&
-    node.expression &&
-    predicate(node.body)
-  ) {
-    return true;
+function componentChildren(node: TSESTree.Expression): readonly TSESTree.Expression[] {
+  if (node.type === AST_NODE_TYPES.ConditionalExpression) {
+    return [node.consequent, node.alternate];
   }
-  return containsDirectReturnValue(node.body, node, predicate);
+  if (node.type === AST_NODE_TYPES.LogicalExpression) {
+    return [node.left, node.right];
+  }
+  if (node.type === AST_NODE_TYPES.SequenceExpression) {
+    return node.expressions.slice(-1);
+  }
+  return node.type === AST_NODE_TYPES.ArrayExpression ? arrayExpressions(node) : [];
+}
+
+function directComponentSignal(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.Expression,
+): boolean {
+  return node.type === AST_NODE_TYPES.JSXElement ||
+    node.type === AST_NODE_TYPES.JSXFragment ||
+    isReactCreateElement(sourceCode, node);
+}
+
+function returnedExpressionHasComponentSignal(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.Expression,
+): boolean {
+  const transparent = transparentExpression(node);
+  return directComponentSignal(sourceCode, node) ||
+    (transparent !== null
+      ? returnedExpressionHasComponentSignal(sourceCode, transparent)
+      : componentChildren(node).some((child) =>
+        returnedExpressionHasComponentSignal(sourceCode, child)
+      ));
 }
 
 function isComponent(
   sourceCode: Readonly<TSESLint.SourceCode>,
-  jsxTags: ReadonlySet<string>,
+  state: ClassificationState,
   candidate: FunctionCandidate,
   upperCamel: boolean,
 ): boolean {
-  if (
-    jsxTags.has(candidate.name.name) ||
-    containsJsx(candidate.functionNode, candidate.functionNode)
-  ) {
+  const returned = returnedValues(candidate.functionNode, state.recordedReturns);
+  if (candidate.binding !== null && state.jsxBindings.has(candidate.binding)) {
     return true;
   }
   if (returnTypeSignalsComponent(sourceCode, candidate.functionNode, upperCamel)) {
     return true;
   }
-  if (directlyReturns(candidate.functionNode, isReactCreateElement)) {
+  if (returned.some((expression) =>
+    expression !== null && returnedExpressionHasComponentSignal(sourceCode, expression)
+  )) {
     return true;
   }
-  return candidate.exported &&
-    upperCamel &&
-    directlyReturns(candidate.functionNode, isNullLiteral);
+  return false;
 }
 
 function reportCandidate(
   context: Readonly<
     TSESLint.RuleContext<"componentUpperCamel" | "ordinaryLowerCamel", []>
   >,
-  jsxTags: ReadonlySet<string>,
+  state: ClassificationState,
   candidate: FunctionCandidate,
 ): void {
   const upperCamel = /^\p{Lu}/u.test(candidate.name.name);
-  const component = isComponent(context.sourceCode, jsxTags, candidate, upperCamel);
+  const component = isComponent(context.sourceCode, state, candidate, upperCamel);
   if (component && !upperCamel) {
     context.report({ node: candidate.name, messageId: "componentUpperCamel" });
     return;
@@ -254,44 +257,51 @@ export const componentFunctionNaming = createRule({
   },
   defaultOptions: [],
   create(context) {
+    const sourceCode = context.sourceCode;
     const candidates: FunctionCandidate[] = [];
-    const jsxTags = new Set<string>();
+    const jsxBindings = new Set<TSESLint.Scope.Variable>();
+    const recordedReturns =
+      new Map<CandidateFunction, Array<TSESTree.Expression | null>>();
+    const state: ClassificationState = { jsxBindings, recordedReturns };
 
     return {
       FunctionDeclaration(node) {
         if (node.id === null) {
           return;
         }
-        candidates.push({
-          exported: exportedFunction(node),
-          functionNode: node,
-          globalVariable: false,
-          name: node.id,
-          variable: false,
-        });
+        candidates.push({ binding: declaredVariable(sourceCode, node, node.id.name),
+          functionNode: node, globalVariable: false, name: node.id, variable: false });
       },
       JSXOpeningElement(node) {
-        const name = jsxTagName(node.name);
-        if (name !== null) {
-          jsxTags.add(name);
+        if (node.name.type !== AST_NODE_TYPES.JSXIdentifier) {
+          return;
+        }
+        const binding = resolveVariable(sourceCode, node.name);
+        if (binding !== null) {
+          jsxBindings.add(binding);
         }
       },
       "Program:exit"() {
         for (const candidate of candidates) {
-          reportCandidate(context, jsxTags, candidate);
+          reportCandidate(context, state, candidate);
         }
+      },
+      ReturnStatement(node) {
+        const owner = containingFunction(node);
+        if (owner === null) {
+          return;
+        }
+        const values = recordedReturns.get(owner) ?? [];
+        values.push(node.argument);
+        recordedReturns.set(owner, values);
       },
       VariableDeclarator(node) {
         if (node.id.type !== AST_NODE_TYPES.Identifier || !isFunctionInitializer(node.init)) {
           return;
         }
-        candidates.push({
-          exported: exportedVariable(node),
+        candidates.push({ binding: declaredVariable(sourceCode, node, node.id.name),
           functionNode: node.init,
-          globalVariable: topLevelVariable(node),
-          name: node.id,
-          variable: true,
-        });
+          globalVariable: topLevelVariable(node), name: node.id, variable: true });
       },
     };
   },

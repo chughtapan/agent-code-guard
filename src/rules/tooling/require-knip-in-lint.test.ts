@@ -58,6 +58,19 @@ ruleTester.run("require-knip-in-lint", rule, {
         },
       ],
     },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: {
+              knip: "pnpm exec knip",
+              lint: "eslint . && pnpm run knip",
+            },
+          }),
+        },
+      ],
+    },
   ],
   invalid: [
     {
@@ -81,6 +94,72 @@ ruleTester.run("require-knip-in-lint", rule, {
         },
       ],
       errors: [{ messageId: "missingScript" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: { lint: "eslint . && echo knip" },
+          }),
+        },
+      ],
+      errors: [{ messageId: "missingKnip" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: { lint: "eslint . && true || knip" },
+          }),
+        },
+      ],
+      errors: [{ messageId: "missingKnip" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: { lint: "eslint . && knip || true" },
+          }),
+        },
+      ],
+      errors: [{ messageId: "missingKnip" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: { lint: "eslint . && knip &" },
+          }),
+        },
+      ],
+      errors: [{ messageId: "missingKnip" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: { lint: "eslint . && knip --no-exit-code" },
+          }),
+        },
+      ],
+      errors: [{ messageId: "missingKnip" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        {
+          packageJsonPath: packageJsonFixture({
+            scripts: { lint: "eslint . && knip --version" },
+          }),
+        },
+      ],
+      errors: [{ messageId: "missingKnip" }],
     },
   ],
 });

@@ -10,6 +10,7 @@ import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 import {
   hasConfiguredScript,
+  packageScriptsRunEslint,
   packageScriptsRunTypecheck,
 } from "./typescript-quality-script.js";
 import { missingCompilerOptions } from "./typescript-compiler-floor.js";
@@ -18,6 +19,7 @@ type MessageId =
   | "invalidPackageJson"
   | "invalidTsconfig"
   | "missingCompilerOptions"
+  | "missingEslint"
   | "missingScript"
   | "missingTypecheck";
 
@@ -139,9 +141,12 @@ function scriptsResult(
     scriptNames,
     contract,
   );
-  return runsTypecheck
+  if (!runsTypecheck) {
+    return { _tag: "Violation", data, messageId: "missingTypecheck" };
+  }
+  return packageScriptsRunEslint(scripts, scriptNames)
     ? { _tag: "Configured" }
-    : { _tag: "Violation", data, messageId: "missingTypecheck" };
+    : { _tag: "Violation", data, messageId: "missingEslint" };
 }
 
 function compilerOptionsResult(compilerOptions: ts.CompilerOptions): GateResult {
@@ -278,6 +283,8 @@ export const requireTypeScriptQualityGate = createRule<
       invalidTsconfig: "Could not read tsconfig.json or resolve its effective compiler options.",
       missingCompilerOptions:
         "tsconfig.json must explicitly set the required compiler options: {{optionNames}}.",
+      missingEslint:
+        "package.json scripts {{scriptNames}} must safely run `eslint` from the default quality gate.",
       missingScript:
         "package.json must define one of scripts {{scriptNames}} as the default quality gate.",
       missingTypecheck:

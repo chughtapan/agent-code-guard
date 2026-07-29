@@ -54,9 +54,10 @@ function rawQualityGateFixture(
   return { packageJsonPath, tsconfigPath };
 }
 
-function missingQualityGateFixture(
-  missing: "packageJson" | "tsconfig",
-): { readonly packageJsonPath: string; readonly tsconfigPath: string } {
+function missingQualityGateFixture(missing: "packageJson" | "tsconfig"): {
+  readonly packageJsonPath: string;
+  readonly tsconfigPath: string;
+} {
   const fixture = qualityGateFixture({ lint: "tsc --noEmit && eslint ." });
   fs.unlinkSync(missing === "packageJson" ? fixture.packageJsonPath : fixture.tsconfigPath);
   return fixture;
@@ -69,14 +70,10 @@ function inheritedQualityGateFixture(): {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "agent-code-guard-ts-gate-"));
   const packageJsonPath = path.join(directory, "package.json");
   const tsconfigPath = path.join(directory, "tsconfig.json");
-  fs.writeFileSync(
-    packageJsonPath,
-    JSON.stringify({ scripts: { lint: "tsc --noEmit && eslint ." } }, null, 2),
-  );
-  fs.writeFileSync(
-    path.join(directory, "tsconfig.base.json"),
-    JSON.stringify({ compilerOptions: REQUIRED_OPTIONS }, null, 2),
-  );
+  const packageJson = JSON.stringify({ scripts: { lint: "tsc --noEmit && eslint ." } }, null, 2);
+  fs.writeFileSync(packageJsonPath, packageJson);
+  const baseConfigPath = path.join(directory, "tsconfig.base.json");
+  fs.writeFileSync(baseConfigPath, JSON.stringify({ compilerOptions: REQUIRED_OPTIONS }, null, 2));
   fs.writeFileSync(
     tsconfigPath,
     '{\n  // TypeScript config syntax and inherited options must be honored.\n  "extends": "./tsconfig.base.json",\n}\n',
@@ -108,11 +105,17 @@ ruleTester.run("require-typescript-quality-gate", rule, {
     },
     {
       code: "export const value = 1;",
-      options: [qualityGateFixture({ lint: 'tsc --project "./tsconfig.json"' })],
+      options: [qualityGateFixture({ lint: "tsc --build && eslint ." })],
     },
     {
       code: "export const value = 1;",
-      options: [qualityGateFixture({ lint: "tsc --build" })],
+      options: [
+        qualityGateFixture({
+          eslint: "eslint .",
+          lint: "pnpm run typecheck && pnpm run eslint",
+          typecheck: "tsc --noEmit",
+        }),
+      ],
     },
   ],
   invalid: [
@@ -183,11 +186,6 @@ ruleTester.run("require-typescript-quality-gate", rule, {
     },
     {
       code: "export const value = 1;",
-      options: [qualityGateFixture({ lint: "echo tsc && eslint ." })],
-      errors: [{ messageId: "missingTypecheck" }],
-    },
-    {
-      code: "export const value = 1;",
       options: [
         qualityGateFixture({
           lint: "pnpm run typecheck && eslint .",
@@ -195,6 +193,44 @@ ruleTester.run("require-typescript-quality-gate", rule, {
         }),
       ],
       errors: [{ messageId: "missingTypecheck" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [qualityGateFixture({ lint: "tsc --noEmit" })],
+      errors: [{ messageId: "missingEslint" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        qualityGateFixture({
+          eslint: "eslint . || true",
+          lint: "pnpm run typecheck && pnpm run eslint",
+          typecheck: "tsc --noEmit",
+        }),
+      ],
+      errors: [{ messageId: "missingEslint" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        qualityGateFixture({
+          eslint: "eslint --version",
+          lint: "pnpm run typecheck && pnpm run eslint",
+          typecheck: "tsc --noEmit",
+        }),
+      ],
+      errors: [{ messageId: "missingEslint" }],
+    },
+    {
+      code: "export const value = 1;",
+      options: [
+        qualityGateFixture({
+          eslint: "echo eslint",
+          lint: "pnpm run typecheck && pnpm run eslint",
+          typecheck: "tsc --noEmit",
+        }),
+      ],
+      errors: [{ messageId: "missingEslint" }],
     },
     {
       code: "export const value = 1;",
