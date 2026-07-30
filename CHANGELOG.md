@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.18] - 2026-07-29
+
+### Fixed
+
+- Corrected the README and init command to match the removal of
+  `require-typescript-quality-gate`: consuming repositories remain
+  responsible for type checking and lint coverage, but the plugin no longer
+  prescribes a particular `tsc` or ESLint command shape.
+
 ## [0.0.17] - 2026-07-29
 
 ### Breaking

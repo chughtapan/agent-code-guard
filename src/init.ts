@@ -22,9 +22,10 @@ const NEXT_STEPS = `
 Next:
   1. Paste the snippet into your project's \`eslint.config.js\` (or merge
      into an existing config).
-  2. Make sure the project has a strict \`tsconfig.json\` and its default
-     lint script runs \`tsc\`, \`eslint .\`, and Knip.
-  3. Run your package lint script.
+  2. Make sure the project has a strict \`tsconfig.json\` and its default lint
+     path runs ESLint over the intended source surface and Knip.
+  3. Keep \`tsc\` in the repository's explicit quality pipeline.
+  4. Run your package lint script.
 `;
 
 function main(): void {

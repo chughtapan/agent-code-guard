@@ -26,8 +26,10 @@ export default [
 
 Then run your default lint script. The preset bundles its TypeScript parser,
 maintained rule plugins, and type-aware `projectService` setup; the project
-must have a `tsconfig.json`, and its lint script must run `tsc`, `eslint .`,
-and Knip.
+must have a `tsconfig.json`. Its default lint path must run ESLint over the
+repository's intended source surface and run Knip. Keep type checking as an
+explicit part of the repository's quality pipeline; the preset does not
+prescribe a particular command string or task orchestrator.
 
 ## What it catches
 
@@ -195,8 +197,9 @@ The package no longer has a default export. Replace
 `import { plugin as guard } from "eslint-plugin-agent-code-guard"`. Main
 presets now include the parser and typed language options, so remove manual
 parser wiring and spread the preset directly. Typed lint requires a
-`tsconfig.json`, and the default lint script must include `tsc`, `eslint .`,
-and Knip.
+`tsconfig.json`. Keep type checking in the repository's explicit quality
+pipeline, and keep ESLint plus Knip in its default lint path; no particular
+command string or task orchestrator is required.
 
 ## Disabling a rule
 
