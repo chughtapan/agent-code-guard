@@ -10,7 +10,11 @@ it("prints a named-export, type-aware setup", () => {
   expect(output).toContain('import { plugin as guard } from "eslint-plugin-agent-code-guard";');
   expect(output).toContain('files: ["**/*.{ts,tsx,mts,cts}"]');
   expect(output).toContain("...guard.configs.recommended");
-  expect(output).toContain("lint script runs `tsc`, `eslint .`, and Knip");
+  expect(output).toContain("default lint");
+  expect(output).toContain("runs ESLint over the intended source surface and Knip");
+  expect(output).toContain("Keep `tsc` in the repository's explicit quality pipeline");
+  expect(output).not.toContain("lint script runs `tsc`");
+  expect(output).not.toContain("`eslint .`");
   expect(output).not.toContain('files: ["src/**/*.ts"]');
   expect(output).not.toContain("@typescript-eslint/parser");
   expect(output).not.toContain("import guard from");
