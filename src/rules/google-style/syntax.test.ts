@@ -201,6 +201,18 @@ ruleTester.run("require-assertion-rationale", requireAssertionRationale, {
       // Invariant guarantees the collection is non-empty.
       input!
     );`,
+    `const value = (
+      /* Safe because the boundary validated this value. */
+      (input as { readonly id: string }).id
+    );`,
+    `expect(
+      /* Safe because the test fixture establishes this asserted shape. */
+      (input as { readonly id: string }).id,
+    );`,
+    `const value = (
+      /* Invariant guarantees the optional value is present. */
+      (input!).length
+    );`,
   ],
   invalid: [
     {
@@ -217,6 +229,18 @@ ruleTester.run("require-assertion-rationale", requireAssertionRationale, {
     },
     {
       code: "// cast\nconst value = input as string;",
+      errors: [{ messageId: "rationale" }],
+    },
+    {
+      code: `/* Safe because the boundary validated this value. */
+        consume((input as string).length);`,
+      errors: [{ messageId: "rationale" }],
+    },
+    {
+      code: `const value = (
+        /* Safe because the boundary validated this value. */
+        consume(input as string)
+      );`,
       errors: [{ messageId: "rationale" }],
     },
   ],

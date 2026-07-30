@@ -19,10 +19,35 @@ function isConstAssertion(node: TSESTree.TSAsExpression): boolean {
   );
 }
 
+function closestCommentBefore(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.Node,
+): TSESTree.Comment | undefined {
+  const comments = sourceCode.getAllComments();
+  for (let index = comments.length - 1; index >= 0; index -= 1) {
+    const comment = comments[index];
+    if (comment !== undefined && comment.range[1] <= node.range[0]) {
+      return comment;
+    }
+  }
+  return undefined;
+}
+
+function hasOnlyTransparentParentheses(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  comment: TSESTree.Comment,
+  node: TSESTree.Node,
+): boolean {
+  const gap = sourceCode.text.slice(comment.range[1], node.range[0]);
+  return /^[\s(]*$/u.test(gap);
+}
+
 function hasRationale(sourceCode: Readonly<TSESLint.SourceCode>, node: TSESTree.Node): boolean {
-  const comments = sourceCode.getCommentsBefore(node);
-  const comment = comments.at(-1);
+  const comment = closestCommentBefore(sourceCode, node);
   if (comment === undefined) {
+    return false;
+  }
+  if (!hasOnlyTransparentParentheses(sourceCode, comment, node)) {
     return false;
   }
   if (comment.loc.end.line + 1 < node.loc.start.line) {

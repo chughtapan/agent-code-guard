@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.19] - 2026-07-29
+
+### Fixed
+
+- Made `require-assertion-rationale` recognize rationale comments separated
+  from an assertion only by the grouping parentheses Oxfmt emits. Comments
+  separated by calls or other executable syntax remain invalid.
+
 ## [0.0.18] - 2026-07-29
 
 ### Fixed
