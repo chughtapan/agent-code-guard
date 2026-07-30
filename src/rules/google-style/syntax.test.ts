@@ -213,6 +213,10 @@ ruleTester.run("require-assertion-rationale", requireAssertionRationale, {
       /* Invariant guarantees the optional value is present. */
       (input!).length
     );`,
+    `/* Safe because the test fixture establishes this asserted shape. */
+    (
+      input as { mutable: boolean }
+    ).mutable = true;`,
   ],
   invalid: [
     {
@@ -241,6 +245,12 @@ ruleTester.run("require-assertion-rationale", requireAssertionRationale, {
         /* Safe because the boundary validated this value. */
         consume(input as string)
       );`,
+      errors: [{ messageId: "rationale" }],
+    },
+    {
+      code: `/* Safe because the boundary validated this value. */
+
+        (input as string).length;`,
       errors: [{ messageId: "rationale" }],
     },
   ],

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.20] - 2026-07-29
+
+### Fixed
+
+- Extended the Oxfmt compatibility fix for
+  `require-assertion-rationale` to grouping parentheses placed on their own
+  lines. Blank lines still break the rationale-to-assertion association.
+
 ## [0.0.19] - 2026-07-29
 
 ### Fixed
