@@ -122,7 +122,6 @@ another formatter independently.
 | Rule | Catches |
 |---|---|
 | [`require-knip-in-lint`](docs/rules/tooling/require-knip-in-lint.md) | `package.json` default quality scripts that omit Knip |
-| `require-typescript-quality-gate` | Default quality scripts that omit type checking, omit project-wide `eslint .`, or weaken the required compiler-option floor |
 
 ### Documentation
 
