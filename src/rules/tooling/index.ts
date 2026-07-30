@@ -4,14 +4,11 @@
  */
 
 import { requireKnipInLint } from "./require-knip-in-lint.js";
-import { requireTypeScriptQualityGate } from "./require-typescript-quality-gate.js";
 
 /**
  * Tooling rule family. Catches misconfigurations in the build/quality
- * tooling itself: default quality scripts that omit dead-code detection or
- * type checking, and compiler configurations below the required strict floor.
+ * tooling itself: default quality scripts that omit dead-code detection.
  */
 export const toolingRules = {
   "require-knip-in-lint": requireKnipInLint,
-  "require-typescript-quality-gate": requireTypeScriptQualityGate,
 } as const;

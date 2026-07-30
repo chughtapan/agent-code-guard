@@ -63,9 +63,14 @@ it("recommended and strict presets provide type-aware Google Style enforcement",
     expect(config.settings).toHaveProperty("import-x/extensions");
     expect(config.settings).toHaveProperty("import-x/parsers");
     expect(config.settings).toHaveProperty("import-x/resolver-next");
-    expect(config.rules).toHaveProperty(
+  }
+});
+
+it("does not expose the removed TypeScript quality-gate rule", () => {
+  expect(plugin.rules).not.toHaveProperty("require-typescript-quality-gate");
+  for (const config of [plugin.configs.recommended, plugin.configs.strict]) {
+    expect(config.rules).not.toHaveProperty(
       "agent-code-guard/require-typescript-quality-gate",
-      "error",
     );
   }
 });

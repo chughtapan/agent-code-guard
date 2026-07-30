@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.0.17] - 2026-07-29
+
+### Breaking
+
+- Removed `require-typescript-quality-gate`. Inferring a repository's
+  type-checking contract from package-script text produced false constraints
+  around orchestrators, delegated commands, and otherwise valid quality
+  pipelines. Consumers that configured the rule explicitly must remove that
+  configuration when upgrading.
+
+### Changed
+
+- Type checking remains part of the Google TypeScript Style coverage model,
+  but is now an explicit responsibility of each consuming repository. The
+  ESLint presets continue to provide type-aware rules without treating one
+  package-script shape as the only valid way to run `tsc`.
+
 ## [0.0.16] - 2026-07-29
 
 ### Breaking

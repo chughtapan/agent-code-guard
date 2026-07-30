@@ -81,7 +81,6 @@ export const recommendedSyntaxRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/no-hardcoded-assertion-literals": "error",
   "agent-code-guard/tag-discriminant": "error",
   "agent-code-guard/require-knip-in-lint": "error",
-  "agent-code-guard/require-typescript-quality-gate": "error",
   ...googleStyleRuleEntries,
 };
 
