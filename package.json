@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-agent-code-guard",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Normative ESLint floor for agent-written TypeScript: Google TypeScript Style plus stricter safety, Effect, testing, and tooling rules.",
   "type": "module",
   "main": "./dist/index.js",

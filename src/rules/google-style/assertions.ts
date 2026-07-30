@@ -33,13 +33,14 @@ function closestCommentBefore(
   return undefined;
 }
 
-function hasOnlyTransparentParentheses(
+function hasOnlyNearbyTransparentParentheses(
   sourceCode: Readonly<TSESLint.SourceCode>,
   comment: TSESTree.Comment,
   node: TSESTree.Node,
 ): boolean {
   const gap = sourceCode.text.slice(comment.range[1], node.range[0]);
-  return /^[\s(]*$/u.test(gap);
+  const hasBlankLine = /\n[ \t]*\n/u.test(gap);
+  return /^[\s(]*$/u.test(gap) && !hasBlankLine;
 }
 
 function hasRationale(sourceCode: Readonly<TSESLint.SourceCode>, node: TSESTree.Node): boolean {
@@ -47,10 +48,7 @@ function hasRationale(sourceCode: Readonly<TSESLint.SourceCode>, node: TSESTree.
   if (comment === undefined) {
     return false;
   }
-  if (!hasOnlyTransparentParentheses(sourceCode, comment, node)) {
-    return false;
-  }
-  if (comment.loc.end.line + 1 < node.loc.start.line) {
+  if (!hasOnlyNearbyTransparentParentheses(sourceCode, comment, node)) {
     return false;
   }
   const explanation = comment.value.trim();
