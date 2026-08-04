@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- The exhaustive class-order fixture matrix is intentionally kept in one RuleTester table. */
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import * as tsParser from "@typescript-eslint/parser";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
@@ -301,3 +302,4 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
     },
   ],
 });
+/* eslint-enable max-lines -- End exhaustive class-order fixture table. */
