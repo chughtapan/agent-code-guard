@@ -6,6 +6,7 @@ const INTERNAL_BAND = 1;
 const CONSTRUCTOR_BAND = 0;
 const PUBLIC_BAND = 1;
 const PRIVATE_BAND = 2;
+const DOT_ADDRESSABLE_NAME = /^[A-Za-z_$][A-Za-z0-9_$]*$/u;
 
 /**
  * Collects the top-level functions and eligible class methods ordered within
@@ -182,6 +183,9 @@ function methodName(member: TSESTree.MethodDefinition): string | null {
   }
   if (member.key.type === AST_NODE_TYPES.Identifier || member.key.type === AST_NODE_TYPES.PrivateIdentifier) {
     return member.key.name;
+  }
+  if (member.key.type === AST_NODE_TYPES.Literal && typeof member.key.value === "string") {
+    return DOT_ADDRESSABLE_NAME.test(member.key.value) ? member.key.value : null;
   }
   return null;
 }

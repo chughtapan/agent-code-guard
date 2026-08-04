@@ -110,11 +110,20 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
       `,
     },
     {
-      name: "noncomputed string-literal keys are excluded from direct identifier resolution",
+      name: "a noncomputed string-literal key that no dot call can address is not a direct target",
       code: `
         class Service {
-          public "read"() { return "value"; }
+          public "read-value"() { return "value"; }
+          public run() { return this["read-value"](); }
+        }
+      `,
+    },
+    {
+      name: "a noncomputed string-literal key resolves for a caller that already precedes it",
+      code: `
+        class Service {
           public run() { return this.read(); }
+          public "read"() { return "value"; }
         }
       `,
     },
@@ -294,6 +303,20 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
       `,
       errors: [{
         message: "run must precede its direct local callee secret in the private story band.",
+        type: AST_NODE_TYPES.CallExpression,
+      }],
+      output: null,
+    },
+    {
+      name: "a noncomputed string-literal key is a direct target when the caller follows it",
+      code: `
+        class Service {
+          public "read"() { return "value"; }
+          public run() { return this.read(); }
+        }
+      `,
+      errors: [{
+        message: "run must precede its direct local callee read in the public/protected story band.",
         type: AST_NODE_TYPES.CallExpression,
       }],
       output: null,
