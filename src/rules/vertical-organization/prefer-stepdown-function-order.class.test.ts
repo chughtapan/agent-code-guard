@@ -70,6 +70,16 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
       `,
     },
     {
+      name: "a computed method is never a direct target for a computed this call",
+      code: `
+        const key = "read";
+        class Service {
+          public [key]() { return "value"; }
+          public run() { return this["read"](); }
+        }
+      `,
+    },
+    {
       name: "numeric literal keys are eligible declarations but not direct method names",
       code: `
         class Service {
@@ -123,6 +133,26 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
           }
           public read() { return "value"; }
           public static make() { return "value"; }
+        }
+      `,
+    },
+    {
+      name: "calls through another object and across story bands are excluded",
+      code: `
+        class Service {
+          public read() { return "value"; }
+          public run() { const other = this; return other.read(); }
+          #secret() { return this.read(); }
+        }
+      `,
+    },
+    {
+      name: "a class caller never follows a same-band top-level callee",
+      code: `
+        function read() { return "top-level"; }
+        class Service {
+          public first() { return "value"; }
+          public run() { return read(); }
         }
       `,
     },

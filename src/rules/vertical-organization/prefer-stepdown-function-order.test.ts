@@ -112,8 +112,33 @@ ruleTester.run("prefer-stepdown-function-order: top-level", rule, {
         function caller() { return read(); }
       `,
     },
+    {
+      name: "a class method with the same name does not shadow the program target table",
+      code: `
+        function run() { return read(); }
+        function read() { return "top-level"; }
+        class Service { public read() { return "method"; } }
+      `,
+    },
+    {
+      name: "a top-level caller does not resolve a class this call",
+      code: `
+        function read() { return "value"; }
+        function run() { return this.read(); }
+      `,
+    },
   ],
   invalid: [
+    {
+      name: "class method names do not make a top-level lexical target ambiguous",
+      code: `
+        function read() { return "top-level"; }
+        function run() { return read(); }
+        class Service { public read() { return "method"; } }
+      `,
+      errors: [{ messageId: "callerMustPrecedeCallee" }],
+      output: null,
+    },
     {
       name: "band diagnostics do not depend on calls",
       code: `
