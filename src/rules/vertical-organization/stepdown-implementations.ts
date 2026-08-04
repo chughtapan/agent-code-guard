@@ -139,7 +139,7 @@ function classImplementation(
     container: member.parent,
     band,
     bandName: classBandName(band),
-    label: method ?? "constructor",
+    label: methodLabel(member, method),
     callableName: method === null ? null : methodCallKey(member, method),
     isStatic: member.static,
   }];
@@ -148,7 +148,9 @@ function classImplementation(
 function isEligibleMethod(
   member: TSESTree.ClassElement,
 ): member is TSESTree.MethodDefinition & { readonly value: TSESTree.FunctionExpression } {
-  if (member.type !== AST_NODE_TYPES.MethodDefinition || member.value.type !== AST_NODE_TYPES.FunctionExpression) {
+  // ESTree's MethodDefinition node always owns a FunctionExpression; empty-body
+  // signatures use a distinct TS node and are excluded by this discriminant.
+  if (member.type !== AST_NODE_TYPES.MethodDefinition) {
     return false;
   }
   if (member.kind === "constructor") {
@@ -182,6 +184,16 @@ function methodName(member: TSESTree.MethodDefinition): string | null {
     return member.key.name;
   }
   return null;
+}
+
+function methodLabel(member: TSESTree.MethodDefinition, name: string | null): string {
+  if (member.kind === "constructor") {
+    return "constructor";
+  }
+  if (name !== null) {
+    return name;
+  }
+  return member.computed ? "computed method" : "literal-key method";
 }
 
 function methodCallKey(member: TSESTree.MethodDefinition, name: string): string {

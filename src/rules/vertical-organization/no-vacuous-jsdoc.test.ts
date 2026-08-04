@@ -22,6 +22,10 @@ ruleTester.run("no-vacuous-jsdoc", rule, {
       code: `/** Short, specific prose is valid. */\nconst item = 1;`,
     },
     {
+      name: "ignores an empty JSDoc token when comment-parser emits no block",
+      code: `/**/\nexport {};`,
+    },
+    {
       code: `/**\n * @file The module's contract is documented.\n */\nexport {};`,
     },
     {

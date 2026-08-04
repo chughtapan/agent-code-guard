@@ -104,6 +104,13 @@ function callableFromRange(
     : `${symbol}${sourceCode.text.slice(opening, closing + 1)}`;
 }
 
+function afterTypeParameters(
+  declaration: { readonly typeParameters?: { readonly range: readonly [number, number] } },
+  fallback: number,
+): number {
+  return declaration.typeParameters?.range[1] ?? fallback;
+}
+
 function functionCandidates(
   sourceCode: TSESLint.SourceCode,
   declaration: TSESTree.FunctionDeclaration,
@@ -112,7 +119,12 @@ function functionCandidates(
     ? undefined
     : {
         symbol: declaration.id.name,
-        callable: callableFromRange(sourceCode, declaration.id.name, declaration.id.range[1], declaration.range[1]),
+        callable: callableFromRange(
+          sourceCode,
+          declaration.id.name,
+          afterTypeParameters(declaration, declaration.id.range[1]),
+          declaration.range[1],
+        ),
         represents: false,
       };
 }
@@ -126,7 +138,12 @@ function methodCandidates(
   }
   return {
     symbol: declaration.key.name,
-    callable: callableFromRange(sourceCode, declaration.key.name, declaration.key.range[1], declaration.value.range[1]),
+    callable: callableFromRange(
+      sourceCode,
+      declaration.key.name,
+      afterTypeParameters(declaration.value, declaration.key.range[1]),
+      declaration.value.range[1],
+    ),
     represents: false,
   };
 }
@@ -145,7 +162,12 @@ function variableCandidates(
   const initializer = declarator.init;
   const callable = initializer !== null &&
     (initializer.type === AST_NODE_TYPES.ArrowFunctionExpression || initializer.type === AST_NODE_TYPES.FunctionExpression)
-    ? callableFromRange(sourceCode, declarator.id.name, initializer.range[0], initializer.range[1])
+    ? callableFromRange(
+      sourceCode,
+      declarator.id.name,
+      afterTypeParameters(initializer, initializer.range[0]),
+      initializer.range[1],
+    )
     : undefined;
   return { symbol: declarator.id.name, callable, represents: true };
 }

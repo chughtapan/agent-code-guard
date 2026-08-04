@@ -17,6 +17,21 @@ test("implementation model records non-static functions and non-callable constru
   ]);
 });
 
+test("implementation model excludes abstract methods with empty function bodies", () => {
+  const program = tsParser.parse(`
+    abstract class Service {
+      abstract read(): string;
+      run() { return "value"; }
+    }
+  `);
+  attachParents(program, null);
+  const classBody = findClassBody(program);
+
+  expect(collectImplementations(program, [classBody])).toMatchObject([
+    { callableName: "run", label: "run" },
+  ]);
+});
+
 function attachParents(node: TSESTree.Node, parent: TSESTree.Node | null): void {
   Object.assign(node, { parent });
   for (const child of childNodes(node)) {

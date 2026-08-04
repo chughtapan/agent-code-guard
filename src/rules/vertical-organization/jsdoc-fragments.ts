@@ -19,6 +19,7 @@ export interface DescriptionSpan {
 interface ParsedJsdocTag {
   readonly tag: string;
   readonly name: string;
+  readonly loc: TSESTree.SourceLocation;
   readonly description?: DescriptionSpan;
 }
 
@@ -178,7 +179,7 @@ function isJSDoc(token: TSESLint.AST.Token, sourceCode: TSESLint.SourceCode): bo
 function parseJsdocBlock(
   sourceCode: TSESLint.SourceCode,
   token: TSESLint.AST.Token,
-): ParsedJsdocBlock {
+): ParsedJsdocBlock | undefined {
   const source = sourceCode.text.slice(token.range[0], token.range[1]);
   // comment-parser treats LF and CRLF as line endings but otherwise leaves a
   // bare CR inside one logical line. Normalize only bare CR bytes; preserving
@@ -186,20 +187,27 @@ function parseJsdocBlock(
   const parserSource = source.replace(/\r(?!\n)/gu, "\n");
   const blocks = parse(parserSource, { startLine: token.loc.start.line, spacing: "preserve" });
   const block = blocks[0];
+  if (block === undefined) {
+    return undefined;
+  }
   const mapped = mapLines(sourceCode.text, token, block);
   return {
     token,
     description: blockDescription(sourceCode, block, mapped),
-    tags: block.tags.map((spec) => ({
-      tag: spec.tag,
-      name: spec.name,
-      description: tagDescription(
-        sourceCode,
-        spec,
-        // eslint-disable-next-line agent-code-guard/require-assertion-rationale -- comment-parser spec.source line numbers are a subset of its enclosing block.source lines.
-        spec.source.map((line) => mapped.find((entry) => entry.line.number === line.number)!),
-      ),
-    })),
+    tags: block.tags.map((spec) => {
+      // eslint-disable-next-line agent-code-guard/require-assertion-rationale -- comment-parser spec.source line numbers are a subset of its enclosing block.source lines.
+      const specLines = spec.source.map((line) => mapped.find((entry) => entry.line.number === line.number)!);
+      const tagLine = specLines[0];
+      return {
+        tag: spec.tag,
+        name: spec.name,
+        loc: {
+          start: sourceCode.getLocFromIndex(tagLine.ranges.tag[0]),
+          end: sourceCode.getLocFromIndex(tagLine.ranges.tag[1]),
+        },
+        description: tagDescription(sourceCode, spec, specLines),
+      };
+    }),
     attachment: attachmentFor(sourceCode, token),
   };
 }
@@ -213,5 +221,8 @@ export function parseJsdocBlocks(sourceCode: TSESLint.SourceCode): readonly Pars
   return sourceCode
     .getAllComments()
     .filter((token) => isJSDoc(token, sourceCode))
-    .map((token) => parseJsdocBlock(sourceCode, token));
+    .flatMap((token) => {
+      const block = parseJsdocBlock(sourceCode, token);
+      return block === undefined ? [] : [block];
+    });
 }

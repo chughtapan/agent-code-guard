@@ -65,16 +65,38 @@ class TarjanState {
 
   visitIfUnseen(vertex: Implementation): void {
     if (!this.indexes.has(vertex)) {
-      this.visit(vertex);
+      this.visitIteratively(vertex);
     }
   }
 
-  private visit(vertex: Implementation): void {
-    this.enter(vertex);
-    for (const neighbour of this.adjacency.get(vertex) ?? []) {
-      this.visitNeighbour(vertex, neighbour);
+  private visitIteratively(start: Implementation): void {
+    this.enter(start);
+    const frames: TraversalFrame[] = [{ vertex: start, nextNeighbourIndex: 0 }];
+    while (frames.length > 0) {
+      const frame = currentFrame(frames);
+      const neighbour = this.nextNeighbour(frame);
+      if (neighbour === undefined) {
+        this.completeFrame(frame, frames);
+      } else {
+        this.visitNeighbour(frame.vertex, neighbour, frames);
+      }
     }
-    this.completeComponent(vertex);
+  }
+
+  private completeFrame(frame: TraversalFrame, frames: TraversalFrame[]): void {
+    frames.pop();
+    this.completeComponent(frame.vertex);
+    const caller = frames.at(-1)?.vertex;
+    if (caller !== undefined) {
+      this.reduceLowlinkFrom(caller, this.lowlinks, frame.vertex);
+    }
+  }
+
+  private nextNeighbour(frame: TraversalFrame): Implementation | undefined {
+    const neighbours = this.adjacency.get(frame.vertex) ?? [];
+    const neighbour = neighbours[frame.nextNeighbourIndex];
+    frame.nextNeighbourIndex += 1;
+    return neighbour;
   }
 
   private enter(vertex: Implementation): void {
@@ -85,10 +107,14 @@ class TarjanState {
     this.onStack.add(vertex);
   }
 
-  private visitNeighbour(vertex: Implementation, neighbour: Implementation): void {
+  private visitNeighbour(
+    vertex: Implementation,
+    neighbour: Implementation,
+    frames: TraversalFrame[],
+  ): void {
     if (!this.indexes.has(neighbour)) {
-      this.visit(neighbour);
-      this.reduceLowlinkFrom(vertex, this.lowlinks, neighbour);
+      this.enter(neighbour);
+      frames.push({ vertex: neighbour, nextNeighbourIndex: 0 });
       return;
     }
     if (this.onStack.has(neighbour)) {
@@ -113,6 +139,18 @@ class TarjanState {
       this.components.push(componentFromStack(this.stack, this.onStack, vertex));
     }
   }
+}
+
+interface TraversalFrame {
+  readonly vertex: Implementation;
+  nextNeighbourIndex: number;
+}
+
+function currentFrame(frames: readonly TraversalFrame[]): TraversalFrame {
+  return (
+    // The caller's nonempty-worklist loop guarantees a current frame.
+    frames.at(-1)!
+  );
 }
 
 function stronglyConnectedComponents(edges: readonly Edge[]): readonly Component[] {

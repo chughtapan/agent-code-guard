@@ -1,6 +1,6 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
-import { stepdownRuleTester } from "./stepdown-test-support.js";
+import { stepdownRuleTester } from "./test-support/stepdown.js";
 
 const ruleTester = stepdownRuleTester();
 

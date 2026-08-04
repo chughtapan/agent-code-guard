@@ -57,6 +57,9 @@ export function parseSideEffectImportBarrier(
     return undefined;
   }
   const text = raw(sourceCode, token);
+  if (!text.startsWith(BARRIER_PREFIX)) {
+    return undefined;
+  }
   const separator = text.indexOf(BARRIER_SEPARATOR, BARRIER_PREFIX.length);
   const kind = text.slice(BARRIER_PREFIX.length, separator);
   if (kind !== "begin" && kind !== "end") {

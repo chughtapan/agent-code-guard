@@ -184,7 +184,7 @@ function reportOverviewViolations(
   const firstFileTag = allFileTags.at(0);
   for (const tag of allFileTags) {
     if (tag !== firstFileTag && !canonicalTags.has(tag)) {
-      context.report({ loc: tag.description?.loc ?? sourceCode.getLocFromIndex(0), messageId: "duplicateFileTag" });
+      context.report({ loc: tag.description?.loc ?? tag.loc, messageId: "duplicateFileTag" });
     }
   }
   if (canonical.length === 0) {

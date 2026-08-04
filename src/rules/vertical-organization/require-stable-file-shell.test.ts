@@ -53,7 +53,7 @@ ruleTester.run("require-stable-file-shell", rule, {
     {
       code: `/** @file Canonical overview. */\n/** @file */\nexport {};`,
       output: null,
-      errors: [{ messageId: "duplicateFileTag" }],
+      errors: [{ messageId: "duplicateFileTag", line: 2, column: 5, endLine: 2, endColumn: 10 }],
     },
     {
       code: `/** @file    */\nexport {};`,
@@ -205,6 +205,16 @@ ruleTester.run("require-stable-file-shell", rule, {
       ],
     },
     {
+      name: "rejects same-length barrier-prefix impostors",
+      code: `${overview}\n// ${"x".repeat(37)}begin -- evaluation-order: registration\nimport "./registration";\n// ${"x".repeat(37)}end -- evaluation-order: registration`,
+      output: null,
+      errors: [
+        { messageId: "disallowedPreamble" },
+        { messageId: "invalidSideEffectImportBarrier" },
+        { messageId: "invalidSideEffectImportBarrier" },
+      ],
+    },
+    {
       name: "distinguishes absent and malformed barriers on each side",
       code: `${overview}\n/* agent-code-guard: side-effect-import-begin -- evaluation-order: registration */\nimport "./registration";\n// agent-code-guard: side-effect-import-end -- evaluation-order:`,
       output: null,
@@ -320,6 +330,9 @@ it("evaluates license and directive grammar after a fresh module load", async ()
     expect(verify(`${overview}\n${directive}\nimport value from "./value";\nexport { value };`)[0]?.messageId).toBe("disallowedPreamble");
   }
   expect(verify(`/** @file */\nexport {};`).map((message) => message.messageId)).toEqual([
+    "missingCanonicalFileOverview",
+  ]);
+  expect(verify(`/**/\nexport {};`).map((message) => message.messageId)).toEqual([
     "missingCanonicalFileOverview",
   ]);
   expect(verify(`/** @file First.\n * @file Second. */\nexport {};`).map((message) => message.messageId)).toEqual([

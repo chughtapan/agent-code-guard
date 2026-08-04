@@ -1,7 +1,50 @@
+import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import * as tsParser from "@typescript-eslint/parser";
+import { expect, test } from "vitest";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
-import { stepdownRuleTester } from "./stepdown-test-support.js";
+import type { Edge, Implementation } from "./stepdown-model.js";
+import { violatingEdges } from "./stepdown-scc.js";
+import { stepdownRuleTester } from "./test-support/stepdown.js";
 
+const LINEAR_CHAIN_LENGTH = 8_000;
 const ruleTester = stepdownRuleTester();
+const syntheticProgram = tsParser.parse("function synthetic() { return syntheticCall(); }");
+const syntheticDeclaration = syntheticProgram.body[0];
+if (syntheticDeclaration?.type !== AST_NODE_TYPES.FunctionDeclaration) {
+  throw new Error("Expected the synthetic fixture to contain one function declaration.");
+}
+const syntheticStatement = syntheticDeclaration.body.body[0];
+if (syntheticStatement?.type !== AST_NODE_TYPES.ReturnStatement || syntheticStatement.argument?.type !== AST_NODE_TYPES.CallExpression) {
+  throw new Error("Expected the synthetic fixture to contain one call expression.");
+}
+const syntheticCall = syntheticStatement.argument;
+
+test("an ordered eight-thousand-vertex graph does not exhaust the call stack", () => {
+  const implementations: Implementation[] = [];
+  const edges: Edge[] = [];
+  for (let index = 0; index < LINEAR_CHAIN_LENGTH; index += 1) {
+    implementations.push(implementation(index));
+    if (index > 0) {
+      edges.push({ caller: implementations[index - 1], callee: implementations[index], call: syntheticCall });
+    }
+  }
+
+  expect(violatingEdges(edges)).toEqual([]);
+});
+
+function implementation(index: number): Implementation {
+  return {
+    declaration: syntheticDeclaration,
+    function: syntheticDeclaration,
+    container: syntheticProgram,
+    band: 1,
+    bandName: "internal",
+    index,
+    label: `step${index}`,
+    callableName: `step${index}`,
+    isStatic: false,
+  };
+}
 
 ruleTester.run("prefer-stepdown-function-order: graph", rule, {
   valid: [

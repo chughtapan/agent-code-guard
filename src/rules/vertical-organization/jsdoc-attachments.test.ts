@@ -114,6 +114,12 @@ class Example {
     ]);
   });
 
+  it("starts callable extraction after generic constraints containing parentheses", () => {
+    const [block] = parse(`/** Generic function. */
+function foo<T extends (x: string) => void>(value: T) {}`);
+    expect(block.attachment?.callable).toBe("foo(value: T)");
+  });
+
   it("keeps each quote family closed while finding a nested default parameter", () => {
     const blocks = parse("/** Single. */\nfunction single(value = ')'): void {}\n/** Double. */\nfunction double(value = \")\"): void {}\n/** Template. */\nfunction template(value = `)`): void {}\n/** Expression. */\nconst expression = function (value = nested(1)): number { return value; };");
     expect(blocks.map((block) => block.attachment?.callable)).toEqual([

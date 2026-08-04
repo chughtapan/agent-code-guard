@@ -2,7 +2,7 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import * as tsParser from "@typescript-eslint/parser";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
-import { stepdownRuleTester } from "./stepdown-test-support.js";
+import { stepdownRuleTester } from "./test-support/stepdown.js";
 
 const ruleTester = stepdownRuleTester();
 
@@ -213,6 +213,20 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
     },
   ],
   invalid: [
+    {
+      name: "a computed public method is labeled accurately when its band is out of order",
+      code: `
+        class Service {
+          #secret() { return "value"; }
+          ["run"]() { return "value"; }
+        }
+      `,
+      errors: [{
+        message: "computed method belongs to the public/protected story band, which must precede an earlier private declaration.",
+        type: AST_NODE_TYPES.Literal,
+      }],
+      output: null,
+    },
     {
       name: "class band diagnostics do not depend on calls",
       code: `
