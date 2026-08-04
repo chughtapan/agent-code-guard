@@ -2,14 +2,17 @@ import { AST_NODE_TYPES, type TSESTree, type TSESLint } from "@typescript-eslint
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 import { type ParsedJsdocBlock, parseJsdocBlocks } from "./jsdoc-fragments.js";
+import {
+  type BareImportBarrierMessageId,
+  hasLineAdjacentGap,
+  parseSideEffectImportBarrier,
+  reportBareImportBarrierViolations,
+} from "./side-effect-import-barriers.js";
 
 const LICENSE_PREFIX = /^(SPDX-License-Identifier:|SPDX-FileCopyrightText:|Copyright|©)/u;
-const BARRIER_PREFIX = "// agent-code-guard: side-effect-import-";
-const BARRIER_SEPARATOR = " -- evaluation-order: ";
 // eslint-disable-next-line sonarjs/regex-complexity -- This is the bounded TypeScript triple-slash directive grammar.
 const TRIPLE_SLASH_DIRECTIVE = /^\/\/\/\s*<(?:reference\s+(?:path|types|lib)=(?:"[^"]+"|'[^']+')|amd-module\s+name=(?:"[^"]+"|'[^']+')|amd-dependency\s+path=(?:"[^"]+"|'[^']+'))\s*\/?>(?:\s*)$/u;
 
-type BarrierKind = "begin" | "end";
 type MessageIds =
   | "missingCanonicalFileOverview"
   | "multipleCanonicalFileOverviews"
@@ -17,16 +20,22 @@ type MessageIds =
   | "disallowedPreamble"
   | "contentBeforeFileOverview"
   | "importShellInterrupted"
-  | "missingSideEffectImportBeginBarrier"
-  | "missingSideEffectImportEndBarrier"
-  | "invalidSideEffectImportBarrier"
-  | "mismatchedSideEffectImportBarrier";
+  | BareImportBarrierMessageId;
 
 type ShellContext = Readonly<TSESLint.RuleContext<MessageIds, readonly []>>;
+type ImportShellState = "preamble" | "imports" | "after";
 
-interface Barrier {
-  readonly kind: BarrierKind;
-  readonly reason: string;
+interface OverviewPhaseOptions {
+  readonly context: ShellContext;
+  readonly sourceCode: TSESLint.SourceCode;
+  readonly program: TSESTree.Program;
+  readonly overview?: ParsedJsdocBlock;
+}
+
+interface ImportPositionOptions {
+  readonly statement: TSESTree.ProgramStatement;
+  readonly state: ImportShellState;
+  readonly overview?: ParsedJsdocBlock;
 }
 
 function raw(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): string {
@@ -41,26 +50,6 @@ function isLicenseComment(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.T
     .replace(/^[ \t]*\*[ \t]?/gmu, "")
     .trim();
   return LICENSE_PREFIX.test(text);
-}
-
-function barrier(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): Barrier | undefined {
-  if (token.type !== "Line") {
-    return undefined;
-  }
-  const text = raw(sourceCode, token);
-  if (!text.startsWith(BARRIER_PREFIX)) {
-    return undefined;
-  }
-  const separator = text.indexOf(BARRIER_SEPARATOR, BARRIER_PREFIX.length);
-  if (separator === -1) {
-    return undefined;
-  }
-  const kind = text.slice(BARRIER_PREFIX.length, separator);
-  if (kind !== "begin" && kind !== "end") {
-    return undefined;
-  }
-  const reason = text.slice(separator + BARRIER_SEPARATOR.length);
-  return reason.trim() === "" ? undefined : { kind, reason: reason.trim() };
 }
 
 function reportIndex(
@@ -115,28 +104,6 @@ function directiveExpression(node: TSESTree.ProgramStatement): boolean {
   return node.type === AST_NODE_TYPES.ExpressionStatement && node.directive !== undefined;
 }
 
-function directTokenBefore(
-  tokens: readonly TSESLint.AST.Token[],
-  range: readonly [number, number],
-): TSESLint.AST.Token | undefined {
-  return tokens.filter((token) => token.range[1] <= range[0]).at(-1);
-}
-
-function directTokenAfter(
-  tokens: readonly TSESLint.AST.Token[],
-  range: readonly [number, number],
-): TSESLint.AST.Token | undefined {
-  return tokens.find((token) => token.range[0] >= range[1]);
-}
-
-function hasLineAdjacentGap(
-  sourceCode: TSESLint.SourceCode,
-  left: { readonly range: readonly [number, number] },
-  right: { readonly range: readonly [number, number] },
-): boolean {
-  return /^[ \t]*\r?\n[ \t]*$/u.test(sourceCode.text.slice(left.range[1], right.range[0]));
-}
-
 function isTripleSlashDirective(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): boolean {
   return token.type === "Line" && TRIPLE_SLASH_DIRECTIVE.test(raw(sourceCode, token));
 }
@@ -146,7 +113,7 @@ function beginsImmediateBareSideEffectImport(
   program: TSESTree.Program,
   comment: TSESLint.AST.Token,
 ): boolean {
-  const marker = barrier(sourceCode, comment);
+  const marker = parseSideEffectImportBarrier(sourceCode, comment);
   if (marker?.kind !== "begin") {
     return false;
   }
@@ -203,12 +170,8 @@ function reportOverviewViolations(
   return canonical.at(0);
 }
 
-function reportOverviewPreambleViolations(
-  context: ShellContext,
-  sourceCode: TSESLint.SourceCode,
-  program: TSESTree.Program,
-  overview: ParsedJsdocBlock | undefined,
-): void {
+function reportOverviewPreambleViolations(options: OverviewPhaseOptions): void {
+  const { context, overview, program, sourceCode } = options;
   if (overview === undefined) {
     return;
   }
@@ -223,98 +186,34 @@ function reportOverviewPreambleViolations(
   reportInterimComments(context, program, overview);
 }
 
-function reportImportShellViolations(
+function remainsInImportPreamble(options: ImportPositionOptions): boolean {
+  const { overview, state, statement } = options;
+  const precedesOverview = overview !== undefined && statement.range[0] < overview.token.range[1];
+  return precedesOverview || (state === "preamble" && directiveExpression(statement));
+}
+
+function nextImportShellState(
   context: ShellContext,
-  program: TSESTree.Program,
-  overview: ParsedJsdocBlock | undefined,
-): void {
-  let state: "preamble" | "imports" | "after" = "preamble";
+  statement: TSESTree.ProgramStatement,
+  state: ImportShellState,
+): ImportShellState {
+  if (statement.type !== AST_NODE_TYPES.ImportDeclaration) {
+    return "after";
+  }
+  if (state === "after") {
+    context.report({ node: statement, messageId: "importShellInterrupted" });
+  }
+  return "imports";
+}
+
+function reportImportShellViolations(options: OverviewPhaseOptions): void {
+  const { context, overview, program } = options;
+  let state: ImportShellState = "preamble";
   for (const statement of program.body) {
-    const precedesOverview = overview !== undefined && statement.range[0] < overview.token.range[1];
-    const isPreambleDirective = state === "preamble" && directiveExpression(statement);
-    if (!precedesOverview && !isPreambleDirective) {
-      if (statement.type === AST_NODE_TYPES.ImportDeclaration) {
-        if (state === "after") {
-          context.report({ node: statement, messageId: "importShellInterrupted" });
-        }
-        state = "imports";
-      } else {
-        state = "after";
-      }
+    if (remainsInImportPreamble({ statement, state, overview })) {
+      continue;
     }
-  }
-}
-
-function lexicalTokens(
-  sourceCode: TSESLint.SourceCode,
-  program: TSESTree.Program,
-): readonly TSESLint.AST.Token[] {
-  return [...sourceCode.getTokens(program), ...sourceCode.getAllComments()].sort(
-    (left, right) => left.range[0] - right.range[0],
-  );
-}
-
-function reportBareImportBarrierViolations(
-  context: ShellContext,
-  sourceCode: TSESLint.SourceCode,
-  program: TSESTree.Program,
-): void {
-  const tokens = lexicalTokens(sourceCode, program);
-  for (const statement of program.body) {
-    if (statement.type === AST_NODE_TYPES.ImportDeclaration && statement.specifiers.length === 0) {
-      reportBareImportBarriers(context, sourceCode, statement, tokens);
-    }
-  }
-}
-
-function reportBareImportBarriers(
-  context: ShellContext,
-  sourceCode: TSESLint.SourceCode,
-  statement: TSESTree.ImportDeclaration,
-  tokens: readonly TSESLint.AST.Token[],
-): void {
-  const before = directTokenBefore(tokens, statement.range);
-  const after = directTokenAfter(tokens, statement.range);
-  const begin = before === undefined ? undefined : barrier(sourceCode, before);
-  const end = after === undefined ? undefined : barrier(sourceCode, after);
-  reportBeginBarrierViolation(context, sourceCode, statement, before, begin);
-  reportEndBarrierViolation(context, sourceCode, statement, after, end);
-  if (begin?.kind === "begin" && end?.kind === "end" && begin.reason !== end.reason) {
-    context.report({ node: statement, messageId: "mismatchedSideEffectImportBarrier" });
-  }
-}
-
-function reportBeginBarrierViolation(
-  context: ShellContext,
-  sourceCode: TSESLint.SourceCode,
-  statement: TSESTree.ImportDeclaration,
-  before: TSESLint.AST.Token | undefined,
-  begin: Barrier | undefined,
-): void {
-  if (begin === undefined || !hasLineAdjacentGap(sourceCode, before ?? statement, statement)) {
-    context.report({
-      node: statement,
-      messageId: before?.type === "Line" ? "invalidSideEffectImportBarrier" : "missingSideEffectImportBeginBarrier",
-    });
-  } else if (begin.kind !== "begin") {
-    context.report({ node: statement, messageId: "invalidSideEffectImportBarrier" });
-  }
-}
-
-function reportEndBarrierViolation(
-  context: ShellContext,
-  sourceCode: TSESLint.SourceCode,
-  statement: TSESTree.ImportDeclaration,
-  after: TSESLint.AST.Token | undefined,
-  end: Barrier | undefined,
-): void {
-  if (end === undefined || !hasLineAdjacentGap(sourceCode, statement, after ?? statement)) {
-    context.report({
-      node: statement,
-      messageId: after?.type === "Line" ? "invalidSideEffectImportBarrier" : "missingSideEffectImportEndBarrier",
-    });
-  } else if (end.kind !== "end") {
-    context.report({ node: statement, messageId: "invalidSideEffectImportBarrier" });
+    state = nextImportShellState(context, statement, state);
   }
 }
 
@@ -349,9 +248,16 @@ export const requireStableFileShell = createRule({
       "Program:exit"(program: TSESTree.Program) {
         const sourceCode = context.sourceCode;
         const overview = reportOverviewViolations(context, sourceCode, program, parseJsdocBlocks(sourceCode));
-        reportOverviewPreambleViolations(context, sourceCode, program, overview);
-        reportImportShellViolations(context, program, overview);
-        reportBareImportBarrierViolations(context, sourceCode, program);
+        const overviewOptions = { context, sourceCode, program, overview };
+        reportOverviewPreambleViolations(overviewOptions);
+        reportImportShellViolations(overviewOptions);
+        reportBareImportBarrierViolations({
+          sourceCode,
+          program,
+          report(statement, messageId) {
+            context.report({ node: statement, messageId });
+          },
+        });
       },
     };
   },

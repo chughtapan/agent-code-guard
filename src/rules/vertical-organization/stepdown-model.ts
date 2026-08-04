@@ -1,9 +1,12 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 
+/** Function nodes that can own stepdown call edges. */
 export type FunctionImplementation = TSESTree.FunctionDeclaration | TSESTree.FunctionExpression;
 type Declaration = TSESTree.FunctionDeclaration | TSESTree.MethodDefinition;
+/** AST containers whose implementations form independent ordering stories. */
 export type Container = TSESTree.Program | TSESTree.ClassBody;
 
+/** Describes one eligible function or method in its declaration-order band. */
 export interface Implementation {
   readonly declaration: Declaration;
   readonly function: FunctionImplementation;
@@ -16,6 +19,7 @@ export interface Implementation {
   readonly isStatic: boolean;
 }
 
+/** Connects a local caller to its resolved callee at one call site. */
 export interface Edge {
   readonly caller: Implementation;
   readonly callee: Implementation;

@@ -2,7 +2,9 @@ import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
 import { stepdownRuleTester } from "./stepdown-test-support.js";
 
-stepdownRuleTester().run("prefer-stepdown-function-order: top-level", rule, {
+const ruleTester = stepdownRuleTester();
+
+ruleTester.run("prefer-stepdown-function-order: top-level", rule, {
   valid: [
     {
       name: "exported functions precede internal callees",

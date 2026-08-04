@@ -7,6 +7,11 @@ RuleTester.it = it;
 RuleTester.itOnly = it.only;
 RuleTester.describe = describe;
 
+/**
+ * Creates the shared RuleTester configuration for stepdown-order suites.
+ *
+ * @returns Configured rule tester.
+ */
 export function stepdownRuleTester(): RuleTester {
   return new RuleTester({
     languageOptions: {

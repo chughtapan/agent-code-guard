@@ -1,5 +1,5 @@
 import { type Block, type Line, type Spec, parse } from "comment-parser";
-import { type TSESTree, type TSESLint } from "@typescript-eslint/utils";
+import type { TSESTree, TSESLint } from "@typescript-eslint/utils";
 import { attachmentFor, type AttachedCandidates } from "./jsdoc-attachments.js";
 
 /** Categorizes a JSDoc description by its physical source. */

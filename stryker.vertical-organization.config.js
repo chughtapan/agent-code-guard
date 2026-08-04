@@ -5,6 +5,7 @@ export default {
     "src/rules/vertical-organization/no-vacuous-jsdoc.ts",
     "src/rules/vertical-organization/prefer-stepdown-function-order.ts",
     "src/rules/vertical-organization/require-stable-file-shell.ts",
+    "src/rules/vertical-organization/side-effect-import-barriers.ts",
     "src/rules/vertical-organization/stepdown-graph.ts",
     "src/rules/vertical-organization/stepdown-implementations.ts",
     "src/rules/vertical-organization/stepdown-scc.ts",

@@ -38,11 +38,13 @@ function declarationFor(node: TSESTree.Node): TSESTree.Node | undefined {
 
 function leadingNode(declaration: TSESTree.Node): TSESTree.Node {
   const parent = declaration.parent;
-  return parent !== null &&
-    parent !== undefined &&
-    (parent.type === AST_NODE_TYPES.ExportNamedDeclaration || parent.type === AST_NODE_TYPES.ExportDefaultDeclaration)
-    ? parent
-    : declaration;
+  if (parent === null || parent === undefined) {
+    return declaration;
+  }
+  if (parent.type === AST_NODE_TYPES.ExportNamedDeclaration) {
+    return parent;
+  }
+  return parent.type === AST_NODE_TYPES.ExportDefaultDeclaration ? parent : declaration;
 }
 
 function isImmediateLeadingComment(
@@ -189,7 +191,12 @@ function candidatesFor(
   }
 }
 
-/** Finds the declaration immediately documented by a JSDoc token. */
+/**
+ * Finds the declaration immediately documented by a JSDoc token.
+ * @param sourceCode Source text and AST lookup services for the current file.
+ * @param token Candidate JSDoc block-comment token.
+ * @returns Closed template candidates for the immediately attached declaration.
+ */
 export function attachmentFor(
   sourceCode: TSESLint.SourceCode,
   token: TSESLint.AST.Token,

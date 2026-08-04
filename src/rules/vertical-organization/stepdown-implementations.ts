@@ -7,6 +7,14 @@ const CONSTRUCTOR_BAND = 0;
 const PUBLIC_BAND = 1;
 const PRIVATE_BAND = 2;
 
+/**
+ * Collects the top-level functions and eligible class methods ordered within
+ * their containing story bands.
+ *
+ * @param program Parsed source-file program.
+ * @param classBodies Class bodies encountered in the source file.
+ * @returns Indexed implementations from the program and its classes.
+ */
 export function collectImplementations(
   program: TSESTree.Program,
   classBodies: readonly TSESTree.ClassBody[],
@@ -28,8 +36,7 @@ function topLevelImplementation(
   program: TSESTree.Program,
   exportedNames: ReadonlySet<string>,
 ): Omit<Implementation, "index"> {
-  const exported = isDirectlyExported(declaration) ||
-    (declaration.id !== null && exportedNames.has(declaration.id.name));
+  const exported = isExportedImplementation(declaration, exportedNames);
   return {
     declaration,
     function: declaration,
@@ -40,6 +47,17 @@ function topLevelImplementation(
     callableName: declaration.id?.name ?? null,
     isStatic: false,
   };
+}
+
+function isExportedImplementation(
+  declaration: TSESTree.FunctionDeclaration,
+  exportedNames: ReadonlySet<string>,
+): boolean {
+  if (isDirectlyExported(declaration)) {
+    return true;
+  }
+  const name = declaration.id?.name;
+  return name !== undefined && exportedNames.has(name);
 }
 
 function functionDeclarationsInStatement(
@@ -100,7 +118,7 @@ function collectClassImplementations(classBody: TSESTree.ClassBody): readonly Im
 
 function classImplementation(
   member: TSESTree.ClassElement,
-): readonly Omit<Implementation, "index">[] {
+): ReadonlyArray<Omit<Implementation, "index">> {
   if (!isEligibleMethod(member)) {
     return [];
   }
@@ -121,9 +139,13 @@ function classImplementation(
 function isEligibleMethod(
   member: TSESTree.ClassElement,
 ): member is TSESTree.MethodDefinition & { readonly value: TSESTree.FunctionExpression } {
-  return member.type === AST_NODE_TYPES.MethodDefinition &&
-    member.value.type === AST_NODE_TYPES.FunctionExpression &&
-    (member.kind === "constructor" || (member.kind === "method" && member.decorators.length === 0));
+  if (member.type !== AST_NODE_TYPES.MethodDefinition || member.value.type !== AST_NODE_TYPES.FunctionExpression) {
+    return false;
+  }
+  if (member.kind === "constructor") {
+    return true;
+  }
+  return member.kind === "method" && member.decorators.length === 0;
 }
 
 function methodBand(member: TSESTree.MethodDefinition): number {
@@ -158,7 +180,10 @@ function methodName(member: TSESTree.MethodDefinition): string | null {
 
 function methodCallKey(member: TSESTree.MethodDefinition): string | null {
   const name = methodName(member);
-  return name === null ? null : member.key.type === AST_NODE_TYPES.PrivateIdentifier ? `#${name}` : name;
+  if (name === null) {
+    return null;
+  }
+  return member.key.type === AST_NODE_TYPES.PrivateIdentifier ? `#${name}` : name;
 }
 
 function assignIndexes(
@@ -169,6 +194,12 @@ function assignIndexes(
     .map((candidate, index) => ({ ...candidate, index }));
 }
 
+/**
+ * Groups implementations by their program or class-body container.
+ *
+ * @param implementations Implementations to group.
+ * @returns Implementations keyed by their containing AST node.
+ */
 export function groupByContainer(
   implementations: readonly Implementation[],
 ): ReadonlyMap<Container, readonly Implementation[]> {
@@ -184,6 +215,12 @@ export function groupByContainer(
   return groups;
 }
 
+/**
+ * Selects the most useful declaration node for an ordering diagnostic.
+ *
+ * @param implementation Implementation being reported.
+ * @returns Named declaration node when available.
+ */
 export function diagnosticDeclaration(implementation: Implementation): TSESTree.Node {
   if (implementation.declaration.type === AST_NODE_TYPES.FunctionDeclaration) {
     return implementation.declaration.id ?? implementation.declaration;

@@ -2,38 +2,58 @@ import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint
 import type { Container, Edge, FunctionImplementation, Implementation } from "./stepdown-model.js";
 import { violatingEdges } from "./stepdown-scc.js";
 
+interface EdgeCollection {
+  readonly byFunction: WeakMap<FunctionImplementation, Implementation>;
+  readonly sourceCode: Readonly<TSESLint.SourceCode>;
+  readonly topLevelTargets: ReadonlyMap<string, Implementation>;
+  readonly classTargets: ReadonlyMap<Container, ReadonlyMap<string, Implementation>>;
+  readonly edges: Map<string, Edge>;
+}
+
+/**
+ * Collects same-band local call edges whose declaration order violates the
+ * caller-before-callee narrative.
+ *
+ * @param calls Calls found in the source file.
+ * @param implementations Eligible function and method implementations.
+ * @param byFunction Implementation lookup by function node.
+ * @param sourceCode ESLint source and scope model.
+ * @returns Violating call edges in source order.
+ */
 export function collectViolatingEdges(
   calls: readonly TSESTree.CallExpression[],
   implementations: readonly Implementation[],
   byFunction: WeakMap<FunctionImplementation, Implementation>,
   sourceCode: Readonly<TSESLint.SourceCode>,
 ): readonly Edge[] {
-  const topLevelTargets = uniqueTopLevelImplementations(implementations);
-  const classTargets = uniqueClassImplementations(implementations);
   const edges = new Map<string, Edge>();
+  const collection: EdgeCollection = {
+    byFunction,
+    sourceCode,
+    topLevelTargets: uniqueTopLevelImplementations(implementations),
+    classTargets: uniqueClassImplementations(implementations),
+    edges,
+  };
   for (const call of calls) {
-    collectEdge(call, byFunction, sourceCode, topLevelTargets, classTargets, edges);
+    collectEdge(call, collection);
   }
   return violatingEdges(sortEdges(edges));
 }
 
 function collectEdge(
   call: TSESTree.CallExpression,
-  byFunction: WeakMap<FunctionImplementation, Implementation>,
-  sourceCode: Readonly<TSESLint.SourceCode>,
-  topLevelTargets: ReadonlyMap<string, Implementation>,
-  classTargets: ReadonlyMap<Container, ReadonlyMap<string, Implementation>>,
-  edges: Map<string, Edge>,
+  collection: EdgeCollection,
 ): void {
-  const caller = ownerOfCall(call, byFunction);
+  const caller = ownerOfCall(call, collection.byFunction);
   if (caller === null) {
     return;
   }
-  const callee = topLevelCallee(call, topLevelTargets, sourceCode) ?? classCallee(call, caller, classTargets);
+  const callee = topLevelCallee(call, collection.topLevelTargets, collection.sourceCode) ??
+    classCallee(call, caller, collection.classTargets);
   if (callee === null || caller.container !== callee.container || caller.band !== callee.band) {
     return;
   }
-  rememberEarliestEdge(edges, { caller, callee, call });
+  rememberEarliestEdge(collection.edges, { caller, callee, call });
 }
 
 function rememberEarliestEdge(edges: Map<string, Edge>, edge: Edge): void {

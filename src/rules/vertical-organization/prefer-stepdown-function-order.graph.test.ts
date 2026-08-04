@@ -1,7 +1,9 @@
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
 import { stepdownRuleTester } from "./stepdown-test-support.js";
 
-stepdownRuleTester().run("prefer-stepdown-function-order: graph", rule, {
+const ruleTester = stepdownRuleTester();
+
+ruleTester.run("prefer-stepdown-function-order: graph", rule, {
   valid: [
     {
       name: "cycles do not produce intra-component diagnostics",

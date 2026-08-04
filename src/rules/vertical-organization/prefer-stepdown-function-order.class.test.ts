@@ -2,7 +2,9 @@ import * as tsParser from "@typescript-eslint/parser";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
 import { stepdownRuleTester } from "./stepdown-test-support.js";
 
-stepdownRuleTester().run("prefer-stepdown-function-order: classes", rule, {
+const ruleTester = stepdownRuleTester();
+
+ruleTester.run("prefer-stepdown-function-order: classes", rule, {
   valid: [
     {
       name: "class constructor public protected then private is ordered",
