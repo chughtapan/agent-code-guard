@@ -12,6 +12,8 @@ import { manualAlgebraRules } from "./manual-algebra/index.js";
 import { safetyRules } from "./safety/index.js";
 import { testingRules } from "./testing/index.js";
 import { toolingRules } from "./tooling/index.js";
+import { verticalOrganizationRules } from "./vertical-organization/index.js";
+import { verticalOrganizationRuleEntries } from "./vertical-organization/rule-entries.js";
 
 type RuleEntry = TSESLint.Linter.RuleEntry;
 
@@ -27,6 +29,7 @@ export const syntaxRules = {
   ...safetyRules,
   ...testingRules,
   ...toolingRules,
+  ...verticalOrganizationRules,
 } as const;
 
 /**
@@ -81,6 +84,7 @@ export const recommendedSyntaxRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/no-hardcoded-assertion-literals": "error",
   "agent-code-guard/tag-discriminant": "error",
   "agent-code-guard/require-knip-in-lint": "error",
+  ...verticalOrganizationRuleEntries,
   ...googleStyleRuleEntries,
 };
 

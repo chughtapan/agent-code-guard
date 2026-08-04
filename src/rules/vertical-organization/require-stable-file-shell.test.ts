@@ -22,6 +22,7 @@ ruleTester.run("require-stable-file-shell", rule, {
   valid: [
     { code: `${overview}\nexport {};` },
     { code: `#!/usr/bin/env node\n// SPDX-License-Identifier: MIT\n/* Copyright Example */\n${overview}\n/// <reference types="node" />\n"use strict";\nimport value from "./value";\n${pairedBareImport}\nexport { value };` },
+    { code: `/*\r\n * SPDX-License-Identifier: MIT\r\n */\r\n${overview}\r\nexport {};` },
     { code: `${overview}\n${pairedBareImport}\nimport value from "./value";\nexport { value };` },
     { code: `${overview}\nimport type { Value } from "./value";\nexport type { Value };` },
   ],
@@ -35,6 +36,11 @@ ruleTester.run("require-stable-file-shell", rule, {
       code: `/**\n * @file First overview.\n * @file Second overview.\n */\nexport {};`,
       output: null,
       errors: [{ messageId: "duplicateFileTag" }, { messageId: "missingCanonicalFileOverview" }],
+    },
+    {
+      code: `/** @file Canonical overview. */\n/** @file */\nexport {};`,
+      output: null,
+      errors: [{ messageId: "duplicateFileTag" }],
     },
     {
       code: `// ordinary comment\n${overview}\nexport {};`,
@@ -62,6 +68,11 @@ ruleTester.run("require-stable-file-shell", rule, {
       errors: [{ messageId: "importShellInterrupted" }],
     },
     {
+      code: `${overview}\n// ordinary comment\nimport value from "./value";\nexport { value };`,
+      output: null,
+      errors: [{ messageId: "disallowedPreamble" }],
+    },
+    {
       code: `${overview}\nimport "./registration";\nexport {};`,
       output: null,
       errors: [
@@ -80,9 +91,15 @@ ruleTester.run("require-stable-file-shell", rule, {
       errors: [{ messageId: "mismatchedSideEffectImportBarrier" }],
     },
     {
+      code: `${overview}\n// agent-code-guard: side-effect-import-begin -- evaluation-order: registration\n\nimport "./registration";\n// agent-code-guard: side-effect-import-end -- evaluation-order: registration`,
+      output: null,
+      errors: [{ messageId: "invalidSideEffectImportBarrier" }],
+    },
+    {
       code: `${overview}\n// unrelated comment\nimport "./registration";\n// unrelated comment`,
       output: null,
       errors: [
+        { messageId: "disallowedPreamble" },
         { messageId: "invalidSideEffectImportBarrier" },
         { messageId: "invalidSideEffectImportBarrier" },
       ],

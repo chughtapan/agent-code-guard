@@ -70,13 +70,17 @@ export const preferStepdownFunctionOrder = createRule<[],
   create(context) {
     const sourceCode = context.sourceCode;
     const calls: TSESTree.CallExpression[] = [];
+    const classBodies: TSESTree.ClassBody[] = [];
 
     return {
       CallExpression(node) {
         calls.push(node);
       },
+      ClassBody(node) {
+        classBodies.push(node);
+      },
       "Program:exit"(program) {
-        const implementations = collectImplementations(program);
+        const implementations = collectImplementations(program, classBodies);
         const byFunction = new WeakMap<FunctionImplementation, Implementation>();
         for (const implementation of implementations) {
           byFunction.set(implementation.function, implementation);
@@ -104,10 +108,12 @@ export const preferStepdownFunctionOrder = createRule<[],
   },
 });
 
-function collectImplementations(program: TSESTree.Program): readonly Implementation[] {
+function collectImplementations(
+  program: TSESTree.Program,
+  classBodies: readonly TSESTree.ClassBody[],
+): readonly Implementation[] {
   const topLevel = collectTopLevelImplementations(program);
-  const classes = program.body.flatMap((statement) => classBodiesInStatement(statement));
-  return [...topLevel, ...classes.flatMap(collectClassImplementations)];
+  return [...topLevel, ...classBodies.flatMap(collectClassImplementations)];
 }
 
 function collectTopLevelImplementations(program: TSESTree.Program): readonly Implementation[] {
@@ -164,22 +170,16 @@ function exportedLocalNames(program: TSESTree.Program): ReadonlySet<string> {
       continue;
     }
     for (const specifier of statement.specifiers) {
-      if (specifier.type === AST_NODE_TYPES.ExportSpecifier) {
+      if (
+        statement.exportKind !== "type" &&
+        specifier.type === AST_NODE_TYPES.ExportSpecifier &&
+        specifier.exportKind !== "type"
+      ) {
         names.add(specifier.local.name);
       }
     }
   }
   return names;
-}
-
-function classBodiesInStatement(statement: TSESTree.ProgramStatement): readonly TSESTree.ClassBody[] {
-  const declaration = statement.type === AST_NODE_TYPES.ClassDeclaration
-    ? statement
-    : statement.type === AST_NODE_TYPES.ExportNamedDeclaration ||
-        statement.type === AST_NODE_TYPES.ExportDefaultDeclaration
-      ? statement.declaration
-      : null;
-  return declaration?.type === AST_NODE_TYPES.ClassDeclaration ? [declaration.body] : [];
 }
 
 function collectClassImplementations(classBody: TSESTree.ClassBody): readonly Implementation[] {
@@ -188,15 +188,15 @@ function collectClassImplementations(classBody: TSESTree.ClassBody): readonly Im
       return [];
     }
     const band = methodBand(member);
-    const callableName = member.kind === "method" ? methodName(member) : null;
+    const method = member.kind === "method" ? methodName(member) : null;
     return [{
       declaration: member,
       function: member.value,
       container: classBody,
       band,
       bandName: classBandName(band),
-      label: callableName ?? "constructor",
-      callableName,
+      label: method ?? "constructor",
+      callableName: method === null ? null : methodCallKey(member),
       isStatic: member.static,
     } satisfies Omit<Implementation, "index">];
   });
@@ -247,6 +247,14 @@ function methodName(member: TSESTree.MethodDefinition): string | null {
     return null;
   }
   return member.key.name;
+}
+
+function methodCallKey(member: TSESTree.MethodDefinition): string | null {
+  const name = methodName(member);
+  if (name === null) {
+    return null;
+  }
+  return member.key.type === AST_NODE_TYPES.PrivateIdentifier ? `#${name}` : name;
 }
 
 function assignIndexes(
@@ -312,13 +320,14 @@ function collectEdges(
   sourceCode: Readonly<TSESLint.SourceCode>,
 ): readonly Edge[] {
   const topLevelByName = uniqueTopLevelImplementations(implementations);
+  const classTargets = uniqueClassImplementations(implementations);
   const edges = new Map<string, Edge>();
   for (const call of calls) {
     const caller = ownerOfCall(call, byFunction);
     if (caller === null) {
       continue;
     }
-    const callee = topLevelCallee(call, topLevelByName, sourceCode) ?? classCallee(call, caller, implementations);
+    const callee = topLevelCallee(call, topLevelByName, sourceCode) ?? classCallee(call, caller, classTargets);
     if (
       callee === null ||
       caller.container !== callee.container ||
@@ -333,6 +342,34 @@ function collectEdges(
     }
   }
   return [...edges.values()].sort((left, right) => left.call.range[0] - right.call.range[0]);
+}
+
+function uniqueClassImplementations(
+  implementations: readonly Implementation[],
+): ReadonlyMap<Container, ReadonlyMap<string, Implementation>> {
+  const grouped = new Map<Container, Map<string, Implementation[]>>();
+  for (const implementation of implementations) {
+    if (implementation.container.type !== AST_NODE_TYPES.ClassBody || implementation.callableName === null) {
+      continue;
+    }
+    const targets = grouped.get(implementation.container) ?? new Map<string, Implementation[]>();
+    const key = `${implementation.isStatic}:${implementation.callableName}`;
+    const candidates = targets.get(key) ?? [];
+    candidates.push(implementation);
+    targets.set(key, candidates);
+    grouped.set(implementation.container, targets);
+  }
+  const unique = new Map<Container, ReadonlyMap<string, Implementation>>();
+  for (const [container, targets] of grouped) {
+    const resolved = new Map<string, Implementation>();
+    for (const [key, candidates] of targets) {
+      if (candidates.length === 1) {
+        resolved.set(key, candidates[0]);
+      }
+    }
+    unique.set(container, resolved);
+  }
+  return unique;
 }
 
 function ownerOfCall(
@@ -410,7 +447,7 @@ function lexicalVariable(
 function classCallee(
   call: TSESTree.CallExpression,
   caller: Implementation,
-  implementations: readonly Implementation[],
+  targets: ReadonlyMap<Container, ReadonlyMap<string, Implementation>>,
 ): Implementation | null {
   if (call.optional || call.callee.type !== AST_NODE_TYPES.MemberExpression || call.callee.optional) {
     return null;
@@ -419,20 +456,15 @@ function classCallee(
   if (member.computed || member.object.type !== AST_NODE_TYPES.ThisExpression) {
     return null;
   }
-  const name = member.property.type === AST_NODE_TYPES.Identifier ||
-      member.property.type === AST_NODE_TYPES.PrivateIdentifier
-    ? member.property.name
-    : null;
+  const name = member.property.type === AST_NODE_TYPES.PrivateIdentifier
+    ? `#${member.property.name}`
+    : member.property.type === AST_NODE_TYPES.Identifier
+      ? member.property.name
+      : null;
   if (name === null || caller.container.type !== AST_NODE_TYPES.ClassBody) {
     return null;
   }
-  const matches = implementations.filter(
-    (candidate) =>
-      candidate.container === caller.container &&
-      candidate.callableName === name &&
-      candidate.isStatic === caller.isStatic,
-  );
-  return matches.length === 1 ? matches[0] : null;
+  return targets.get(caller.container)?.get(`${caller.isStatic}:${name}`) ?? null;
 }
 
 function violatingEdges(edges: readonly Edge[]): readonly Edge[] {

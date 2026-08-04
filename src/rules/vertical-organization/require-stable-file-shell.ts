@@ -5,6 +5,7 @@ import { type ParsedJsdocBlock, parseJsdocBlocks } from "./jsdoc-fragments.js";
 
 const LICENSE_PREFIX = /^(SPDX-License-Identifier:|SPDX-FileCopyrightText:|Copyright|©)/u;
 const BARRIER = /^\/\/[ \t]agent-code-guard: side-effect-import-(begin|end) -- evaluation-order: ([^\r\n]*\S[^\r\n]*)$/u;
+const TRIPLE_SLASH_DIRECTIVE = /^\/\/\/\s*<(?:reference\s+(?:path|types|lib)=(?:"[^"]+"|'[^']+')|amd-module\s+name=(?:"[^"]+"|'[^']+')|amd-dependency\s+path=(?:"[^"]+"|'[^']+'))\s*\/?>(?:\s*)$/u;
 
 type BarrierKind = "begin" | "end";
 
@@ -22,6 +23,7 @@ function isLicenseComment(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.T
     .replace(/^\/\*/u, "")
     .replace(/\*\/$/u, "")
     .replace(/^\/\//u, "")
+    .replace(/^[ \t]*\*[ \t]?/gmu, "")
     .trim();
   return LICENSE_PREFIX.test(text);
 }
@@ -108,6 +110,43 @@ function directTokenAfter(
   return tokens.find((token) => token.range[0] >= range[1]);
 }
 
+function hasLineAdjacentGap(
+  sourceCode: TSESLint.SourceCode,
+  left: { readonly range: readonly [number, number] },
+  right: { readonly range: readonly [number, number] },
+): boolean {
+  return /^[ \t]*\r?\n[ \t]*$/u.test(sourceCode.text.slice(left.range[1], right.range[0]));
+}
+
+function isTripleSlashDirective(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): boolean {
+  return token.type === "Line" && TRIPLE_SLASH_DIRECTIVE.test(raw(sourceCode, token));
+}
+
+function reportInterimComments(
+  context: Readonly<
+    TSESLint.RuleContext<"disallowedPreamble" | "contentBeforeFileOverview", readonly []>
+  >,
+  program: TSESTree.Program,
+  overview: ParsedJsdocBlock,
+): void {
+  const firstContent = program.body.find(
+    (statement) => statement.range[0] >= overview.token.range[1] && !directiveExpression(statement),
+  );
+  if (firstContent?.type !== AST_NODE_TYPES.ImportDeclaration) {
+    return;
+  }
+  for (const comment of context.sourceCode.getAllComments()) {
+    if (
+      comment.range[0] > overview.token.range[1] &&
+      comment.range[1] < firstContent.range[0] &&
+      !isTripleSlashDirective(context.sourceCode, comment) &&
+      !raw(context.sourceCode, comment).startsWith("// agent-code-guard: side-effect-import-")
+    ) {
+      reportIndex(context, "disallowedPreamble", comment.range[0]);
+    }
+  }
+}
+
 /** Enforces a canonical JSDoc overview, contiguous import shell, and paired bare-import barriers. */
 export const requireStableFileShell = createRule({
   name: "require-stable-file-shell",
@@ -140,11 +179,18 @@ export const requireStableFileShell = createRule({
         const sourceCode = context.sourceCode;
         const blocks = parseJsdocBlocks(sourceCode);
         const canonical = canonicalBlocks(blocks);
-        const blocksWithDuplicateFileTags = blocks.filter(
-          (block) => block.tags.filter((tag) => tag.tag === "file").length > 1,
+        const canonicalTags = new Set(
+          canonical.flatMap((block) => block.tags.filter((tag) => tag.tag === "file")),
         );
-        for (const block of blocksWithDuplicateFileTags) {
-          context.report({ loc: sourceCode.getLocFromIndex(block.token.range[0]), messageId: "duplicateFileTag" });
+        const allFileTags = blocks.flatMap((block) => block.tags.filter((tag) => tag.tag === "file"));
+        const firstFileTag = allFileTags.at(0);
+        for (const tag of allFileTags) {
+          if (tag !== firstFileTag && !canonicalTags.has(tag)) {
+            context.report({
+              loc: tag.description?.loc ?? sourceCode.getLocFromIndex(0),
+              messageId: "duplicateFileTag",
+            });
+          }
         }
         if (canonical.length === 0) {
           context.report({ node: program, messageId: "missingCanonicalFileOverview" });
@@ -166,6 +212,7 @@ export const requireStableFileShell = createRule({
               break;
             }
           }
+          reportInterimComments(context, program, overview);
         }
 
         let state: "preamble" | "imports" | "after" = "preamble";
@@ -197,7 +244,7 @@ export const requireStableFileShell = createRule({
           const after = directTokenAfter(lexicalTokens, statement.range);
           const begin = before === undefined ? undefined : barrier(sourceCode, before);
           const end = after === undefined ? undefined : barrier(sourceCode, after);
-          if (begin === undefined) {
+          if (begin === undefined || !hasLineAdjacentGap(sourceCode, before ?? statement, statement)) {
             context.report({
               node: statement,
               messageId: before?.type === "Line" ? "invalidSideEffectImportBarrier" : "missingSideEffectImportBeginBarrier",
@@ -205,7 +252,7 @@ export const requireStableFileShell = createRule({
           } else if (begin.kind !== "begin") {
             context.report({ node: statement, messageId: "invalidSideEffectImportBarrier" });
           }
-          if (end === undefined) {
+          if (end === undefined || !hasLineAdjacentGap(sourceCode, statement, after ?? statement)) {
             context.report({
               node: statement,
               messageId: after?.type === "Line" ? "invalidSideEffectImportBarrier" : "missingSideEffectImportEndBarrier",

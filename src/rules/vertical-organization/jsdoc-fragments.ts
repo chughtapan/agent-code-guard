@@ -195,6 +195,7 @@ function declarationFor(node: TSESTree.Node): TSESTree.Node | undefined {
         continue;
       case AST_NODE_TYPES.FunctionDeclaration:
       case AST_NODE_TYPES.ClassDeclaration:
+      case AST_NODE_TYPES.TSEnumDeclaration:
       case AST_NODE_TYPES.MethodDefinition:
       case AST_NODE_TYPES.VariableDeclaration:
       case AST_NODE_TYPES.TSTypeAliasDeclaration:
@@ -337,6 +338,7 @@ function attachmentFor(
       return { symbol: declarator.id.name, callable, represents: true };
     }
     case AST_NODE_TYPES.ClassDeclaration:
+    case AST_NODE_TYPES.TSEnumDeclaration:
     case AST_NODE_TYPES.TSTypeAliasDeclaration:
     case AST_NODE_TYPES.TSInterfaceDeclaration:
       return declaration.id === null

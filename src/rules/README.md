@@ -12,6 +12,8 @@ Rule families are grouped by the kind of shape they inspect:
 - `testing/` catches committed test hygiene issues.
 - `tooling/` catches repo-quality gate drift such as dead-code checks falling
   out of the default lint script.
+- `vertical-organization/` provides non-fixing JSDoc, file-shell, and stepdown
+  navigation rules that PR 1 publishes disabled for the reviewed PR 2 rollout.
 
 `registry.ts` is the plugin-facing facade. New rule families should get their
 own folder when they have more than one rule or need shared implementation.

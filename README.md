@@ -125,6 +125,17 @@ another formatter independently.
 |---|---|
 | [`require-knip-in-lint`](docs/rules/tooling/require-knip-in-lint.md) | `package.json` default quality scripts that omit Knip |
 
+### Vertical organization
+
+These public rules ship disabled in `recommended` and `strict` in PR 1. A
+reviewed follow-up enables them and performs the repository migration.
+
+| Rule | Catches |
+|---|---|
+| [`no-vacuous-jsdoc`](docs/rules/vertical-organization/no-vacuous-jsdoc.md) | A closed grammar of placeholder and mechanically-derived JSDoc filler |
+| [`require-stable-file-shell`](docs/rules/vertical-organization/require-stable-file-shell.md) | Missing canonical file overviews, interrupted import shells, and unreasoned bare side-effect imports |
+| [`prefer-stepdown-function-order`](docs/rules/vertical-organization/prefer-stepdown-function-order.md) | Story-band and same-band caller-before-callee navigation violations |
+
 ### Documentation
 
 JSDoc lint comes from bundled

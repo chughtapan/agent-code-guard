@@ -92,6 +92,11 @@ ruleTester.run("no-vacuous-jsdoc", rule, {
       errors: [{ messageId: "vacuousBlockDescription" }],
     },
     {
+      code: `/**\n * Represents Status values.\n */\nenum Status { Ready }`,
+      output: null,
+      errors: [{ messageId: "vacuousBlockDescription" }],
+    },
+    {
       code: `/**\n * Represents Account values.\n */\ntype Account = string;\n/**\n * Represents AccountShape values.\n */\ninterface AccountShape {}\n/**\n * Represents account values.\n */\nconst account = 1;`,
       output: null,
       errors: [

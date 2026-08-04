@@ -34,6 +34,13 @@ ruleTester.run("prefer-stepdown-function-order", rule, {
       `,
     },
     {
+      name: "type-only export specifiers do not classify function values as exported",
+      code: `
+        function helper() { return "value"; }
+        export type { helper };
+      `,
+    },
+    {
       name: "anonymous default exports occupy the exported band but have no lexical target",
       code: `
         export default function() { return helper(); }
@@ -244,6 +251,31 @@ ruleTester.run("prefer-stepdown-function-order", rule, {
         class Service {
           public read() { return "value"; }
           public run() { return this.read(); }
+        }
+      `,
+      errors: [{ messageId: "callerMustPrecedeCallee" }],
+      output: null,
+    },
+    {
+      name: "private and public names use separate target namespaces",
+      code: `
+        class Service {
+          public secret() { return "public"; }
+          #secret() { return "private"; }
+          #run() { return this.#secret(); }
+        }
+      `,
+      errors: [{ messageId: "callerMustPrecedeCallee" }],
+      output: null,
+    },
+    {
+      name: "class expressions nested in functions receive class-body analysis",
+      code: `
+        function createService() {
+          return class Service {
+            public read() { return "value"; }
+            public run() { return this.read(); }
+          };
         }
       `,
       errors: [{ messageId: "callerMustPrecedeCallee" }],

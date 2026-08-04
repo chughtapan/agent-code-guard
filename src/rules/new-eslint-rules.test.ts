@@ -114,6 +114,20 @@ describe("property: exported constructors", () => {
   });
 });
 
+describe("vertical-organization public rules", () => {
+  it("registers exactly the three PR 1 rule ids", () => {
+    const ruleIds = Object.keys(plugin.rules).filter((ruleId) =>
+      ["no-vacuous-jsdoc", "require-stable-file-shell", "prefer-stepdown-function-order"].includes(ruleId),
+    );
+    expect(ruleIds.sort((left, right) => left.localeCompare(right))).toEqual([
+      "no-vacuous-jsdoc",
+      "prefer-stepdown-function-order",
+      "require-stable-file-shell",
+    ]);
+    expect(Object.keys(plugin.rules)).toHaveLength(63);
+  });
+});
+
 describe("property: conditional chaining", () => {
   it("optional/nullish parameters fire in non-boundary functions", () => {
     fc.assert(
