@@ -97,7 +97,7 @@ class Example {
   #write(value: string) { return value; }
 }`);
     expect(blocks.map((block) => block.attachment)).toEqual([
-      { symbol: "Phase", callable: undefined, represents: false },
+      undefined,
       undefined,
       undefined,
       undefined,

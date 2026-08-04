@@ -42,10 +42,34 @@ ruleTester.run("no-vacuous-jsdoc", rule, {
       code: `/**\n * @param input Executes the input operation.\n */\nfunction run(input: string): string { return input; }`,
     },
     {
+      name: "named tags do not use the attached callable as a candidate",
+      code: `/** @param input Executes the read operation. */\nfunction read(input: string): string { return input; }`,
+    },
+    {
+      name: "callable-derived templates stay valid when the symbol does not match",
+      code: `/** The read result. */\nfunction write(): string { return "id"; }\n/** Executes the read operation. */\nfunction remove(): string { return "id"; }`,
+    },
+    {
+      name: "enums are outside the closed attachment candidate grammar",
+      code: `/** Provides the Phase runtime value. */\nenum Phase { Start }`,
+    },
+    {
       code: `/** Executes the read operation. */\n/** Useful exported operation. */\nfunction read(): string { return "id"; }`,
     },
   ],
   invalid: [
+    {
+      name: "rejects a result template derived from a callable symbol",
+      code: `/** The read result. */\nfunction read(): string { return "id"; }`,
+      output: null,
+      errors: [{ messageId: "vacuousBlockDescription" }],
+    },
+    {
+      name: "rejects an operation template derived from a callable symbol",
+      code: `/** Executes the read operation. */\nfunction read(): string { return "id"; }`,
+      output: null,
+      errors: [{ messageId: "vacuousBlockDescription" }],
+    },
     {
       code: `/** TODO */\nconst item = 1;`,
       output: null,
@@ -85,6 +109,7 @@ ruleTester.run("no-vacuous-jsdoc", rule, {
       code: `/** The read() result. */\nfunction read(): string { return "id"; }\n/** Provides the write runtime value. */\nfunction write(): string { return "id"; }\n/** Executes the remove operation. */\nfunction remove(): string { return "id"; }`,
       output: null,
       errors: [
+        { messageId: "vacuousBlockDescription" },
         { messageId: "vacuousBlockDescription" },
         { messageId: "vacuousBlockDescription" },
       ],
@@ -194,6 +219,10 @@ it("evaluates the module contract and every closed grammar member after a fresh 
   ]) {
     expect(verify(`/** ${template} */\nconst value = 1;`)).toHaveLength(1);
   }
+  expect(verify(`/** The read result. */\nfunction read(): string { return "id"; }`)).toHaveLength(1);
+  expect(verify(`/** Executes the read operation. */\nfunction read(): string { return "id"; }`)).toHaveLength(1);
+  expect(verify(`/** @param input Executes the read operation. */\nfunction read(input: string): string { return input; }`)).toHaveLength(0);
+  expect(verify(`/** Provides the Phase runtime value. */\nenum Phase { Start }`)).toHaveLength(0);
   expect(freshRule.meta).toMatchObject({
     type: "problem",
     docs: { description: "Rejects known placeholder and mechanically-derived JSDoc filler without judging other prose." },

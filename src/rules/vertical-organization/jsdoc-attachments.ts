@@ -23,7 +23,6 @@ function declarationFor(node: TSESTree.Node): TSESTree.Node | undefined {
         break;
       case AST_NODE_TYPES.FunctionDeclaration:
       case AST_NODE_TYPES.ClassDeclaration:
-      case AST_NODE_TYPES.TSEnumDeclaration:
       case AST_NODE_TYPES.MethodDefinition:
       case AST_NODE_TYPES.VariableDeclaration:
       case AST_NODE_TYPES.TSTypeAliasDeclaration:
@@ -159,10 +158,6 @@ function representedCandidates(
     : { symbol: declaration.id.name, callable: undefined, represents: true };
 }
 
-function enumCandidates(declaration: TSESTree.TSEnumDeclaration): AttachedCandidates | undefined {
-  return { symbol: declaration.id.name, callable: undefined, represents: false };
-}
-
 function candidatesFor(
   sourceCode: TSESLint.SourceCode,
   declaration: TSESTree.Node,
@@ -179,8 +174,6 @@ function candidatesFor(
     case AST_NODE_TYPES.TSTypeAliasDeclaration:
     case AST_NODE_TYPES.TSInterfaceDeclaration:
       return representedCandidates(declaration);
-    case AST_NODE_TYPES.TSEnumDeclaration:
-      return enumCandidates(declaration);
     default:
       return undefined;
   }

@@ -50,7 +50,11 @@ function templateMatches(span: DescriptionSpan, block: ParsedJsdocBlock): boolea
   }
   const attachment = block.attachment;
   const namedTag = span.tagName;
-  const resultCandidates = namedTag === undefined ? values([attachment?.callable]) : values([namedTag]);
+  const callableCandidates = values([
+    attachment?.callable === undefined ? undefined : attachment.symbol,
+    attachment?.callable,
+  ]);
+  const resultCandidates = namedTag === undefined ? callableCandidates : values([namedTag]);
   if (resultCandidates.some((candidate) => prose === `the ${candidate} result`)) {
     return true;
   }
@@ -60,7 +64,7 @@ function templateMatches(span: DescriptionSpan, block: ParsedJsdocBlock): boolea
   if (runtimeCandidates.some((candidate) => prose === `provides the ${candidate} runtime value`)) {
     return true;
   }
-  if (values([attachment?.callable]).some((candidate) => prose === `executes the ${candidate} operation`)) {
+  if (namedTag === undefined && callableCandidates.some((candidate) => prose === `executes the ${candidate} operation`)) {
     return true;
   }
   return attachment?.represents === true && attachment.symbol !== undefined && prose === `represents ${normalize(attachment.symbol)} values`;
