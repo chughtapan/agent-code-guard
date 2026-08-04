@@ -42,6 +42,11 @@ function values(candidates: ReadonlyArray<string | undefined>): readonly string[
   return candidates.filter((candidate): candidate is string => candidate !== undefined).map(normalize);
 }
 
+function matchesRepresentedTemplate(prose: string, block: ParsedJsdocBlock): boolean {
+  const attachment = block.attachment;
+  return attachment?.represents === true && attachment.symbol !== undefined && prose === `represents ${normalize(attachment.symbol)} values`;
+}
+
 // eslint-disable-next-line complexity, sonarjs/cyclomatic-complexity -- The closed template grammar stays explicit for auditability.
 function templateMatches(span: DescriptionSpan, block: ParsedJsdocBlock): boolean {
   const prose = normalize(span.text);
@@ -67,7 +72,7 @@ function templateMatches(span: DescriptionSpan, block: ParsedJsdocBlock): boolea
   if (namedTag === undefined && callableCandidates.some((candidate) => prose === `executes the ${candidate} operation`)) {
     return true;
   }
-  return attachment?.represents === true && attachment.symbol !== undefined && prose === `represents ${normalize(attachment.symbol)} values`;
+  return matchesRepresentedTemplate(prose, block);
 }
 
 function isVacuous(span: DescriptionSpan, block: ParsedJsdocBlock): boolean {
