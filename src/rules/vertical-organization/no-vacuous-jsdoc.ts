@@ -1,4 +1,4 @@
-import { type TSESTree } from "@typescript-eslint/utils";
+import type { TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 import { type DescriptionSpan, type ParsedJsdocBlock, parseJsdocBlocks } from "./jsdoc-fragments.js";
@@ -39,7 +39,7 @@ function normalize(text: string): string {
   return withoutPeriod.replace(/[A-Z]/gu, (letter) => letter.toLowerCase());
 }
 
-function values(candidates: readonly (string | undefined)[]): readonly string[] {
+function values(candidates: ReadonlyArray<string | undefined>): readonly string[] {
   return candidates.filter((candidate): candidate is string => candidate !== undefined).map(normalize);
 }
 
@@ -51,7 +51,7 @@ function templateMatches(span: DescriptionSpan, block: ParsedJsdocBlock): boolea
   const attachment = block.attachment;
   const namedTag = span.tagName;
   if (prose.startsWith("the ") && prose.endsWith(" result")) {
-    const candidates = namedTag === undefined ? values([attachment?.symbol, attachment?.callable]) : values([namedTag]);
+    const candidates = namedTag === undefined ? values([attachment?.callable]) : values([namedTag]);
     return candidates.some((candidate) => prose === `the ${candidate} result`);
   }
   if (prose.startsWith("provides the ") && prose.endsWith(" runtime value")) {
@@ -59,7 +59,7 @@ function templateMatches(span: DescriptionSpan, block: ParsedJsdocBlock): boolea
     return candidates.some((candidate) => prose === `provides the ${candidate} runtime value`);
   }
   if (prose.startsWith("executes the ") && prose.endsWith(" operation")) {
-    return values([attachment?.symbol, attachment?.callable]).some(
+    return values([attachment?.callable]).some(
       (candidate) => prose === `executes the ${candidate} operation`,
     );
   }

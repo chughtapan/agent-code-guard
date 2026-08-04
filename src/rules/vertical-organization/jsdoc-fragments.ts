@@ -338,18 +338,25 @@ function attachmentFor(
       return { symbol: declarator.id.name, callable, represents: true };
     }
     case AST_NODE_TYPES.ClassDeclaration:
-    case AST_NODE_TYPES.TSEnumDeclaration:
     case AST_NODE_TYPES.TSTypeAliasDeclaration:
     case AST_NODE_TYPES.TSInterfaceDeclaration:
       return declaration.id === null
         ? undefined
         : { symbol: declaration.id.name, callable: undefined, represents: true };
+    case AST_NODE_TYPES.TSEnumDeclaration:
+      return declaration.id === null
+        ? undefined
+        : { symbol: declaration.id.name, callable: undefined, represents: false };
     default:
       return undefined;
   }
 }
 
-/** Parses one JSDoc token using comment-parser's physical token offsets. */
+/**
+ * Parses one JSDoc token using comment-parser's physical token offsets.
+ * @param sourceCode
+ * @param token
+ */
 export function parseJsdocBlock(
   sourceCode: TSESLint.SourceCode,
   token: TSESLint.AST.Token,
@@ -382,7 +389,10 @@ export function parseJsdocBlock(
   };
 }
 
-/** Parses every JSDoc block comment in a source file. */
+/**
+ * Parses every JSDoc block comment in a source file.
+ * @param sourceCode
+ */
 export function parseJsdocBlocks(sourceCode: TSESLint.SourceCode): readonly ParsedJsdocBlock[] {
   return sourceCode
     .getAllComments()

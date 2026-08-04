@@ -257,6 +257,17 @@ ruleTester.run("prefer-stepdown-function-order", rule, {
       output: null,
     },
     {
+      name: "a noncomputed string-literal method key is an identifier-call target",
+      code: `
+        class Service {
+          public "read"() { return "value"; }
+          public run() { return this.read(); }
+        }
+      `,
+      errors: [{ messageId: "callerMustPrecedeCallee" }],
+      output: null,
+    },
+    {
       name: "private and public names use separate target namespaces",
       code: `
         class Service {

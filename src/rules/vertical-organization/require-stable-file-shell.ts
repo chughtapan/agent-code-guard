@@ -4,7 +4,8 @@ import { PRINCIPLE_URL } from "../utils/principles.js";
 import { type ParsedJsdocBlock, parseJsdocBlocks } from "./jsdoc-fragments.js";
 
 const LICENSE_PREFIX = /^(SPDX-License-Identifier:|SPDX-FileCopyrightText:|Copyright|©)/u;
-const BARRIER = /^\/\/[ \t]agent-code-guard: side-effect-import-(begin|end) -- evaluation-order: ([^\r\n]*\S[^\r\n]*)$/u;
+const BARRIER_PREFIX = "// agent-code-guard: side-effect-import-";
+const BARRIER_SEPARATOR = " -- evaluation-order: ";
 const TRIPLE_SLASH_DIRECTIVE = /^\/\/\/\s*<(?:reference\s+(?:path|types|lib)=(?:"[^"]+"|'[^']+')|amd-module\s+name=(?:"[^"]+"|'[^']+')|amd-dependency\s+path=(?:"[^"]+"|'[^']+'))\s*\/?>(?:\s*)$/u;
 
 type BarrierKind = "begin" | "end";
@@ -32,15 +33,20 @@ function barrier(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): Ba
   if (token.type !== "Line") {
     return undefined;
   }
-  const match = BARRIER.exec(raw(sourceCode, token));
-  if (match === null) {
+  const text = raw(sourceCode, token);
+  if (!text.startsWith(BARRIER_PREFIX)) {
     return undefined;
   }
-  const kind = match[1];
+  const separator = text.indexOf(BARRIER_SEPARATOR, BARRIER_PREFIX.length);
+  if (separator === -1) {
+    return undefined;
+  }
+  const kind = text.slice(BARRIER_PREFIX.length, separator);
   if (kind !== "begin" && kind !== "end") {
     return undefined;
   }
-  return { kind, reason: match[2].trim() };
+  const reason = text.slice(separator + BARRIER_SEPARATOR.length);
+  return reason.trim() === "" ? undefined : { kind, reason: reason.trim() };
 }
 
 function reportIndex(
@@ -122,6 +128,21 @@ function isTripleSlashDirective(sourceCode: TSESLint.SourceCode, token: TSESLint
   return token.type === "Line" && TRIPLE_SLASH_DIRECTIVE.test(raw(sourceCode, token));
 }
 
+function beginsImmediateBareSideEffectImport(
+  sourceCode: TSESLint.SourceCode,
+  program: TSESTree.Program,
+  comment: TSESLint.AST.Token,
+): boolean {
+  const marker = barrier(sourceCode, comment);
+  if (marker?.kind !== "begin") {
+    return false;
+  }
+  const following = program.body.find((statement) => statement.range[0] >= comment.range[1]);
+  return following?.type === AST_NODE_TYPES.ImportDeclaration &&
+    following.specifiers.length === 0 &&
+    hasLineAdjacentGap(sourceCode, comment, following);
+}
+
 function reportInterimComments(
   context: Readonly<
     TSESLint.RuleContext<"disallowedPreamble" | "contentBeforeFileOverview", readonly []>
@@ -140,7 +161,7 @@ function reportInterimComments(
       comment.range[0] > overview.token.range[1] &&
       comment.range[1] < firstContent.range[0] &&
       !isTripleSlashDirective(context.sourceCode, comment) &&
-      !raw(context.sourceCode, comment).startsWith("// agent-code-guard: side-effect-import-")
+      !beginsImmediateBareSideEffectImport(context.sourceCode, program, comment)
     ) {
       reportIndex(context, "disallowedPreamble", comment.range[0]);
     }

@@ -240,6 +240,9 @@ function methodName(member: TSESTree.MethodDefinition): string | null {
   if (member.computed) {
     return null;
   }
+  if (member.key.type === AST_NODE_TYPES.Literal) {
+    return typeof member.key.value === "string" ? member.key.value : null;
+  }
   if (
     member.key.type !== AST_NODE_TYPES.Identifier &&
     member.key.type !== AST_NODE_TYPES.PrivateIdentifier
@@ -258,7 +261,7 @@ function methodCallKey(member: TSESTree.MethodDefinition): string | null {
 }
 
 function assignIndexes(
-  candidates: readonly Omit<Implementation, "index">[],
+  candidates: ReadonlyArray<Omit<Implementation, "index">>,
 ): readonly Implementation[] {
   return [...candidates]
     .sort((left, right) => left.declaration.range[0] - right.declaration.range[0])

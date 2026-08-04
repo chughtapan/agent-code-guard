@@ -1,8 +1,7 @@
 import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
 import { describe, expect, it } from "vitest";
-import type { ParsedJsdocBlock } from "./jsdoc-fragments.js";
-import { parseJsdocBlocks } from "./jsdoc-fragments.js";
+import { type ParsedJsdocBlock, parseJsdocBlocks  } from "./jsdoc-fragments.js";
 
 function parse(code: string): readonly ParsedJsdocBlock[] {
   const linter = new Linter();
