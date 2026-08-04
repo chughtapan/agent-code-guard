@@ -24,6 +24,7 @@ export default {
     "src/rules/vertical-organization/prefer-stepdown-function-order.meta.test.ts",
     "src/rules/vertical-organization/prefer-stepdown-function-order.test.ts",
     "src/rules/vertical-organization/require-stable-file-shell.test.ts",
+    "src/rules/vertical-organization/side-effect-import-barriers.test.ts",
     "src/rules/vertical-organization/stepdown-implementations.test.ts",
   ],
   testRunner: "vitest",
