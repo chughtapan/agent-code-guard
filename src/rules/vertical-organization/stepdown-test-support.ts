@@ -1,0 +1,17 @@
+import { RuleTester } from "@typescript-eslint/rule-tester";
+import { afterAll, describe, it } from "vitest";
+import * as tsParser from "@typescript-eslint/parser";
+
+RuleTester.afterAll = afterAll;
+RuleTester.it = it;
+RuleTester.itOnly = it.only;
+RuleTester.describe = describe;
+
+export function stepdownRuleTester(): RuleTester {
+  return new RuleTester({
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: { ecmaVersion: 2022, sourceType: "module" },
+    },
+  });
+}

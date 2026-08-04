@@ -1,24 +1,8 @@
-import { RuleTester } from "@typescript-eslint/rule-tester";
-import { afterAll, describe, it } from "vitest";
-import * as tsParser from "@typescript-eslint/parser";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
+import { stepdownRuleTester } from "./stepdown-test-support.js";
 
-/* eslint-disable max-lines -- The exhaustive rule matrix is intentionally one declarative RuleTester suite. */
-
-RuleTester.afterAll = afterAll;
-RuleTester.it = it;
-RuleTester.itOnly = it.only;
-RuleTester.describe = describe;
-
-const ruleTester = new RuleTester({
-  languageOptions: {
-    parser: tsParser,
-    parserOptions: { ecmaVersion: 2022, sourceType: "module" },
-  },
-});
-
-ruleTester.run("prefer-stepdown-function-order", rule, {
+stepdownRuleTester().run("prefer-stepdown-function-order: top-level", rule, {
   valid: [
     {
       name: "exported functions precede internal callees",
@@ -57,80 +41,11 @@ ruleTester.run("prefer-stepdown-function-order", rule, {
       `,
     },
     {
-      name: "class constructor public protected then private is ordered",
-      code: `
-        class Service {
-          constructor() { this.run(); }
-          public run() { return this.protectedStep(); }
-          protected protectedStep() { return this.secret(); }
-          #secret() { return "value"; }
-        }
-      `,
-    },
-    {
-      name: "static and instance methods share their band without crossing staticness",
-      code: `
-        class Service {
-          public static run() { return this.read(); }
-          public static read() { return "value"; }
-          public instance() { return this.instanceRead(); }
-          public instanceRead() { return "value"; }
-        }
-      `,
-    },
-    {
-      name: "staticness mismatches do not create a this-method edge",
-      code: `
-        class Service {
-          public static read() { return "value"; }
-          public static run() { return this.instanceRead(); }
-          public instanceRead() { return "value"; }
-        }
-      `,
-    },
-    {
-      name: "cycles do not produce intra-component diagnostics",
-      code: `
-        function first() { return second(); }
-        function second() { return first(); }
-      `,
-    },
-    {
-      name: "shared callee follows every caller",
-      code: `
-        function first() { return helper(); }
-        function second() { return helper(); }
-        function helper() { return "value"; }
-      `,
-    },
-    {
       name: "overload signatures attach to their implementation",
       code: `
         function load(value: string): string;
         function load(value: number): number;
         function load(value: string | number) { return value; }
-      `,
-    },
-    {
-      name: "abstract and signature-only methods are excluded",
-      code: `
-        abstract class Service {
-          abstract declared(): string;
-          public run() { return this.read(); }
-          public read() { return "value"; }
-        }
-      `,
-    },
-    {
-      name: "an override remains a syntactic this-method narrative edge",
-      code: `
-        class Base {
-          public run() { return this.read(); }
-          public read() { return "base"; }
-        }
-        class Derived extends Base {
-          public read() { return "derived"; }
-        }
       `,
     },
     {
@@ -159,37 +74,6 @@ ruleTester.run("prefer-stepdown-function-order", rule, {
         }
       `,
     },
-    {
-      name: "optional computed super and class-qualified calls are excluded",
-      code: `
-        class Base { public read() { return "base"; } }
-        class Service extends Base {
-          public run() {
-            this?.read();
-            this["read"]();
-            super.read();
-            Service.make();
-          }
-          public read() { return "value"; }
-          public static make() { return "value"; }
-        }
-      `,
-    },
-    {
-      name: "decorated methods accessors fields and static blocks are excluded",
-      code: `
-        class Service {
-          static { Service.setup(); }
-          value = this.read();
-          @trace() public decorated() { return this.read(); }
-          get result() { return this.read(); }
-          public run() { return this.read(); }
-          public read() { return "value"; }
-          public static setup() { return "value"; }
-        }
-      `,
-      languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, ecmaFeatures: { legacyDecorators: true } } },
-    },
   ],
   invalid: [
     {
@@ -208,23 +92,6 @@ ruleTester.run("prefer-stepdown-function-order", rule, {
         export default function() { return "value"; }
       `,
       errors: [{ messageId: "declarationOutOfStoryBand", line: 3, type: AST_NODE_TYPES.FunctionDeclaration }],
-      output: null,
-    },
-    {
-      name: "class band diagnostics do not depend on calls",
-      code: `
-        class Service {
-          private secret() { return "value"; }
-          protected middle() { return "value"; }
-          constructor() {}
-          public run() { return "value"; }
-        }
-      `,
-      errors: [
-        { messageId: "declarationOutOfStoryBand" },
-        { messageId: "declarationOutOfStoryBand" },
-        { messageId: "declarationOutOfStoryBand" },
-      ],
       output: null,
     },
     {
@@ -247,76 +114,5 @@ ruleTester.run("prefer-stepdown-function-order", rule, {
       errors: [{ messageId: "callerMustPrecedeCallee" }],
       output: null,
     },
-    {
-      name: "a direct same-staticness this call reports when caller follows callee",
-      code: `
-        class Service {
-          public read() { return "value"; }
-          public run() { return this.read(); }
-        }
-      `,
-      errors: [{ messageId: "callerMustPrecedeCallee" }],
-      output: null,
-    },
-    {
-      name: "a noncomputed string-literal method key is an identifier-call target",
-      code: `
-        class Service {
-          public "read"() { return "value"; }
-          public run() { return this.read(); }
-        }
-      `,
-      errors: [{ messageId: "callerMustPrecedeCallee" }],
-      output: null,
-    },
-    {
-      name: "private and public names use separate target namespaces",
-      code: `
-        class Service {
-          public secret() { return "public"; }
-          #secret() { return "private"; }
-          #run() { return this.#secret(); }
-        }
-      `,
-      errors: [{ messageId: "callerMustPrecedeCallee" }],
-      output: null,
-    },
-    {
-      name: "class expressions nested in functions receive class-body analysis",
-      code: `
-        function createService() {
-          return class Service {
-            public read() { return "value"; }
-            public run() { return this.read(); }
-          };
-        }
-      `,
-      errors: [{ messageId: "callerMustPrecedeCallee" }],
-      output: null,
-    },
-    {
-      name: "the earliest repeated call is the only edge diagnostic",
-      code: `
-        function read() { return "value"; }
-        function load() {
-          read();
-          return read();
-        }
-      `,
-      errors: [{ messageId: "callerMustPrecedeCallee", line: 4 }],
-      output: null,
-    },
-    {
-      name: "an inter-component edge uses the component interval boundary",
-      code: `
-        function first() { return second(); }
-        function helper() { return first(); }
-        function second() { return first(); }
-      `,
-      errors: [{ messageId: "callerMustPrecedeCallee" }],
-      output: null,
-    },
   ],
 });
-
-/* eslint-enable max-lines -- End of the declarative RuleTester suite. */
