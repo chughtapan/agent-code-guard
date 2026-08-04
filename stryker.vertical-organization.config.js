@@ -16,10 +16,12 @@ export default {
   // before the dry run, despite this deliberately narrow mutation scope.
   testFiles: [
     "src/rules/vertical-organization/jsdoc-attachments.test.ts",
+    "src/rules/vertical-organization/jsdoc-fragments.dynamic.test.ts",
     "src/rules/vertical-organization/jsdoc-fragments.test.ts",
     "src/rules/vertical-organization/no-vacuous-jsdoc.test.ts",
     "src/rules/vertical-organization/prefer-stepdown-function-order.class.test.ts",
     "src/rules/vertical-organization/prefer-stepdown-function-order.graph.test.ts",
+    "src/rules/vertical-organization/prefer-stepdown-function-order.meta.test.ts",
     "src/rules/vertical-organization/prefer-stepdown-function-order.test.ts",
     "src/rules/vertical-organization/require-stable-file-shell.test.ts",
   ],
