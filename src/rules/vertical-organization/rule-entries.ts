@@ -1,7 +1,5 @@
 /**
- * @file Disabled PR 1 entries for the vertical-organization rule family.
- *
- * The entry options are retained when PR 2 promotes this family to errors.
+ * @file Defines the shared enabled rule entries and pinned options for vertical organization.
  */
 
 import type { TSESLint } from "@typescript-eslint/utils";
@@ -18,8 +16,7 @@ const alphabeticalCommentPartitionOptions = {
 } as const;
 
 /**
- * Rule entries shipped disabled with PR 1 and enabled by the reviewed PR 2
- * migration only after the stable-shell gate is clean.
+ * Shared rule entries consumed by the plugin and repository lint configuration.
  */
 export const verticalOrganizationRuleEntries: Record<string, RuleEntry> = {
   "@typescript-eslint/adjacent-overload-signatures": "error",
