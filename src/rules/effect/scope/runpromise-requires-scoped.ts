@@ -1,3 +1,7 @@
+/**
+ * @file Prevents scoped Effects from being run through unscoped Effect runners.
+ */
+
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { requireServices } from "../../utils/typed-linter/index.js";

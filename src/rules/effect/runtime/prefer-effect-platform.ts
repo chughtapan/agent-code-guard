@@ -1,3 +1,7 @@
+/**
+ * @file Reports raw platform APIs where Effect platform services should be used.
+ */
+
 import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PURE_EFFECT_NAMESPACES } from "../effect-namespaces.js";

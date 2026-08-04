@@ -1,3 +1,7 @@
+/**
+ * @file Reports Promise return types that erase the typed error channel.
+ */
+
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isFunctionReturnTypeReference } from "../utils/ast-refinement/index.js";

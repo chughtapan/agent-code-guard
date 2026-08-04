@@ -1,3 +1,7 @@
+/**
+ * @file Requires Scope finalizer registration to occur inside a scope frame.
+ */
+
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";

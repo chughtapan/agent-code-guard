@@ -1,3 +1,7 @@
+/**
+ * @file Reports generic Error construction that erases typed Effect error variants.
+ */
+
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { isNamedMemberCall } from "../../utils/ast-refinement/index.js";

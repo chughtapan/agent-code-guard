@@ -1,3 +1,7 @@
+/**
+ * @file Reports casts to Schema-derived types that bypass runtime decoding.
+ */
+
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";

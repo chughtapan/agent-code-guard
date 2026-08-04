@@ -1,3 +1,7 @@
+/**
+ * @file Validates tagged Effect values are narrowed with supported discriminant comparisons.
+ */
+
 import type { TSESTree } from "@typescript-eslint/utils";
 import type * as ts from "typescript";
 import { createRule } from "../../utils/create-rule.js";

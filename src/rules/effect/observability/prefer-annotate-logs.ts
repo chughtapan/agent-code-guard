@@ -1,3 +1,7 @@
+/**
+ * @file Requires Effect log calls to carry structured annotations.
+ */
+
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";

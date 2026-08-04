@@ -1,3 +1,7 @@
+/**
+ * @file Reports async functions so Effect-based error channels remain explicit.
+ */
+
 import type { TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";

@@ -1,3 +1,7 @@
+/**
+ * @file Requires forked Effects to have an explicit lifecycle or supervision boundary.
+ */
+
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
