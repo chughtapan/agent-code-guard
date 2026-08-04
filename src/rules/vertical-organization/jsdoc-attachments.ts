@@ -38,7 +38,7 @@ function declarationFor(node: TSESTree.Node): TSESTree.Node | undefined {
 
 function leadingNode(declaration: TSESTree.Node): TSESTree.Node {
   const parent = declaration.parent;
-  if (parent === null || parent === undefined) {
+  if (parent === undefined) {
     return declaration;
   }
   if (parent.type === AST_NODE_TYPES.ExportNamedDeclaration) {
@@ -54,19 +54,15 @@ function isImmediateLeadingComment(
 ): boolean {
   const leading = leadingNode(declaration);
   const last = sourceCode.getCommentsBefore(leading).at(-1);
-  if (last === undefined || last.range[0] !== token.range[0] || last.range[1] !== token.range[1]) {
-    return false;
-  }
-  const next = sourceCode.getTokenAfter(token, { includeComments: false });
-  return next !== null && next.range[0] >= leading.range[0];
+  return last !== undefined && last.range[0] === token.range[0];
 }
 
 // eslint-disable-next-line complexity, sonarjs/cognitive-complexity, sonarjs/cyclomatic-complexity -- This is a quote-aware signature state machine.
 function matchingParen(text: string, opening: number): number | undefined {
-  let depth = 0;
+  let depth = 1;
   let quote: string | undefined;
   let escaped = false;
-  for (let index = opening; index < text.length; index += 1) {
+  for (let index = opening + 1; text[index] !== undefined; index += 1) {
     const character = text[index];
     if (quote !== undefined) {
       if (escaped) {
@@ -98,12 +94,13 @@ function callableFromRange(
   start: number,
   end: number,
 ): string | undefined {
-  const opening = sourceCode.text.indexOf("(", start);
-  if (opening === -1 || opening >= end) {
+  const openingOffset = sourceCode.text.slice(start, end).indexOf("(");
+  if (openingOffset === -1) {
     return undefined;
   }
+  const opening = start + openingOffset;
   const closing = matchingParen(sourceCode.text, opening);
-  return closing === undefined || closing >= end
+  return closing === undefined
     ? undefined
     : `${symbol}${sourceCode.text.slice(opening, closing + 1)}`;
 }
@@ -163,9 +160,7 @@ function representedCandidates(
 }
 
 function enumCandidates(declaration: TSESTree.TSEnumDeclaration): AttachedCandidates | undefined {
-  return declaration.id === null
-    ? undefined
-    : { symbol: declaration.id.name, callable: undefined, represents: false };
+  return { symbol: declaration.id.name, callable: undefined, represents: false };
 }
 
 function candidatesFor(
@@ -201,7 +196,7 @@ export function attachmentFor(
   sourceCode: TSESLint.SourceCode,
   token: TSESLint.AST.Token,
 ): AttachedCandidates | undefined {
-  const following = sourceCode.getTokenAfter(token, { includeComments: false });
+  const following = sourceCode.getTokenAfter(token);
   if (following === null) {
     return undefined;
   }

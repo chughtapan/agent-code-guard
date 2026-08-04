@@ -61,7 +61,7 @@ interface Piece {
 
 function mapLines(source: string, token: TSESLint.AST.Token, block: Block): readonly MappedLine[] {
   let cursor = token.range[0];
-  return block.source.map((line, index) => {
+  return block.source.map((line) => {
     const ranges: Partial<Record<(typeof TOKEN_FIELDS)[number], readonly [number, number]>> = {};
     for (const field of TOKEN_FIELDS) {
       const value = line.tokens[field];
@@ -69,17 +69,7 @@ function mapLines(source: string, token: TSESLint.AST.Token, block: Block): read
       cursor += value.length;
       ranges[field] = [start, cursor];
     }
-    const lineEnd = cursor;
-    const expected = source.slice(lineEnd - line.source.length, lineEnd);
-    if (expected !== line.source) {
-      cursor = token.range[1];
-    } else if (index < block.source.length - 1) {
-      if (source[cursor] === "\r" && source[cursor + 1] === "\n") {
-        cursor += 2;
-      } else if (source[cursor] === "\n" || source[cursor] === "\r") {
-        cursor += 1;
-      }
-    }
+    cursor += Number("\r\n".includes(source[cursor]));
     return {
       line,
       // eslint-disable-next-line agent-code-guard/require-assertion-rationale -- TOKEN_FIELDS fills every record key before this conversion.
@@ -104,11 +94,11 @@ function spanFromPieces(
   if (first === undefined || last === undefined) {
     return undefined;
   }
-  const startOffset = first.text.search(/\S/u);
+  const start = first.range[0] + first.text.length - first.text.trimStart().length;
   // eslint-disable-next-line sonarjs/slow-regex -- This suffix check runs on a single bounded JSDoc line.
   const endOffset = last.text.search(/\s*$/u);
   const range: readonly [number, number] = [
-    first.range[0] + startOffset,
+    start,
     last.range[0] + endOffset,
   ];
   return {
@@ -158,10 +148,7 @@ function tagDescription(
   if (spec.problems.length > 0) {
     return undefined;
   }
-  const tagLine = mapped.find((line) => line.line.tokens.tag !== "");
-  if (tagLine === undefined) {
-    return undefined;
-  }
+  const tagLine = mapped[0];
   const continuationLines = mapped.slice(mapped.indexOf(tagLine) + 1);
   const pieces = NAMED_TAGS.has(spec.tag)
     ? mapped.map(descriptionPiece)
@@ -179,7 +166,7 @@ function tagDescription(
 }
 
 function isJSDoc(token: TSESLint.AST.Token, sourceCode: TSESLint.SourceCode): boolean {
-  return token.type === "Block" && sourceCode.text.slice(token.range[0], token.range[1]).startsWith("/**");
+  return sourceCode.text.slice(token.range[0], token.range[1]).startsWith("/**");
 }
 
 /**
@@ -191,16 +178,14 @@ function isJSDoc(token: TSESLint.AST.Token, sourceCode: TSESLint.SourceCode): bo
 function parseJsdocBlock(
   sourceCode: TSESLint.SourceCode,
   token: TSESLint.AST.Token,
-): ParsedJsdocBlock | undefined {
-  if (!isJSDoc(token, sourceCode)) {
-    return undefined;
-  }
+): ParsedJsdocBlock {
   const source = sourceCode.text.slice(token.range[0], token.range[1]);
-  const blocks = parse(source, { startLine: token.loc.start.line, spacing: "preserve" });
-  const block = blocks.at(0);
-  if (block === undefined) {
-    return undefined;
-  }
+  // comment-parser treats LF and CRLF as line endings but otherwise leaves a
+  // bare CR inside one logical line. Normalize only bare CR bytes; preserving
+  // length keeps its parser offsets aligned with the physical source token.
+  const parserSource = source.replace(/\r(?!\n)/gu, "\n");
+  const blocks = parse(parserSource, { startLine: token.loc.start.line, spacing: "preserve" });
+  const block = blocks[0];
   const mapped = mapLines(sourceCode.text, token, block);
   return {
     token,
@@ -211,9 +196,8 @@ function parseJsdocBlock(
       description: tagDescription(
         sourceCode,
         spec,
-        spec.source.map((line) => mapped.find((entry) => entry.line.number === line.number)).filter(
-          (entry): entry is MappedLine => entry !== undefined,
-        ),
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion, agent-code-guard/require-assertion-rationale -- comment-parser spec.source line numbers are a subset of its enclosing block.source lines.
+        spec.source.map((line) => mapped.find((entry) => entry.line.number === line.number)!),
       ),
     })),
     attachment: attachmentFor(sourceCode, token),
@@ -229,6 +213,5 @@ export function parseJsdocBlocks(sourceCode: TSESLint.SourceCode): readonly Pars
   return sourceCode
     .getAllComments()
     .filter((token) => isJSDoc(token, sourceCode))
-    .map((token) => parseJsdocBlock(sourceCode, token))
-    .filter((block): block is ParsedJsdocBlock => block !== undefined);
+    .map((token) => parseJsdocBlock(sourceCode, token));
 }
