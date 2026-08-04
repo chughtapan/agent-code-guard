@@ -1,8 +1,18 @@
 export default {
   mutate: [
+    "src/rules/vertical-organization/jsdoc-fragments.ts",
     "src/rules/vertical-organization/no-vacuous-jsdoc.ts",
     "src/rules/vertical-organization/require-stable-file-shell.ts",
     "src/rules/vertical-organization/prefer-stepdown-function-order.ts",
+  ],
+  // Keep this gate focused on the direct, rule-level specifications.  Without
+  // `testFiles`, Vitest's related-test discovery traverses the entire project
+  // before the dry run, despite this deliberately narrow mutation scope.
+  testFiles: [
+    "src/rules/vertical-organization/jsdoc-fragments.test.ts",
+    "src/rules/vertical-organization/no-vacuous-jsdoc.test.ts",
+    "src/rules/vertical-organization/require-stable-file-shell.test.ts",
+    "src/rules/vertical-organization/prefer-stepdown-function-order.test.ts",
   ],
   testRunner: "vitest",
   checkers: ["typescript"],
@@ -16,5 +26,8 @@ export default {
   jsonReporter: {
     fileName: "reports/mutation/vertical-organization/mutation.json",
   },
+  // `testFiles` is the explicit dependency boundary for this gate, so related
+  // discovery is redundant and can only broaden the dry run.
+  vitest: { related: false },
   incremental: false,
 };

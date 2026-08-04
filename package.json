@@ -30,6 +30,7 @@
     "bench": "tsx bench/lint-bench.ts",
     "bench:generate": "tsx bench/generate-fixture.ts",
     "mutation": "stryker run",
+    "test:mutation:vertical-organization": "stryker run stryker.vertical-organization.config.js",
     "prepublishOnly": "pnpm build && pnpm test:all"
   },
   "keywords": [
