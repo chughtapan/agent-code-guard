@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/observability/annotate-without-span ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { annotateWithoutSpan as rule } from "./annotate-without-span.js";

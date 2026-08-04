@@ -1,3 +1,7 @@
+/**
+ * @file Tests the safety/no-process-env-at-runtime ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noProcessEnvAtRuntime as rule } from "./no-process-env-at-runtime.js";

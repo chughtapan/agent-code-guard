@@ -1,3 +1,7 @@
+/**
+ * @file Tests the tooling/require-knip-in-lint ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

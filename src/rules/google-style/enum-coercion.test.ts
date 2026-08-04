@@ -1,3 +1,7 @@
+/**
+ * @file Tests the google-style/enum-coercion ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { createTypedRuleTester } from "../utils/typed-linter/test-support/rule-tester.js";
 import { noEnumBooleanCoercion } from "./enum-coercion.js";
 

@@ -1,3 +1,7 @@
+/**
+ * @file Provides shared source fixtures and assertions for stepdown ordering rule tests.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import * as tsParser from "@typescript-eslint/parser";

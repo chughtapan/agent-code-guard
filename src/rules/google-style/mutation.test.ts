@@ -1,3 +1,7 @@
+/**
+ * @file Tests the google-style/mutation ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";

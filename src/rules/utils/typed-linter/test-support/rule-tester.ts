@@ -1,3 +1,7 @@
+/**
+ * @file Configures the shared typed RuleTester used by typed-linter tests.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import * as tsParser from "@typescript-eslint/parser";

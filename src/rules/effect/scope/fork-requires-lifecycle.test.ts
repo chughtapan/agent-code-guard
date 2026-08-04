@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/scope/fork-requires-lifecycle ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { forkRequiresLifecycle as rule } from "./fork-requires-lifecycle.js";

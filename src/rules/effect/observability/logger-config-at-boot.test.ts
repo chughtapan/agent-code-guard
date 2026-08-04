@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/observability/logger-config-at-boot ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { loggerConfigAtBoot as rule } from "./logger-config-at-boot.js";

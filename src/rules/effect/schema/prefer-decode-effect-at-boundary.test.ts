@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/schema/prefer-decode-effect-at-boundary ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { preferDecodeEffectAtBoundary as rule } from "./prefer-decode-effect-at-boundary.js";

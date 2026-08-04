@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/schema/no-schema-type-cast ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noSchemaTypeCast as rule } from "./no-schema-type-cast.js";

@@ -1,3 +1,7 @@
+/**
+ * @file Tests the testing/no-coverage-threshold-gate ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noCoverageThresholdGate as rule } from "./no-coverage-threshold-gate.js";

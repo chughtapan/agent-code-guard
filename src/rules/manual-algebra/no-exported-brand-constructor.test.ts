@@ -1,3 +1,7 @@
+/**
+ * @file Tests the manual-algebra/no-exported-brand-constructor ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noExportedBrandConstructor as rule } from "./no-exported-brand-constructor.js";

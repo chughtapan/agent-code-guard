@@ -1,3 +1,7 @@
+/**
+ * @file Tests the manual-algebra/detection/brand ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
 import { findManualBrandMatch } from "./index.js";

@@ -1,3 +1,7 @@
+/**
+ * @file Tests the manual-algebra/no-manual-enum-cast ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noManualEnumCast as rule } from "./no-manual-enum-cast.js";

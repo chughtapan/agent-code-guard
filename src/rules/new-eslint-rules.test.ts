@@ -1,3 +1,7 @@
+/**
+ * @file Property-tests the plugin's registered ESLint rules and their lint behavior.
+ */
+
 import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
 import * as fc from "fast-check";

@@ -1,3 +1,7 @@
+/**
+ * @file Tests the testing/no-hardcoded-assertion-literals ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noHardcodedAssertionLiterals as rule } from "./no-hardcoded-assertion-literals.js";

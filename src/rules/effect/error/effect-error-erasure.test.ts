@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/error/effect-error-erasure ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { effectErrorErasure as rule } from "./effect-error-erasure.js";

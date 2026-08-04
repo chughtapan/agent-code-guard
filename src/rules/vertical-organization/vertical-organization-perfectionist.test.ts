@@ -1,3 +1,7 @@
+/**
+ * @file Tests the vertical-organization/vertical-organization-perfectionist ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
 import { Linter } from "eslint";
 import perfectionist from "eslint-plugin-perfectionist";

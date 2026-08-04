@@ -1,3 +1,7 @@
+/**
+ * @file Tests the safety/max-non-trivial-classes-per-file ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { maxNonTrivialClassesPerFile as rule } from "./max-non-trivial-classes-per-file.js";

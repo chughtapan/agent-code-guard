@@ -1,3 +1,7 @@
+/**
+ * @file Property-tests that recommended rules stay quiet on safe TypeScript and report seeded anti-patterns.
+ */
+
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
 import {

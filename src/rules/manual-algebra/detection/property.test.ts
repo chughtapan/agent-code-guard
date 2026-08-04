@@ -1,3 +1,7 @@
+/**
+ * @file Tests the manual-algebra/detection/property ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
 import {

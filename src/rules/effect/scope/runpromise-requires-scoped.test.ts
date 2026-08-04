@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/scope/runpromise-requires-scoped ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { createTypedRuleTester } from "../../utils/typed-linter/test-support/rule-tester.js";
 import { runpromiseRequiresScoped as rule } from "./runpromise-requires-scoped.js";
 

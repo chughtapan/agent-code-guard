@@ -1,3 +1,7 @@
+/**
+ * @file Tests the vertical-organization/prefer-stepdown-function-order ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
 import { stepdownRuleTester } from "./test-support/stepdown.js";

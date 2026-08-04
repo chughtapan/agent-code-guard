@@ -1,3 +1,7 @@
+/**
+ * @file Tests the vertical-organization/jsdoc-fragments.dynamic ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
 import { describe, expect, it, vi } from "vitest";

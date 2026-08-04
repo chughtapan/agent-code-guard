@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/observability/handler-requires-span ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { handlerRequiresSpan as rule } from "./handler-requires-span.js";

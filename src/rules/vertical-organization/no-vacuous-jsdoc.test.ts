@@ -1,3 +1,7 @@
+/**
+ * @file Tests the vertical-organization/no-vacuous-jsdoc ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { Linter } from "eslint";
 import { afterAll, describe, expect, it, vi } from "vitest";

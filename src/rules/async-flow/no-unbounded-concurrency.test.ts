@@ -1,3 +1,7 @@
+/**
+ * @file Tests the async-flow/no-unbounded-concurrency ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noUnboundedConcurrency as rule } from "./no-unbounded-concurrency.js";

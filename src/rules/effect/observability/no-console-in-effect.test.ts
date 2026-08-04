@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/observability/no-console-in-effect ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noConsoleInEffect as rule } from "./no-console-in-effect.js";

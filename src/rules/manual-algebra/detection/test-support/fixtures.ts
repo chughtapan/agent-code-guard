@@ -1,3 +1,7 @@
+/**
+ * @file Provides source fixtures shared by manual-algebra detection rule tests.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
 import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 

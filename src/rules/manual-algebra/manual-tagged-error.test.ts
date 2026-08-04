@@ -1,3 +1,7 @@
+/**
+ * @file Tests the manual-algebra/manual-tagged-error ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { manualTaggedError as rule } from "./manual-tagged-error.js";

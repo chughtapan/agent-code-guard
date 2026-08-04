@@ -1,3 +1,7 @@
+/**
+ * @file Covers call-graph component ordering, edge deduplication, and stack safety over a deep linear chain.
+ */
+
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import * as tsParser from "@typescript-eslint/parser";
 import { expect, test } from "vitest";

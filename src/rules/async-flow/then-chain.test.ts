@@ -1,3 +1,7 @@
+/**
+ * @file Tests the async-flow/then-chain ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { thenChain as rule } from "./then-chain.js";

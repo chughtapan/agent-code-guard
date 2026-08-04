@@ -1,3 +1,7 @@
+/**
+ * @file Tests the manual-algebra/manual-result ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { manualResult as rule } from "./manual-result.js";

@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/runtime/effect-foreach-requires-concurrency ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { effectForeachRequiresConcurrency as rule } from "./effect-foreach-requires-concurrency.js";

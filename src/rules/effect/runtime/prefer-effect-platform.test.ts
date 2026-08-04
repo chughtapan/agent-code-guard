@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/runtime/prefer-effect-platform ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { preferEffectPlatform as rule } from "./prefer-effect-platform.js";

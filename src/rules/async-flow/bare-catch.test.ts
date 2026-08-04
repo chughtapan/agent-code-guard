@@ -1,3 +1,7 @@
+/**
+ * @file Tests the async-flow/bare-catch ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { bareCatch as rule } from "./bare-catch.js";

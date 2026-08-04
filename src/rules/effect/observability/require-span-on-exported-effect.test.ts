@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/observability/require-span-on-exported-effect ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { requireSpanOnExportedEffect as rule } from "./require-span-on-exported-effect.js";

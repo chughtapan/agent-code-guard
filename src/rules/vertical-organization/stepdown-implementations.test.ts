@@ -1,3 +1,7 @@
+/**
+ * @file Tests the vertical-organization/stepdown-implementations ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import * as tsParser from "@typescript-eslint/parser";
 import { expect, test } from "vitest";

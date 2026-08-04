@@ -1,3 +1,7 @@
+/**
+ * @file Provides generators and lint helpers shared by rule-correctness property tests.
+ */
+
 import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
 import * as fc from "fast-check";

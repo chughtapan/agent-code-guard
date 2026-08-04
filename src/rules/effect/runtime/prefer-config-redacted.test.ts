@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/runtime/prefer-config-redacted ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { preferConfigRedacted as rule } from "./prefer-config-redacted.js";

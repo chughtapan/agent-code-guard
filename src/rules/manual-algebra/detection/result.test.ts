@@ -1,3 +1,7 @@
+/**
+ * @file Tests the manual-algebra/detection/result ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
 import { findManualResultMatch } from "./index.js";

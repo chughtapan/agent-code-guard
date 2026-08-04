@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/error/no-effect-error-coalescing ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noEffectErrorCoalescing as rule } from "./no-effect-error-coalescing.js";

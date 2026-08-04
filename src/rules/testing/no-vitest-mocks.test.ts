@@ -1,3 +1,7 @@
+/**
+ * @file Tests the testing/no-vitest-mocks ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noVitestMocks as rule } from "./no-vitest-mocks.js";

@@ -1,3 +1,7 @@
+/**
+ * @file Provides parsed AST fixtures and generators for ast-refinement property tests.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
 import * as fc from "fast-check";
 import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";

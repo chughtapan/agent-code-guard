@@ -1,3 +1,7 @@
+/**
+ * @file Tests the safety/no-raw-throw-new-error ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noRawThrowNewError as rule } from "./no-raw-throw-new-error.js";

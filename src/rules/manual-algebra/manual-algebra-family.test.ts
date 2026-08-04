@@ -1,3 +1,7 @@
+/**
+ * @file Tests the manual-algebra/manual-algebra-family ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
 import * as fc from "fast-check";

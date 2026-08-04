@@ -1,3 +1,7 @@
+/**
+ * @file Tests the effect/runtime/no-promise-all-in-effect ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noPromiseAllInEffect as rule } from "./no-promise-all-in-effect.js";

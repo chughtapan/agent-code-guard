@@ -1,3 +1,7 @@
+/**
+ * @file Tests the vertical-organization/prefer-stepdown-function-order.meta ESLint rule with representative valid and invalid lint fixtures.
+ */
+
 import { expect, test, vi } from "vitest";
 
 test("stepdown rule exposes its exact public metadata", async () => {
