@@ -32,24 +32,19 @@ interface OverviewPhaseOptions {
   readonly overview?: ParsedJsdocBlock;
 }
 
-interface ImportPositionOptions {
-  readonly statement: TSESTree.ProgramStatement;
-  readonly state: ImportShellState;
-  readonly overview?: ParsedJsdocBlock;
-}
-
 function raw(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): string {
   return sourceCode.text.slice(token.range[0], token.range[1]);
 }
 
-function isLicenseComment(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): boolean {
-  const text = raw(sourceCode, token)
-    .replace(/^\/\*/u, "")
-    .replace(/\*\/$/u, "")
-    .replace(/^\/\//u, "")
-    .replace(/^[ \t]*\*[ \t]?/gmu, "")
-    .trim();
-  return LICENSE_PREFIX.test(text);
+function isLicenseComment(token: TSESLint.AST.Token): boolean {
+  const text = token.value
+    .split(/\r?\n/u)
+    .map((line) => {
+      const trimmed = line.trim();
+      return trimmed.startsWith("*") ? trimmed.slice(1) : trimmed;
+    })
+    .find((line) => line !== "");
+  return text !== undefined && LICENSE_PREFIX.test(text.trim());
 }
 
 function reportIndex(
@@ -64,7 +59,11 @@ function reportIndex(
 function canonicalBlocks(blocks: readonly ParsedJsdocBlock[]): readonly ParsedJsdocBlock[] {
   return blocks.filter((block) => {
     const files = block.tags.filter((tag) => tag.tag === "file");
-    return files.length === 1 && files[0].description !== undefined && files[0].description.text.trim() !== "";
+    if (files.length !== 1) {
+      return false;
+    }
+    const description = files[0].description;
+    return description !== undefined;
   });
 }
 
@@ -73,16 +72,20 @@ function firstUnpermittedPreamble(
   overview: ParsedJsdocBlock,
 ): number | undefined {
   const text = sourceCode.text;
-  if (sourceCode.hasBOM || text.startsWith("\uFEFF")) {
+  if (sourceCode.hasBOM) {
     return 0;
   }
-  const allowed = sourceCode
-    .getAllComments()
-    .filter((comment) => comment.range[1] <= overview.token.range[0] && isLicenseComment(sourceCode, comment))
+  const comments = sourceCode.getAllComments();
+  // eslint-disable-next-line agent-code-guard/require-assertion-rationale -- Parsed JSDoc tokens originate from getAllComments and are therefore comments.
+  const overviewComment = overview.token as TSESTree.Comment;
+  const overviewIndex = comments.indexOf(overviewComment);
+  const allowed = comments
+    .slice(0, overviewIndex)
+    .filter((comment) => isLicenseComment(comment))
     .map((comment) => comment.range);
   if (text.startsWith("#!")) {
     const end = text.indexOf("\n");
-    allowed.push([0, end === -1 ? text.length : end] as const);
+    allowed.push([0, end] as const);
   }
   allowed.sort((left, right) => left[0] - right[0]);
   const relevant = allowed;
@@ -101,11 +104,32 @@ function firstUnpermittedPreamble(
 }
 
 function directiveExpression(node: TSESTree.ProgramStatement): boolean {
-  return node.type === AST_NODE_TYPES.ExpressionStatement && node.directive !== undefined;
+  if (node.type !== AST_NODE_TYPES.ExpressionStatement) {
+    return false;
+  }
+  return node.directive !== undefined;
 }
 
 function isTripleSlashDirective(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): boolean {
-  return token.type === "Line" && TRIPLE_SLASH_DIRECTIVE.test(raw(sourceCode, token));
+  return TRIPLE_SLASH_DIRECTIVE.test(raw(sourceCode, token));
+}
+
+function statementAfterToken(
+  sourceCode: TSESLint.SourceCode,
+  program: TSESTree.Program,
+  token: TSESLint.AST.Token,
+): TSESTree.ProgramStatement | undefined {
+  const followingToken = sourceCode.getTokenAfter(token);
+  return program.body.find((statement) => sourceCode.getFirstToken(statement) === followingToken);
+}
+
+function statementBeforeToken(
+  sourceCode: TSESLint.SourceCode,
+  program: TSESTree.Program,
+  token: TSESLint.AST.Token,
+): TSESTree.ProgramStatement | undefined {
+  const precedingToken = sourceCode.getTokenBefore(token);
+  return program.body.find((statement) => sourceCode.getLastToken(statement) === precedingToken);
 }
 
 function beginsImmediateBareSideEffectImport(
@@ -117,7 +141,7 @@ function beginsImmediateBareSideEffectImport(
   if (marker?.kind !== "begin") {
     return false;
   }
-  const following = program.body.find((statement) => statement.range[0] >= comment.range[1]);
+  const following = statementAfterToken(sourceCode, program, comment);
   return following?.type === AST_NODE_TYPES.ImportDeclaration &&
     following.specifiers.length === 0 &&
     hasLineAdjacentGap(sourceCode, comment, following);
@@ -128,16 +152,18 @@ function reportInterimComments(
   program: TSESTree.Program,
   overview: ParsedJsdocBlock,
 ): void {
-  const firstContent = program.body.find(
-    (statement) => statement.range[0] >= overview.token.range[1] && !directiveExpression(statement),
-  );
+  const firstAfterOverview = statementAfterToken(context.sourceCode, program, overview.token);
+  const statementsAfterOverview = firstAfterOverview === undefined
+    ? []
+    : program.body.slice(program.body.indexOf(firstAfterOverview));
+  const firstContent = statementsAfterOverview.find((statement) => !directiveExpression(statement));
   if (firstContent?.type !== AST_NODE_TYPES.ImportDeclaration) {
     return;
   }
-  for (const comment of context.sourceCode.getAllComments()) {
+  const commentsBeforeContent = new Set(context.sourceCode.getCommentsBefore(firstContent));
+  for (const comment of context.sourceCode.getCommentsAfter(overview.token)) {
     if (
-      comment.range[0] > overview.token.range[1] &&
-      comment.range[1] < firstContent.range[0] &&
+      commentsBeforeContent.has(comment) &&
       !isTripleSlashDirective(context.sourceCode, comment) &&
       !beginsImmediateBareSideEffectImport(context.sourceCode, program, comment)
     ) {
@@ -153,7 +179,7 @@ function reportOverviewViolations(
   blocks: readonly ParsedJsdocBlock[],
 ): ParsedJsdocBlock | undefined {
   const canonical = canonicalBlocks(blocks);
-  const canonicalTags = new Set(canonical.flatMap((block) => block.tags.filter((tag) => tag.tag === "file")));
+  const canonicalTags = new Set(canonical.flatMap((block) => block.tags));
   const allFileTags = blocks.flatMap((block) => block.tags.filter((tag) => tag.tag === "file"));
   const firstFileTag = allFileTags.at(0);
   for (const tag of allFileTags) {
@@ -179,17 +205,11 @@ function reportOverviewPreambleViolations(options: OverviewPhaseOptions): void {
   if (illegalPreamble !== undefined) {
     reportIndex(context, "disallowedPreamble", illegalPreamble);
   }
-  const statementBeforeOverview = program.body.find((statement) => statement.range[0] < overview.token.range[0]);
+  const statementBeforeOverview = statementBeforeToken(sourceCode, program, overview.token);
   if (statementBeforeOverview !== undefined) {
     reportIndex(context, "contentBeforeFileOverview", statementBeforeOverview.range[0]);
   }
   reportInterimComments(context, program, overview);
-}
-
-function remainsInImportPreamble(options: ImportPositionOptions): boolean {
-  const { overview, state, statement } = options;
-  const precedesOverview = overview !== undefined && statement.range[0] < overview.token.range[1];
-  return precedesOverview || (state === "preamble" && directiveExpression(statement));
 }
 
 function nextImportShellState(
@@ -207,13 +227,16 @@ function nextImportShellState(
 }
 
 function reportImportShellViolations(options: OverviewPhaseOptions): void {
-  const { context, overview, program } = options;
+  const { context, overview, program, sourceCode } = options;
   let state: ImportShellState = "preamble";
-  for (const statement of program.body) {
-    if (remainsInImportPreamble({ statement, state, overview })) {
-      continue;
+  const firstAfterOverview = overview === undefined
+    ? program.body.at(0)
+    : statementAfterToken(sourceCode, program, overview.token);
+  const firstAfterIndex = firstAfterOverview === undefined ? program.body.length : program.body.indexOf(firstAfterOverview);
+  for (const statement of program.body.slice(firstAfterIndex)) {
+    if (!directiveExpression(statement)) {
+      state = nextImportShellState(context, statement, state);
     }
-    state = nextImportShellState(context, statement, state);
   }
 }
 

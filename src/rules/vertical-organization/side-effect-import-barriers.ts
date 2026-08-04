@@ -57,13 +57,7 @@ export function parseSideEffectImportBarrier(
     return undefined;
   }
   const text = raw(sourceCode, token);
-  if (!text.startsWith(BARRIER_PREFIX)) {
-    return undefined;
-  }
   const separator = text.indexOf(BARRIER_SEPARATOR, BARRIER_PREFIX.length);
-  if (separator === -1) {
-    return undefined;
-  }
   const kind = text.slice(BARRIER_PREFIX.length, separator);
   if (kind !== "begin" && kind !== "end") {
     return undefined;
@@ -89,20 +83,6 @@ export function hasLineAdjacentGap(
   return /^[ \t]*\r?\n[ \t]*$/u.test(sourceCode.text.slice(left.range[1], right.range[0]));
 }
 
-function directTokenBefore(
-  tokens: readonly TSESLint.AST.Token[],
-  range: readonly [number, number],
-): TSESLint.AST.Token | undefined {
-  return tokens.filter((token) => token.range[1] <= range[0]).at(-1);
-}
-
-function directTokenAfter(
-  tokens: readonly TSESLint.AST.Token[],
-  range: readonly [number, number],
-): TSESLint.AST.Token | undefined {
-  return tokens.find((token) => token.range[0] >= range[1]);
-}
-
 function candidateFor(
   sourceCode: TSESLint.SourceCode,
   token?: TSESLint.AST.Token,
@@ -111,7 +91,7 @@ function candidateFor(
     return {};
   }
   const barrier = parseSideEffectImportBarrier(sourceCode, token);
-  return barrier === undefined ? { token } : { token, barrier };
+  return { token, barrier };
 }
 
 function reportBeginBarrierViolation(options: BarrierSideOptions): void {
@@ -147,11 +127,16 @@ function reportEndBarrierViolation(options: BarrierSideOptions): void {
 function reportBareImportBarriers(
   options: BareImportOptions,
   statement: TSESTree.ImportDeclaration,
-  tokens: readonly TSESLint.AST.Token[],
 ): void {
   const { report, sourceCode } = options;
-  const begin = candidateFor(sourceCode, directTokenBefore(tokens, statement.range));
-  const end = candidateFor(sourceCode, directTokenAfter(tokens, statement.range));
+  const begin = candidateFor(
+    sourceCode,
+    sourceCode.getTokenBefore(statement, { includeComments: true }) ?? undefined,
+  );
+  const end = candidateFor(
+    sourceCode,
+    sourceCode.getTokenAfter(statement, { includeComments: true }) ?? undefined,
+  );
   reportBeginBarrierViolation({ sourceCode, statement, candidate: begin, report });
   reportEndBarrierViolation({ sourceCode, statement, candidate: end, report });
   if (begin.barrier?.kind === "begin" &&
@@ -166,13 +151,10 @@ function reportBareImportBarriers(
  * @param options Source, program, and diagnostic callback for the validation pass.
  */
 export function reportBareImportBarrierViolations(options: BareImportOptions): void {
-  const { program, sourceCode } = options;
-  const tokens = [...sourceCode.getTokens(program), ...sourceCode.getAllComments()].sort(
-    (left, right) => left.range[0] - right.range[0],
-  );
+  const { program } = options;
   for (const statement of program.body) {
     if (statement.type === AST_NODE_TYPES.ImportDeclaration && statement.specifiers.length === 0) {
-      reportBareImportBarriers(options, statement, tokens);
+      reportBareImportBarriers(options, statement);
     }
   }
 }

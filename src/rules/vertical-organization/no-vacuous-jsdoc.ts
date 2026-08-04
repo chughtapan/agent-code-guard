@@ -42,7 +42,7 @@ function values(candidates: ReadonlyArray<string | undefined>): readonly string[
   return candidates.filter((candidate): candidate is string => candidate !== undefined).map(normalize);
 }
 
-// eslint-disable-next-line complexity, sonarjs/cognitive-complexity, sonarjs/cyclomatic-complexity -- The closed template grammar stays explicit for auditability.
+// eslint-disable-next-line complexity, sonarjs/cyclomatic-complexity -- The closed template grammar stays explicit for auditability.
 function templateMatches(span: DescriptionSpan, block: ParsedJsdocBlock): boolean {
   const prose = normalize(span.text);
   if (FIXED_TEMPLATES.has(prose)) {
@@ -50,23 +50,20 @@ function templateMatches(span: DescriptionSpan, block: ParsedJsdocBlock): boolea
   }
   const attachment = block.attachment;
   const namedTag = span.tagName;
-  if (prose.startsWith("the ") && prose.endsWith(" result")) {
-    const candidates = namedTag === undefined ? values([attachment?.callable]) : values([namedTag]);
-    return candidates.some((candidate) => prose === `the ${candidate} result`);
+  const resultCandidates = namedTag === undefined ? values([attachment?.callable]) : values([namedTag]);
+  if (resultCandidates.some((candidate) => prose === `the ${candidate} result`)) {
+    return true;
   }
-  if (prose.startsWith("provides the ") && prose.endsWith(" runtime value")) {
-    const candidates = namedTag === undefined ? values([attachment?.symbol, attachment?.callable]) : values([namedTag]);
-    return candidates.some((candidate) => prose === `provides the ${candidate} runtime value`);
+  const runtimeCandidates = namedTag === undefined
+    ? values([attachment?.symbol, attachment?.callable])
+    : values([namedTag]);
+  if (runtimeCandidates.some((candidate) => prose === `provides the ${candidate} runtime value`)) {
+    return true;
   }
-  if (prose.startsWith("executes the ") && prose.endsWith(" operation")) {
-    return values([attachment?.callable]).some(
-      (candidate) => prose === `executes the ${candidate} operation`,
-    );
+  if (values([attachment?.callable]).some((candidate) => prose === `executes the ${candidate} operation`)) {
+    return true;
   }
-  if (prose.startsWith("represents ") && prose.endsWith(" values")) {
-    return attachment?.represents === true && attachment.symbol !== undefined && prose === `represents ${normalize(attachment.symbol)} values`;
-  }
-  return false;
+  return attachment?.represents === true && attachment.symbol !== undefined && prose === `represents ${normalize(attachment.symbol)} values`;
 }
 
 function isVacuous(span: DescriptionSpan, block: ParsedJsdocBlock): boolean {

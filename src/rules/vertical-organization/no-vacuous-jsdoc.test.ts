@@ -1,6 +1,6 @@
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { Linter } from "eslint";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import * as tsParser from "@typescript-eslint/parser";
 import { noVacuousJsdoc as rule } from "./no-vacuous-jsdoc.js";
 
@@ -108,7 +108,108 @@ ruleTester.run("no-vacuous-jsdoc", rule, {
       output: null,
       errors: [{ messageId: "vacuousTagDescription" }, { messageId: "vacuousTagDescription" }],
     },
+    {
+      name: "normalizes every placeholder spelling without widening its closed vocabulary",
+      code: `/**\n *  TODO\t\n */\nconst todo = 1;\n/**\n * FixMe.\n */\nconst fixme = 2;\n/**\n * N/A\n */\nconst na = 3;`,
+      output: null,
+      errors: [
+        { messageId: "vacuousBlockDescription", line: 2, column: 5, endLine: 2, endColumn: 9 },
+        { messageId: "vacuousBlockDescription", line: 6, column: 4, endLine: 6, endColumn: 10 },
+        { messageId: "vacuousBlockDescription", line: 10, column: 4, endLine: 10, endColumn: 7 },
+      ],
+    },
+    {
+      name: "collapses interior whitespace before matching a fixed template",
+      code: `/** Value   supplied\tto the operation. */\nconst item = 1;`,
+      output: null,
+      errors: [{ messageId: "vacuousBlockDescription", line: 1, column: 5, endLine: 1, endColumn: 39 }],
+    },
+    {
+      name: "recognizes every dynamic callable template only for its attached callable",
+      code: `/** The read() result. */\nfunction read(): string { return "id"; }\n/** Provides the write() runtime value. */\nfunction write(): string { return "id"; }\n/** Executes the remove() operation. */\nfunction remove(): string { return "id"; }\n/** The start() result. */\nconst start = (): undefined => undefined;`,
+      output: null,
+      errors: [
+        { messageId: "vacuousBlockDescription", line: 1, column: 5, endLine: 1, endColumn: 23 },
+        { messageId: "vacuousBlockDescription", line: 3, column: 5, endLine: 3, endColumn: 40 },
+        { messageId: "vacuousBlockDescription", line: 5, column: 5, endLine: 5, endColumn: 37 },
+        { messageId: "vacuousBlockDescription", line: 7, column: 5, endLine: 7, endColumn: 24 },
+      ],
+    },
+    {
+      name: "uses the named tag candidate instead of an attachment candidate",
+      code: `/**\n * @param input The input result.\n * @arg token Provides the token runtime value.\n * @argument source The source result.\n * @property output Provides the output runtime value.\n * @prop item The item result.\n */\nfunction read(input: string, token: string, source: string): string { return input + token + source; }`,
+      output: null,
+      errors: [
+        { messageId: "vacuousTagDescription", line: 2, column: 17, endLine: 2, endColumn: 34 },
+        { messageId: "vacuousTagDescription", line: 3, column: 15, endLine: 3, endColumn: 48 },
+        { messageId: "vacuousTagDescription", line: 4, column: 21, endLine: 4, endColumn: 39 },
+        { messageId: "vacuousTagDescription", line: 5, column: 21, endLine: 5, endColumn: 55 },
+        { messageId: "vacuousTagDescription", line: 6, column: 15, endLine: 6, endColumn: 31 },
+      ],
+    },
   ],
+});
+
+it("publishes the immutable, non-fixing problem-rule contract", () => {
+  expect(rule.meta).toMatchObject({
+    type: "problem",
+    schema: [],
+    fixable: undefined,
+    hasSuggestions: false,
+    messages: {
+      vacuousBlockDescription: "JSDoc block description is a known vacuous placeholder or filler template.",
+      vacuousTagDescription: "JSDoc tag description is a known vacuous placeholder or filler template.",
+    },
+  });
+});
+
+it("evaluates the module contract and every closed grammar member after a fresh module load", async () => {
+  vi.resetModules();
+  const { noVacuousJsdoc: freshRule } = await import("./no-vacuous-jsdoc.js");
+  const linter = new Linter();
+  const verify = (code: string) => linter.verify(
+    code,
+    {
+      files: ["**/*.ts"],
+      languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
+      plugins: { guard: { rules: { fresh: freshRule } } },
+      rules: { "guard/fresh": "error" },
+    },
+    { filename: "fresh.ts" },
+  );
+  for (const [tag, body] of [
+    ["param", "value TODO"], ["arg", "value TODO"], ["argument", "value TODO"], ["property", "value TODO"], ["prop", "value TODO"],
+    ["returns", "TODO"], ["return", "TODO"], ["throws", "{Error} TODO"], ["exception", "{Error} TODO"],
+  ]) {
+    expect(verify(`/** @${tag} ${body} */\nfunction read(value: string): string { return value; }`)).toHaveLength(1);
+  }
+  for (const placeholder of ["TODO", "TBD", "FIXME", "XXX", "N/A", "none", "unknown", "no description"]) {
+    expect(verify(`/** ${placeholder} */\nconst value = 1;`)).toHaveLength(1);
+  }
+  for (const template of [
+    "Value supplied to the operation.",
+    "Name of the operation.",
+    "Re-exports the public API from current module.",
+    "Protocol definition to process.",
+  ]) {
+    expect(verify(`/** ${template} */\nconst value = 1;`)).toHaveLength(1);
+  }
+  expect(freshRule.meta).toMatchObject({
+    type: "problem",
+    docs: { description: "Rejects known placeholder and mechanically-derived JSDoc filler without judging other prose." },
+    messages: {
+      vacuousBlockDescription: "JSDoc block description is a known vacuous placeholder or filler template.",
+      vacuousTagDescription: "JSDoc tag description is a known vacuous placeholder or filler template.",
+    },
+    schema: [],
+    fixable: undefined,
+    hasSuggestions: false,
+  });
+  expect(freshRule.name).toBe("no-vacuous-jsdoc");
+  expect(freshRule.meta.docs.description).toBe("Rejects known placeholder and mechanically-derived JSDoc filler without judging other prose.");
+  // eslint-disable-next-line sonarjs/deprecation, @typescript-eslint/no-deprecated -- The mutation contract includes the rule creator's runtime default-options field.
+  expect(freshRule.defaultOptions).toEqual([]);
+  expect(freshRule.meta.docs.url).toBeTypeOf("string");
 });
 
 it("leaves source unchanged through verifyAndFix", () => {
