@@ -2,6 +2,7 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { ESLint } from "eslint";
+import tseslint from "typescript-eslint";
 import { plugin } from "../src/index.js";
 
 const CUSTOM_RULE_IDS = [
@@ -100,11 +101,15 @@ async function main(): Promise<void> {
     overrideConfigFile: true,
     overrideConfig: [
       {
-        ...plugin.configs.strict,
         files: [...args.globs],
         ignores: [...args.exclude],
+        languageOptions: {
+          ecmaVersion: 2022,
+          parser: tseslint.parser,
+          parserOptions: { sourceType: "module" },
+        },
+        plugins: { "agent-code-guard": plugin },
         rules: {
-          ...plugin.configs.strict.rules,
           ...Object.fromEntries(CUSTOM_RULE_IDS.map((ruleId) => [ruleId, "warn"])),
         },
       },
