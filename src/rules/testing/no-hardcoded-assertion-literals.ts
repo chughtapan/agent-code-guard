@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/testing/no-hardcoded-assertion-literals rule, helper, or integration surface.
+ * @file Identifies substantive literal expected values in common assertion APIs,
+ * pushing tests toward named contracts or structural properties.
  */
 
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

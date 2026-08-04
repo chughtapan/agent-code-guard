@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/manual-algebra/no-manual-brand-constructor rule, helper, or integration surface.
+ * @file Rejects direct-cast functions named like brand constructors, where
+ * convenience would bypass the validation that earns the brand.
  */
 
 import type { TSESTree } from "@typescript-eslint/utils";

@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/manual-algebra/manual-option rule, helper, or integration surface.
+ * @file Flags declaration shapes that recreate Some/None algebra outside the
+ * sanctioned Option implementation.
  */
 
 import { createRule } from "../utils/create-rule.js";

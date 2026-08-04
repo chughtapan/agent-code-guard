@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/safety/as-unknown-as rule, helper, or integration surface.
+ * @file Blocks double casts through unknown, requiring runtime validation or a
+ * typed conversion at the unsafe boundary.
  */
 
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

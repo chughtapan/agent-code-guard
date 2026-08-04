@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/vertical-organization/side-effect-import-barriers rule, helper, or integration surface.
+ * @file Parses and validates reasoned begin/end comment barriers around bare
+ * imports whose evaluation order cannot be freely reordered.
  */
 
 import { AST_NODE_TYPES, type TSESTree, type TSESLint } from "@typescript-eslint/utils";

@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/testing/no-coverage-threshold-gate rule, helper, or integration surface.
+ * @file Rejects coverage thresholds in recognized test-runner config files so
+ * coverage remains evidence rather than a merge gate.
  */
 
 import type { TSESTree } from "@typescript-eslint/utils";

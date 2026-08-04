@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/vertical-organization/stepdown-scc rule, helper, or integration surface.
+ * @file Uses Tarjan components to forgive recursive cycles while selecting
+ * same-band call edges that reverse component-level declaration order.
  */
 
 import type { Edge, Implementation, Violation } from "./stepdown-model.js";

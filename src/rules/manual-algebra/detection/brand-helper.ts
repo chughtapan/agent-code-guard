@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/manual-algebra/detection/brand-helper rule, helper, or integration surface.
+ * @file Recognizes local functions that fabricate nominal brands by directly
+ * casting their single returned expression for downstream diagnostics.
  */
 
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

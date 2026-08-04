@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/vertical-organization/jsdoc-attachments rule, helper, or integration surface.
+ * @file Attaches JSDoc blocks to immediately following supported declarations
+ * and derives exact symbol or callable candidates for filler detection.
  */
 
 import { AST_NODE_TYPES, type TSESTree, type TSESLint } from "@typescript-eslint/utils";

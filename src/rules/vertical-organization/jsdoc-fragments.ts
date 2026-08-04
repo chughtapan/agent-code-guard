@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/vertical-organization/jsdoc-fragments rule, helper, or integration surface.
+ * @file Parses physical JSDoc descriptions and tag offsets, preserving source
+ * ranges and declaration attachments for precise diagnostics.
  */
 
 import { type Block, type Line, type Spec, parse } from "comment-parser";

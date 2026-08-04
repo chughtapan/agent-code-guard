@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/vertical-organization/require-stable-file-shell rule, helper, or integration surface.
+ * @file Enforces a canonical byte-zero-safe `@file` overview and contiguous
+ * import shell, with explicit barriers for bare side-effect imports.
  */
 
 import { AST_NODE_TYPES, type TSESTree, type TSESLint } from "@typescript-eslint/utils";

@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/safety/no-raw-sql rule, helper, or integration surface.
+ * @file Flags query-like calls whose literal or template SQL bypasses the
+ * project's database abstraction.
  */
 
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

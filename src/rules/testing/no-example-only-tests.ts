@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/testing/no-example-only-tests rule, helper, or integration surface.
+ * @file Warns when a test suite accumulates examples without property evidence,
+ * except for configured regression, end-to-end, and snapshot scope.
  */
 
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

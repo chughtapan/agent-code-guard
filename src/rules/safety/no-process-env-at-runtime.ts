@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/safety/no-process-env-at-runtime rule, helper, or integration surface.
+ * @file Detects direct, aliased, and required `process.env` reads at runtime,
+ * reserving configuration access for boundary initialization.
  */
 
 import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

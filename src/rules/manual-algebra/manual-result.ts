@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/manual-algebra/manual-result rule, helper, or integration surface.
+ * @file Detects success/failure declaration shapes that duplicate Result
+ * algebra instead of using discriminated Effect primitives.
  */
 
 import { createRule } from "../utils/create-rule.js";

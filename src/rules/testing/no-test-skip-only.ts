@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/testing/no-test-skip-only rule, helper, or integration surface.
+ * @file Prevents committed test and suite skip/only modifiers, including
+ * aliases and table syntax, unless an option explicitly permits one.
  */
 
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

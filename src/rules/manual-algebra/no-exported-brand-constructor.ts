@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/manual-algebra/no-exported-brand-constructor rule, helper, or integration surface.
+ * @file Prevents brand and schema constructors from escaping their validating
+ * module, preserving its single construction boundary.
  */
 
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

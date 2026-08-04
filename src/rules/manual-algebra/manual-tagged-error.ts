@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/manual-algebra/manual-tagged-error rule, helper, or integration surface.
+ * @file Finds Error-like classes, tag-bearing types, and returned failure
+ * payloads that hand-roll variants while leaving ordinary tagged data alone.
  */
 
 import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

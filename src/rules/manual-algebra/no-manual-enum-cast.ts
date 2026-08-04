@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/manual-algebra/no-manual-enum-cast rule, helper, or integration surface.
+ * @file Catches casts to string-literal unions that decouple values from their
+ * generated or schema-backed enum source.
  */
 
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

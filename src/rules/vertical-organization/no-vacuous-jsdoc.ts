@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/vertical-organization/no-vacuous-jsdoc rule, helper, or integration surface.
+ * @file Rejects a closed set of placeholders and declaration-derived JSDoc
+ * templates while leaving arbitrary prose outside its scope.
  */
 
 import { createRule } from "../utils/create-rule.js";

@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/vertical-organization/stepdown-graph rule, helper, or integration surface.
+ * @file Resolves unshadowed local function and `this`-method calls into
+ * same-band edges before retaining narrative-order violations.
  */
 
 import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";

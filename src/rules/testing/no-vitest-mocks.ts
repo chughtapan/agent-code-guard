@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/testing/no-vitest-mocks rule, helper, or integration surface.
+ * @file Rejects `vi.mock`, `vi.hoisted`, and `vi.spyOn` calls so dependencies
+ * stay real instead of being replaced with test doubles.
  */
 
 import { createRule } from "../utils/create-rule.js";

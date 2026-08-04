@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/safety/max-non-trivial-classes-per-file rule, helper, or integration surface.
+ * @file Limits ordinary classes per file while exempting configured tag-class
+ * factories to separate data declarations from implementations.
  */
 
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

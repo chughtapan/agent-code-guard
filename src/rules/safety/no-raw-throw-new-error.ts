@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/safety/no-raw-throw-new-error rule, helper, or integration surface.
+ * @file Prohibits throwing newly constructed built-in Error types, directing
+ * failures into typed error channels.
  */
 
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";

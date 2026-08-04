@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/manual-algebra/manual-brand rule, helper, or integration surface.
+ * @file Reports reusable hand-rolled nominal-brand surfaces, directing
+ * declarations toward validated brand construction.
  */
 
 import { createRule } from "../utils/create-rule.js";

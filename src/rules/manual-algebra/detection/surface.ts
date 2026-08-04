@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/manual-algebra/detection/surface rule, helper, or integration surface.
+ * @file Reduces declaration shapes to normalized keys and literals so algebra
+ * rules can classify semantics without depending on source spelling.
  */
 
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/tooling/require-knip-in-lint rule, helper, or integration surface.
+ * @file Inspects package scripts and requires a checking Knip invocation in
+ * selected lint-command chains.
  */
 
 import fs from "node:fs";

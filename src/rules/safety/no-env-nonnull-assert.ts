@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/safety/no-env-nonnull-assert rule, helper, or integration surface.
+ * @file Reports non-null assertions on `process.env` properties, which must be
+ * validated or defaulted during startup.
  */
 
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

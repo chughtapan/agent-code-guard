@@ -1,5 +1,6 @@
 /**
- * @file Documents the plugin-configs.test rule, helper, or integration surface.
+ * @file Verifies shipped ESLint presets expose their intended rule sets,
+ * severity guarantees, and package-owned tooling integration.
  */
 
 import * as fc from "fast-check";

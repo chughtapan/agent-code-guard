@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/vertical-organization/stepdown-implementations rule, helper, or integration surface.
+ * @file Indexes eligible top-level functions and undecorated class methods into
+ * exported/internal and visibility bands for narrative-order analysis.
  */
 
 import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";

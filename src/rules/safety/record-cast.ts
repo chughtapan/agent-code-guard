@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/safety/record-cast rule, helper, or integration surface.
+ * @file Reports casts to `Record<string, unknown>` that present unvalidated
+ * external data as safely indexed objects.
  */
 
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";

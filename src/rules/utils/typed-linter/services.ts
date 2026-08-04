@@ -1,5 +1,6 @@
 /**
- * @file Documents the rules/utils/typed-linter/services rule, helper, or integration surface.
+ * @file Obtains TypeScript parser services only when the ESLint config exposes
+ * a program, letting typed rules decline untyped execution.
  */
 
 import {

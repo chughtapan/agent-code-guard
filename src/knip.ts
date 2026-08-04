@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * @file Documents the knip rule, helper, or integration surface.
+ * @file Owns the package-local Knip launcher, resolving the installed binary
+ * and preserving its process outcome for callers.
  */
 
 
