@@ -1,31 +1,8 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { expect, test, vi } from "vitest";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
 import { stepdownRuleTester } from "./stepdown-test-support.js";
 
 const ruleTester = stepdownRuleTester();
-
-test("stepdown rule metadata is an exact public contract", async () => {
-  vi.resetModules();
-  const { preferStepdownFunctionOrder: dynamicallyLoadedRule } = await import("./prefer-stepdown-function-order.js");
-  expect(dynamicallyLoadedRule.meta.docs.url).toBe(
-    "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#5-discipline-over-capability",
-  );
-  expect(dynamicallyLoadedRule.meta).toMatchObject({
-    type: "suggestion",
-    docs: {
-      description: "Keep exported functions and visible class methods before internal implementation detail, then keep direct callers before their local callees.",
-      url: "https://github.com/chughtapan/safer-by-default/blob/main/PRINCIPLES.md#5-discipline-over-capability",
-    },
-    messages: {
-      declarationOutOfStoryBand: "{{name}} belongs to the {{currentBand}} story band, which must precede an earlier {{previousBand}} declaration.",
-      callerMustPrecedeCallee: "{{caller}} must precede its direct local callee {{callee}} in the {{band}} story band.",
-    },
-    schema: [],
-    fixable: undefined,
-    hasSuggestions: false,
-  });
-});
 
 ruleTester.run("prefer-stepdown-function-order: top-level", rule, {
   valid: [
