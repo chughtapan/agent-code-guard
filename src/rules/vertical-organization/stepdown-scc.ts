@@ -30,7 +30,8 @@ function violatesComponentOrder(
 ): boolean {
   const caller = componentByMember.get(edge.caller);
   const callee = componentByMember.get(edge.callee);
-  return caller !== undefined && callee !== undefined && caller !== callee && caller.maxIndex >= callee.minIndex;
+  return caller !== undefined && callee !== undefined && caller !== callee &&
+    Math.sign(caller.maxIndex - callee.minIndex) === 1;
 }
 
 function graphFromEdges(edges: readonly Edge[]): {
@@ -138,6 +139,6 @@ function componentFromStack(
     onStack.delete(member);
     members.push(member);
   } while (member !== root);
-  const indexes = members.map((candidate) => candidate.index);
-  return { members, minIndex: Math.min(...indexes), maxIndex: Math.max(...indexes) };
+  const indexes = members.map((member) => member.index).sort((left, right) => left - right);
+  return { members, minIndex: indexes[0], maxIndex: indexes.at(-1)! };
 }

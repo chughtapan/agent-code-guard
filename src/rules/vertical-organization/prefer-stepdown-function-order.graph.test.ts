@@ -20,6 +20,22 @@ ruleTester.run("prefer-stepdown-function-order: graph", rule, {
         function helper() { return "value"; }
       `,
     },
+    {
+      name: "a multi-member component can precede a separate callee component",
+      code: `
+        function first() { second(); return helper(); }
+        function second() { return first(); }
+        function helper() { return "value"; }
+      `,
+    },
+    {
+      name: "a shared helper follows every member of a cyclic caller component",
+      code: `
+        function first() { return second(); }
+        function second() { first(); return helper(); }
+        function helper() { return "value"; }
+      `,
+    },
   ],
   invalid: [
     {
@@ -31,7 +47,13 @@ ruleTester.run("prefer-stepdown-function-order: graph", rule, {
           return read();
         }
       `,
-      errors: [{ messageId: "callerMustPrecedeCallee", line: 4 }],
+      errors: [{
+        message: "load must precede its direct local callee read in the internal story band.",
+        line: 4,
+        column: 11,
+        endLine: 4,
+        endColumn: 17,
+      }],
       output: null,
     },
     {
@@ -41,7 +63,13 @@ ruleTester.run("prefer-stepdown-function-order: graph", rule, {
         function helper() { return first(); }
         function second() { return first(); }
       `,
-      errors: [{ messageId: "callerMustPrecedeCallee" }],
+      errors: [{
+        message: "helper must precede its direct local callee first in the internal story band.",
+        line: 3,
+        column: 36,
+        endLine: 3,
+        endColumn: 43,
+      }],
       output: null,
     },
   ],

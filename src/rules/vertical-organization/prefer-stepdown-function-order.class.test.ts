@@ -1,3 +1,4 @@
+import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import * as tsParser from "@typescript-eslint/parser";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
 import { stepdownRuleTester } from "./stepdown-test-support.js";
@@ -44,6 +45,55 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
         abstract class Service {
           abstract declared(): string;
           public run() { return this.read(); }
+          public read() { return "value"; }
+        }
+      `,
+    },
+    {
+      name: "constructors are eligible but have no callable method key",
+      code: `
+        class Service {
+          constructor() { this.run(); }
+          public run() { return "value"; }
+        }
+      `,
+    },
+    {
+      name: "computed literal and non-literal method keys are excluded from direct this resolution",
+      code: `
+        const method = "read";
+        class Service {
+          public ["read"]() { return "value"; }
+          public [method]() { return "value"; }
+          public run() { return this.read(); }
+        }
+      `,
+    },
+    {
+      name: "numeric literal keys are eligible declarations but not direct method names",
+      code: `
+        class Service {
+          public 1() { return "value"; }
+          public run() { return this.read(); }
+          public read() { return "value"; }
+        }
+      `,
+    },
+    {
+      name: "duplicate class method names are excluded as ambiguous targets",
+      code: `
+        class Service {
+          public read() { return "first"; }
+          public read() { return "second"; }
+          public run() { return this.read(); }
+        }
+      `,
+    },
+    {
+      name: "self recursion and a later same-band callee do not conflict with a prior caller",
+      code: `
+        class Service {
+          public run() { this.run(); return this.read(); }
           public read() { return "value"; }
         }
       `,
@@ -104,9 +154,30 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
         }
       `,
       errors: [
-        { messageId: "declarationOutOfStoryBand" },
-        { messageId: "declarationOutOfStoryBand" },
-        { messageId: "declarationOutOfStoryBand" },
+        {
+          message: "middle belongs to the public/protected story band, which must precede an earlier private declaration.",
+          line: 4,
+          column: 21,
+          endLine: 4,
+          endColumn: 27,
+          type: AST_NODE_TYPES.Identifier,
+        },
+        {
+          message: "constructor belongs to the constructor story band, which must precede an earlier private declaration.",
+          line: 5,
+          column: 11,
+          endLine: 5,
+          endColumn: 22,
+          type: AST_NODE_TYPES.Identifier,
+        },
+        {
+          message: "run belongs to the public/protected story band, which must precede an earlier private declaration.",
+          line: 6,
+          column: 18,
+          endLine: 6,
+          endColumn: 21,
+          type: AST_NODE_TYPES.Identifier,
+        },
       ],
       output: null,
     },
@@ -118,7 +189,14 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
           public run() { return this.read(); }
         }
       `,
-      errors: [{ messageId: "callerMustPrecedeCallee" }],
+      errors: [{
+        message: "run must precede its direct local callee read in the public/protected story band.",
+        line: 4,
+        column: 33,
+        endLine: 4,
+        endColumn: 44,
+        type: AST_NODE_TYPES.CallExpression,
+      }],
       output: null,
     },
     {
@@ -129,7 +207,10 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
           public run() { return this.read(); }
         }
       `,
-      errors: [{ messageId: "callerMustPrecedeCallee" }],
+      errors: [{
+        message: "run must precede its direct local callee read in the public/protected story band.",
+        type: AST_NODE_TYPES.CallExpression,
+      }],
       output: null,
     },
     {
@@ -141,7 +222,10 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
           #run() { return this.#secret(); }
         }
       `,
-      errors: [{ messageId: "callerMustPrecedeCallee" }],
+      errors: [{
+        message: "run must precede its direct local callee secret in the private story band.",
+        type: AST_NODE_TYPES.CallExpression,
+      }],
       output: null,
     },
     {
@@ -154,7 +238,10 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
           };
         }
       `,
-      errors: [{ messageId: "callerMustPrecedeCallee" }],
+      errors: [{
+        message: "run must precede its direct local callee read in the public/protected story band.",
+        type: AST_NODE_TYPES.CallExpression,
+      }],
       output: null,
     },
   ],

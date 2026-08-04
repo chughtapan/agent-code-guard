@@ -94,25 +94,28 @@ function reportContainerBandViolations(
   context: Readonly<TSESLint.RuleContext<MessageIds, []>>,
   members: readonly Implementation[],
 ): void {
-  let greatestBand: Implementation | null = null;
+  let greatestBand: number | null = null;
+  let greatestBandName: string | null = null;
   for (const member of members) {
-    if (greatestBand !== null && member.band < greatestBand.band) {
-      reportBandViolation(context, member, greatestBand);
+    if (greatestBand !== null && member.band < greatestBand && greatestBandName !== null) {
+      reportBandViolation(context, member, greatestBandName);
     }
-    if (greatestBand === null || member.band > greatestBand.band) {
-      greatestBand = member;
+    const nextGreatestBand = Math.max(greatestBand ?? member.band, member.band);
+    if (nextGreatestBand !== greatestBand) {
+      greatestBandName = member.bandName;
     }
+    greatestBand = nextGreatestBand;
   }
 }
 
 function reportBandViolation(
   context: Readonly<TSESLint.RuleContext<MessageIds, []>>,
   member: Implementation,
-  previous: Implementation,
+  previousBand: string,
 ): void {
   context.report({
     node: diagnosticDeclaration(member),
     messageId: "declarationOutOfStoryBand",
-    data: { name: member.label, currentBand: member.bandName, previousBand: previous.bandName },
+    data: { name: member.label, currentBand: member.bandName, previousBand },
   });
 }

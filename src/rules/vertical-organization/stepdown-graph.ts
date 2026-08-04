@@ -37,7 +37,7 @@ export function collectViolatingEdges(
   for (const call of calls) {
     collectEdge(call, collection);
   }
-  return violatingEdges(sortEdges(edges));
+  return violatingEdges([...edges.values()]);
 }
 
 function collectEdge(
@@ -58,14 +58,9 @@ function collectEdge(
 
 function rememberEarliestEdge(edges: Map<string, Edge>, edge: Edge): void {
   const key = `${edge.caller.declaration.range[0]}:${edge.callee.declaration.range[0]}`;
-  const previous = edges.get(key);
-  if (previous === undefined || edge.call.range[0] < previous.call.range[0]) {
+  if (!edges.has(key)) {
     edges.set(key, edge);
   }
-}
-
-function sortEdges(edges: ReadonlyMap<string, Edge>): readonly Edge[] {
-  return [...edges.values()].sort((left, right) => left.call.range[0] - right.call.range[0]);
 }
 
 function uniqueClassImplementations(

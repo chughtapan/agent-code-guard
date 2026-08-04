@@ -189,9 +189,7 @@ function methodCallKey(member: TSESTree.MethodDefinition): string | null {
 function assignIndexes(
   candidates: ReadonlyArray<Omit<Implementation, "index">>,
 ): readonly Implementation[] {
-  return [...candidates]
-    .sort((left, right) => left.declaration.range[0] - right.declaration.range[0])
-    .map((candidate, index) => ({ ...candidate, index }));
+  return candidates.map((candidate, index) => ({ ...candidate, index }));
 }
 
 /**
