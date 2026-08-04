@@ -158,3 +158,4 @@ const object = { read(value: string) { return value; } };`);
     expect(block.attachment).toEqual({ symbol: "unary", callable: undefined, represents: true });
   });
 });
+/* eslint-enable max-lines-per-function, sonarjs/max-lines-per-function -- End closed attachment grammar table. */

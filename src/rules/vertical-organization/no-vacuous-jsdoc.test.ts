@@ -219,10 +219,7 @@ it("evaluates the module contract and every closed grammar member after a fresh 
   ]) {
     expect(verify(`/** ${template} */\nconst value = 1;`)).toHaveLength(1);
   }
-  expect(verify(`/** The read result. */\nfunction read(): string { return "id"; }`)).toHaveLength(1);
-  expect(verify(`/** Executes the read operation. */\nfunction read(): string { return "id"; }`)).toHaveLength(1);
-  expect(verify(`/** @param input Executes the read operation. */\nfunction read(input: string): string { return input; }`)).toHaveLength(0);
-  expect(verify(`/** Provides the Phase runtime value. */\nenum Phase { Start }`)).toHaveLength(0);
+  expectCallableTemplateSemantics(verify);
   expect(freshRule.meta).toMatchObject({
     type: "problem",
     docs: { description: "Rejects known placeholder and mechanically-derived JSDoc filler without judging other prose." },
@@ -240,6 +237,13 @@ it("evaluates the module contract and every closed grammar member after a fresh 
   expect(freshRule.defaultOptions).toEqual([]);
   expect(freshRule.meta.docs.url).toBeTypeOf("string");
 });
+
+function expectCallableTemplateSemantics(verify: (code: string) => readonly unknown[]): void {
+  expect(verify(`/** The read result. */\nfunction read(): string { return "id"; }`)).toHaveLength(1);
+  expect(verify(`/** Executes the read operation. */\nfunction read(): string { return "id"; }`)).toHaveLength(1);
+  expect(verify(`/** @param input Executes the read operation. */\nfunction read(input: string): string { return input; }`)).toHaveLength(0);
+  expect(verify(`/** Provides the Phase runtime value. */\nenum Phase { Start }`)).toHaveLength(0);
+}
 
 it("leaves source unchanged through verifyAndFix", () => {
   const code = `/** TODO */\nconst item = 1;`;
