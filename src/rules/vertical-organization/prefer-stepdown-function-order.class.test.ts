@@ -59,6 +59,16 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
       `,
     },
     {
+      name: "computed identifier keys remain excluded from direct this identifier calls",
+      code: `
+        const hidden = "hidden";
+        class Service {
+          public [hidden]() { return "value"; }
+          public run() { return this.hidden(); }
+        }
+      `,
+    },
+    {
       name: "constructors are eligible but have no callable method key",
       code: `
         class Service {
