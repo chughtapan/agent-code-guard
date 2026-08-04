@@ -34,7 +34,11 @@ function parse(code: string): readonly ParsedJsdocBlock[] {
   return parsed;
 }
 
-describe("jsdoc fragments", () => {
+describe(
+  "jsdoc fragments",
+  // eslint-disable-next-line max-lines-per-function, sonarjs/max-lines-per-function -- This deterministic fixture matrix documents parser offsets together.
+  () => {
+  // eslint-disable-next-line agent-code-guard/no-example-only-tests -- This suite uses deterministic parser fixtures rather than generative source text.
   it("maps parser-derived one-word and typed tag prose to physical ranges", () => {
     const source = "/**\r\n * @file Overview\r\n * @returns {string} TBD\r\n * @throws {Error} later details\r\n */\r\nfunction read(): string { return \"\"; }";
     const [block] = parse(source);
@@ -43,8 +47,13 @@ describe("jsdoc fragments", () => {
       ["returns", "TBD"],
       ["throws", "later details"],
     ]);
-    expect(source.slice(block.tags[1].description?.range[0], block.tags[1].description?.range[1])).toBe("TBD");
-    expect(source.slice(block.tags[2].description?.range[0], block.tags[2].description?.range[1])).toBe("later details");
+    const returnsDescription = block.tags[1].description;
+    const throwsDescription = block.tags[2].description;
+    if (returnsDescription === undefined || throwsDescription === undefined) {
+      throw new Error("Expected parser descriptions for the returns and throws tags.");
+    }
+    expect(source.slice(returnsDescription.range[0], returnsDescription.range[1])).toBe("TBD");
+    expect(source.slice(throwsDescription.range[0], throwsDescription.range[1])).toBe("later details");
   });
 
   it("ends multiline ranges at the final non-whitespace prose byte", () => {
@@ -52,8 +61,11 @@ describe("jsdoc fragments", () => {
     const [block] = parse(source);
     const span = block.tags[0].description;
     expect(span?.text).toBe("useful\ndetail   ");
-    expect(source.slice(span?.range[0], span?.range[1])).toContain("detail");
-    expect(source.slice(span?.range[0], span?.range[1]).endsWith("detail")).toBe(true);
+    if (span === undefined) {
+      throw new Error("Expected parser description for the returns tag.");
+    }
+    expect(source.slice(span.range[0], span.range[1])).toContain("detail");
+    expect(source.slice(span.range[0], span.range[1]).endsWith("detail")).toBe(true);
   });
 
   it("attaches only the immediate leading block and maps export wrappers", () => {
@@ -89,4 +101,5 @@ interface RecordShape { value: string; }`);
     const [block] = parse(`/**\n * @file First\n * @file Second\n */\nexport {};`);
     expect(block.tags.filter((tag) => tag.tag === "file")).toHaveLength(2);
   });
-});
+  },
+);

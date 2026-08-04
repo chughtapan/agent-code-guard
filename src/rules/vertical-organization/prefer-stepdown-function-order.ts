@@ -6,6 +6,8 @@ import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
+/* eslint-disable max-lines -- This small graph-analysis rule keeps its traversal helpers together for review. */
+
 type FunctionImplementation = TSESTree.FunctionDeclaration | TSESTree.FunctionExpression;
 type Declaration = TSESTree.FunctionDeclaration | TSESTree.MethodDefinition;
 type Container = TSESTree.Program | TSESTree.ClassBody;
@@ -119,6 +121,7 @@ function collectImplementations(
 function collectTopLevelImplementations(program: TSESTree.Program): readonly Implementation[] {
   const exportedNames = exportedLocalNames(program);
   const declarations = program.body.flatMap(functionDeclarationsInStatement);
+  // eslint-disable-next-line complexity -- Export classification combines direct exports and export-specifier evidence.
   const candidates = declarations.map((declaration) => {
     const exported = isDirectlyExported(declaration) ||
       (declaration.id !== null && exportedNames.has(declaration.id.name));
@@ -160,6 +163,7 @@ function isDirectlyExported(declaration: TSESTree.FunctionDeclaration): boolean 
   );
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity -- Value-only export forms must remain explicit.
 function exportedLocalNames(program: TSESTree.Program): ReadonlySet<string> {
   const names = new Set<string>();
   for (const statement of program.body) {
@@ -316,6 +320,7 @@ function diagnosticDeclaration(implementation: Implementation): TSESTree.Node {
   return implementation.declaration.key;
 }
 
+// eslint-disable-next-line complexity, sonarjs/cyclomatic-complexity -- Each unsupported call form is independently rejected.
 function collectEdges(
   calls: readonly TSESTree.CallExpression[],
   implementations: readonly Implementation[],
@@ -325,6 +330,7 @@ function collectEdges(
   const topLevelByName = uniqueTopLevelImplementations(implementations);
   const classTargets = uniqueClassImplementations(implementations);
   const edges = new Map<string, Edge>();
+  // eslint-disable-next-line sonarjs/too-many-break-or-continue-in-loop -- Caller and ineligible-callee checks are distinct skip cases.
   for (const call of calls) {
     const caller = ownerOfCall(call, byFunction);
     if (caller === null) {
@@ -347,6 +353,7 @@ function collectEdges(
   return [...edges.values()].sort((left, right) => left.call.range[0] - right.call.range[0]);
 }
 
+// eslint-disable-next-line complexity, sonarjs/cognitive-complexity, sonarjs/cyclomatic-complexity -- Only unique staticness/name pairs become call targets.
 function uniqueClassImplementations(
   implementations: readonly Implementation[],
 ): ReadonlyMap<Container, ReadonlyMap<string, Implementation>> {
@@ -447,6 +454,7 @@ function lexicalVariable(
   return null;
 }
 
+// eslint-disable-next-line complexity, sonarjs/cyclomatic-complexity -- Only direct noncomputed this-method calls are eligible.
 function classCallee(
   call: TSESTree.CallExpression,
   caller: Implementation,
@@ -459,11 +467,12 @@ function classCallee(
   if (member.computed || member.object.type !== AST_NODE_TYPES.ThisExpression) {
     return null;
   }
-  const name = member.property.type === AST_NODE_TYPES.PrivateIdentifier
-    ? `#${member.property.name}`
-    : member.property.type === AST_NODE_TYPES.Identifier
-      ? member.property.name
-      : null;
+  let name: string | null = null;
+  if (member.property.type === AST_NODE_TYPES.PrivateIdentifier) {
+    name = `#${member.property.name}`;
+  } else if (member.property.type === AST_NODE_TYPES.Identifier) {
+    name = member.property.name;
+  }
   if (name === null || caller.container.type !== AST_NODE_TYPES.ClassBody) {
     return null;
   }
@@ -485,6 +494,7 @@ function violatingEdges(edges: readonly Edge[]): readonly Edge[] {
   });
 }
 
+// eslint-disable-next-line max-lines-per-function, sonarjs/max-lines-per-function -- Tarjan state stays contiguous to make its stack invariant reviewable.
 function stronglyConnectedComponents(edges: readonly Edge[]): readonly Component[] {
   const vertices = new Set<Implementation>();
   const adjacency = new Map<Implementation, Implementation[]>();
@@ -503,6 +513,7 @@ function stronglyConnectedComponents(edges: readonly Edge[]): readonly Component
   const onStack = new Set<Implementation>();
   const components: Component[] = [];
 
+  // eslint-disable-next-line complexity, sonarjs/cognitive-complexity, sonarjs/cyclomatic-complexity -- DFS branches are Tarjan's required transitions.
   const visit = (vertex: Implementation): void => {
     indexes.set(vertex, nextIndex);
     lowlinks.set(vertex, nextIndex);
@@ -512,8 +523,10 @@ function stronglyConnectedComponents(edges: readonly Edge[]): readonly Component
     for (const neighbour of adjacency.get(vertex) ?? []) {
       if (!indexes.has(neighbour)) {
         visit(neighbour);
+        // eslint-disable-next-line agent-code-guard/require-assertion-rationale -- Both vertices are indexed before recursive edge reduction.
         lowlinks.set(vertex, Math.min(lowlinks.get(vertex)!, lowlinks.get(neighbour)!));
       } else if (onStack.has(neighbour)) {
+        // eslint-disable-next-line agent-code-guard/require-assertion-rationale -- onStack vertices were indexed at DFS entry.
         lowlinks.set(vertex, Math.min(lowlinks.get(vertex)!, indexes.get(neighbour)!));
       }
     }
@@ -547,3 +560,5 @@ function stronglyConnectedComponents(edges: readonly Edge[]): readonly Component
   }
   return components;
 }
+
+/* eslint-enable max-lines -- End of the graph-analysis helpers. */

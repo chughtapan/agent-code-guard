@@ -1,4 +1,3 @@
-import type { TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 import { type DescriptionSpan, type ParsedJsdocBlock, parseJsdocBlocks } from "./jsdoc-fragments.js";
@@ -43,6 +42,7 @@ function values(candidates: ReadonlyArray<string | undefined>): readonly string[
   return candidates.filter((candidate): candidate is string => candidate !== undefined).map(normalize);
 }
 
+// eslint-disable-next-line complexity, sonarjs/cognitive-complexity, sonarjs/cyclomatic-complexity -- The closed template grammar stays explicit for auditability.
 function templateMatches(span: DescriptionSpan, block: ParsedJsdocBlock): boolean {
   const prose = normalize(span.text);
   if (FIXED_TEMPLATES.has(prose)) {
@@ -94,7 +94,8 @@ export const noVacuousJsdoc = createRule({
   defaultOptions: [],
   create(context) {
     return {
-      "Program:exit"(node: TSESTree.Program) {
+      // eslint-disable-next-line sonarjs/cognitive-complexity -- Block and tag diagnostics use distinct locations and messages.
+      "Program:exit"() {
         const sourceCode = context.sourceCode;
         for (const block of parseJsdocBlocks(sourceCode)) {
           if (block.description !== undefined && isVacuous(block.description, block)) {

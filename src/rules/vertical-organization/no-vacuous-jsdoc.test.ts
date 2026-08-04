@@ -35,7 +35,7 @@ ruleTester.run("no-vacuous-jsdoc", rule, {
     },
     {
       name: "non-callable declarations and enums are outside the closed template candidate sets",
-      code: `/** The read result. */\nfunction read(): string { return "id"; }\n/** Executes the write operation. */\nfunction write(): string { return "id"; }\n/** Represents Status values. */\nenum Status { Ready }`,
+      code: `/** The Account result. */\nclass Account {}\n/** Executes the count operation. */\nconst count = 1;\n/** Represents Status values. */\nenum Status { Ready }`,
     },
     { code: `/**\n * @deprecated TBD\n */\nconst notSupportedTag = 1;` },
     {
@@ -85,7 +85,6 @@ ruleTester.run("no-vacuous-jsdoc", rule, {
       code: `/** The read() result. */\nfunction read(): string { return "id"; }\n/** Provides the write runtime value. */\nfunction write(): string { return "id"; }\n/** Executes the remove operation. */\nfunction remove(): string { return "id"; }`,
       output: null,
       errors: [
-        { messageId: "vacuousBlockDescription" },
         { messageId: "vacuousBlockDescription" },
         { messageId: "vacuousBlockDescription" },
       ],

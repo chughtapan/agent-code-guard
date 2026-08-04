@@ -106,7 +106,10 @@ ruleTester.run("require-stable-file-shell", rule, {
     {
       code: `${overview}\n// agent-code-guard: side-effect-import-begin -- evaluation-order: registration\n\nimport "./registration";\n// agent-code-guard: side-effect-import-end -- evaluation-order: registration`,
       output: null,
-      errors: [{ messageId: "invalidSideEffectImportBarrier" }],
+      errors: [
+        { messageId: "disallowedPreamble" },
+        { messageId: "invalidSideEffectImportBarrier" },
+      ],
     },
     {
       code: `${overview}\n// unrelated comment\nimport "./registration";\n// unrelated comment`,

@@ -1,34 +1,41 @@
 import { type Block, type Line, type Spec, parse } from "comment-parser";
 import { AST_NODE_TYPES, type TSESTree, type TSESLint } from "@typescript-eslint/utils";
 
+/* eslint-disable max-lines -- Physical JSDoc offset mapping is intentionally kept in one reviewable parser module. */
+
+/** Categorizes a JSDoc description by its physical source. */
 export type DescriptionKind = "block" | "tag";
 
+/** Locates one prose description within a JSDoc block. */
 export interface DescriptionSpan {
   readonly kind: DescriptionKind;
-  readonly tag: string | undefined;
-  readonly tagName: string | undefined;
+  readonly tag?: string;
+  readonly tagName?: string;
   readonly text: string;
   readonly range: readonly [number, number];
   readonly loc: TSESTree.SourceLocation;
 }
 
+/** Captures names available to template matching for an attached declaration. */
 export interface AttachedCandidates {
-  readonly symbol: string | undefined;
-  readonly callable: string | undefined;
+  readonly symbol?: string;
+  readonly callable?: string;
   readonly represents: boolean;
 }
 
+/** Represents one parsed JSDoc tag. */
 export interface ParsedJsdocTag {
   readonly tag: string;
   readonly name: string;
-  readonly description: DescriptionSpan | undefined;
+  readonly description?: DescriptionSpan;
 }
 
+/** Represents the parsed structure and attachment of one JSDoc block. */
 export interface ParsedJsdocBlock {
   readonly token: TSESLint.AST.Token;
-  readonly description: DescriptionSpan | undefined;
+  readonly description?: DescriptionSpan;
   readonly tags: readonly ParsedJsdocTag[];
-  readonly attachment: AttachedCandidates | undefined;
+  readonly attachment?: AttachedCandidates;
 }
 
 const TOKEN_FIELDS = [
@@ -48,11 +55,13 @@ const TOKEN_FIELDS = [
 
 const NAMED_TAGS = new Set(["param", "arg", "argument", "property", "prop"]);
 
+/** Associates a parser line with source ranges for its physical token fields. */
 interface MappedLine {
   readonly line: Line;
   readonly ranges: Readonly<Record<(typeof TOKEN_FIELDS)[number], readonly [number, number]>>;
 }
 
+/** Holds one description fragment and its source location. */
 interface Piece {
   readonly text: string;
   readonly range: readonly [number, number];
@@ -81,15 +90,19 @@ function mapLines(source: string, token: TSESLint.AST.Token, block: Block): read
     }
     return {
       line,
+      // eslint-disable-next-line agent-code-guard/require-assertion-rationale -- TOKEN_FIELDS fills every record key before this conversion.
       ranges: ranges as Readonly<Record<(typeof TOKEN_FIELDS)[number], readonly [number, number]>>,
     };
   });
 }
 
+// eslint-disable-next-line max-params -- A span is defined by these five distinct parser dimensions.
 function spanFromPieces(
   sourceCode: TSESLint.SourceCode,
   kind: DescriptionKind,
+  // eslint-disable-next-line agent-code-guard/prefer-optional-over-undefined-union -- These positional parser slots distinguish an explicit absent tag from omitted arguments.
   tag: string | undefined,
+  // eslint-disable-next-line agent-code-guard/prefer-optional-over-undefined-union -- These positional parser slots distinguish an explicit absent name from omitted arguments.
   tagName: string | undefined,
   pieces: readonly Piece[],
 ): DescriptionSpan | undefined {
@@ -100,6 +113,7 @@ function spanFromPieces(
     return undefined;
   }
   const startOffset = first.text.search(/\S/u);
+  // eslint-disable-next-line sonarjs/slow-regex -- This suffix check runs on a single bounded JSDoc line.
   const endOffset = last.text.search(/\s*$/u);
   const range: readonly [number, number] = [
     first.range[0] + startOffset,
@@ -178,12 +192,14 @@ function isJSDoc(token: TSESLint.AST.Token, sourceCode: TSESLint.SourceCode): bo
 
 function parentOrSelf(node: TSESTree.Node): TSESTree.Node | undefined {
   const parent = node.parent;
-  return parent === undefined || parent === null ? undefined : parent;
+  return parent ?? undefined;
 }
 
+// eslint-disable-next-line complexity, sonarjs/cyclomatic-complexity -- AST export wrappers require exhaustive unwrapping before finding a declaration.
 function declarationFor(node: TSESTree.Node): TSESTree.Node | undefined {
   let current: TSESTree.Node | undefined = node;
   while (current !== undefined) {
+    // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check -- Only declaration-bearing nodes can attach JSDoc prose.
     switch (current.type) {
       case AST_NODE_TYPES.ExportNamedDeclaration:
       case AST_NODE_TYPES.ExportDefaultDeclaration:
@@ -208,6 +224,7 @@ function declarationFor(node: TSESTree.Node): TSESTree.Node | undefined {
   return undefined;
 }
 
+// eslint-disable-next-line complexity, sonarjs/cyclomatic-complexity -- Leading-comment attachment distinguishes exported wrappers from declarations.
 function isImmediateLeadingComment(
   sourceCode: TSESLint.SourceCode,
   token: TSESLint.AST.Token,
@@ -215,6 +232,7 @@ function isImmediateLeadingComment(
 ): boolean {
   const parent = declaration.parent;
   const leading =
+    // eslint-disable-next-line sonarjs/expression-complexity -- Export wrappers are the only alternate attachment target.
     parent !== null &&
     parent !== undefined &&
     (parent.type === AST_NODE_TYPES.ExportNamedDeclaration || parent.type === AST_NODE_TYPES.ExportDefaultDeclaration)
@@ -229,6 +247,7 @@ function isImmediateLeadingComment(
   return next !== null && next.range[0] >= leading.range[0];
 }
 
+// eslint-disable-next-line complexity, sonarjs/cognitive-complexity, sonarjs/cyclomatic-complexity -- This is a quote-aware signature state machine.
 function matchingParen(text: string, opening: number): number | undefined {
   let depth = 0;
   let quote: string | undefined;
@@ -276,6 +295,7 @@ function callableFromRange(
   return `${symbol}${sourceCode.text.slice(opening, closing + 1)}`;
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity, sonarjs/cognitive-complexity, sonarjs/max-lines-per-function, sonarjs/cyclomatic-complexity -- Each declaration kind has a distinct closed attachment grammar.
 function attachmentFor(
   sourceCode: TSESLint.SourceCode,
   token: TSESLint.AST.Token,
@@ -292,6 +312,7 @@ function attachmentFor(
   if (declaration === undefined || !isImmediateLeadingComment(sourceCode, token, declaration)) {
     return undefined;
   }
+  // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check -- Unsupported declaration kinds intentionally have no candidate set.
   switch (declaration.type) {
     case AST_NODE_TYPES.FunctionDeclaration:
       return declaration.id === null
@@ -354,8 +375,9 @@ function attachmentFor(
 
 /**
  * Parses one JSDoc token using comment-parser's physical token offsets.
- * @param sourceCode
- * @param token
+ * @param sourceCode Source text and locations for the current file.
+ * @param token Block-comment token to parse.
+ * @returns Parsed metadata when the token is a valid JSDoc block.
  */
 export function parseJsdocBlock(
   sourceCode: TSESLint.SourceCode,
@@ -391,7 +413,8 @@ export function parseJsdocBlock(
 
 /**
  * Parses every JSDoc block comment in a source file.
- * @param sourceCode
+ * @param sourceCode Source text and locations for the current file.
+ * @returns Parsed metadata for every JSDoc block comment.
  */
 export function parseJsdocBlocks(sourceCode: TSESLint.SourceCode): readonly ParsedJsdocBlock[] {
   return sourceCode
@@ -400,3 +423,5 @@ export function parseJsdocBlocks(sourceCode: TSESLint.SourceCode): readonly Pars
     .map((token) => parseJsdocBlock(sourceCode, token))
     .filter((block): block is ParsedJsdocBlock => block !== undefined);
 }
+
+/* eslint-enable max-lines -- End of the physical JSDoc offset mapping module. */

@@ -4,6 +4,8 @@ import * as tsParser from "@typescript-eslint/parser";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
 
+/* eslint-disable max-lines -- The exhaustive rule matrix is intentionally one declarative RuleTester suite. */
+
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;
 RuleTester.itOnly = it.only;
@@ -316,3 +318,5 @@ ruleTester.run("prefer-stepdown-function-order", rule, {
     },
   ],
 });
+
+/* eslint-enable max-lines -- End of the declarative RuleTester suite. */

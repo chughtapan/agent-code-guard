@@ -6,6 +6,7 @@ import { type ParsedJsdocBlock, parseJsdocBlocks } from "./jsdoc-fragments.js";
 const LICENSE_PREFIX = /^(SPDX-License-Identifier:|SPDX-FileCopyrightText:|Copyright|©)/u;
 const BARRIER_PREFIX = "// agent-code-guard: side-effect-import-";
 const BARRIER_SEPARATOR = " -- evaluation-order: ";
+// eslint-disable-next-line sonarjs/regex-complexity -- This is the bounded TypeScript triple-slash directive grammar.
 const TRIPLE_SLASH_DIRECTIVE = /^\/\/\/\s*<(?:reference\s+(?:path|types|lib)=(?:"[^"]+"|'[^']+')|amd-module\s+name=(?:"[^"]+"|'[^']+')|amd-dependency\s+path=(?:"[^"]+"|'[^']+'))\s*\/?>(?:\s*)$/u;
 
 type BarrierKind = "begin" | "end";
@@ -83,7 +84,8 @@ function firstUnpermittedPreamble(
     const end = text.indexOf("\n");
     allowed.push([0, end === -1 ? text.length : end] as const);
   }
-  const relevant = allowed.sort((left, right) => left[0] - right[0]);
+  allowed.sort((left, right) => left[0] - right[0]);
+  const relevant = allowed;
   let cursor = 0;
   for (const range of relevant) {
     const gap = text.slice(cursor, range[0]);
@@ -194,8 +196,10 @@ export const requireStableFileShell = createRule({
     hasSuggestions: false,
   },
   defaultOptions: [],
+  // eslint-disable-next-line max-lines-per-function, sonarjs/max-lines-per-function -- The listener collection shares one source-code snapshot.
   create(context) {
     return {
+      // eslint-disable-next-line max-lines-per-function, sonarjs/cognitive-complexity, complexity, sonarjs/max-lines-per-function, sonarjs/cyclomatic-complexity, max-statements -- Validation phases deliberately share one canonical overview.
       "Program:exit"(program: TSESTree.Program) {
         const sourceCode = context.sourceCode;
         const blocks = parseJsdocBlocks(sourceCode);
@@ -237,6 +241,7 @@ export const requireStableFileShell = createRule({
         }
 
         let state: "preamble" | "imports" | "after" = "preamble";
+        // eslint-disable-next-line sonarjs/too-many-break-or-continue-in-loop -- Directive and overview statements are distinct skip cases.
         for (const statement of program.body) {
           if (overview !== undefined && statement.range[0] < overview.token.range[1]) {
             continue;
