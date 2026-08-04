@@ -1,3 +1,7 @@
+/**
+ * @file Configures Vitest's cache and threaded isolation behavior for this repository's test suite.
+ */
+
 import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({

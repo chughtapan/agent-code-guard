@@ -1,3 +1,7 @@
+/**
+ * @file Exercises the vertical-organization maintenance scripts against isolated child-process fixtures.
+ */
+
 import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";

@@ -1,3 +1,7 @@
+/**
+ * @file Calibrates vertical-organization rule findings across a chosen TypeScript corpus and writes a report.
+ */
+
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";

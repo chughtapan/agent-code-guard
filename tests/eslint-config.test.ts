@@ -1,3 +1,7 @@
+/**
+ * @file Verifies repository ESLint configuration and vertical-organization policy coverage by file class.
+ */
+
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";

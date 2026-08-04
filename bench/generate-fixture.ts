@@ -1,3 +1,7 @@
+/**
+ * @file Generates deterministic TypeScript benchmark fixture projects at each supported scale.
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
