@@ -50,6 +50,15 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
       `,
     },
     {
+      name: "an abstract signature remains excluded after a private method",
+      code: `
+        abstract class Service {
+          private secret() { return "value"; }
+          abstract declared(): string;
+        }
+      `,
+    },
+    {
       name: "constructors are eligible but have no callable method key",
       code: `
         class Service {
@@ -86,6 +95,15 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
           public 1() { return "value"; }
           public run() { return this.read(); }
           public read() { return "value"; }
+        }
+      `,
+    },
+    {
+      name: "noncomputed string-literal keys are excluded from direct identifier resolution",
+      code: `
+        class Service {
+          public "read"() { return "value"; }
+          public run() { return this.read(); }
         }
       `,
     },
@@ -171,6 +189,17 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
       `,
       languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, ecmaFeatures: { legacyDecorators: true } } },
     },
+    {
+      name: "excluded accessors and decorated methods do not enter public ordering after private methods",
+      code: `
+        class Service {
+          private secret() { return "value"; }
+          get result() { return "value"; }
+          @trace() public decorated() { return "value"; }
+        }
+      `,
+      languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, ecmaFeatures: { legacyDecorators: true } } },
+    },
   ],
   invalid: [
     {
@@ -225,20 +254,6 @@ ruleTester.run("prefer-stepdown-function-order: classes", rule, {
         column: 33,
         endLine: 4,
         endColumn: 44,
-        type: AST_NODE_TYPES.CallExpression,
-      }],
-      output: null,
-    },
-    {
-      name: "a noncomputed string-literal method key is an identifier-call target",
-      code: `
-        class Service {
-          public "read"() { return "value"; }
-          public run() { return this.read(); }
-        }
-      `,
-      errors: [{
-        message: "run must precede its direct local callee read in the public/protected story band.",
         type: AST_NODE_TYPES.CallExpression,
       }],
       output: null,

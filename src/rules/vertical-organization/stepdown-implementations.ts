@@ -103,11 +103,13 @@ function addValueExports(names: Set<string>, statement: TSESTree.ProgramStatemen
   if (statement.type !== AST_NODE_TYPES.ExportNamedDeclaration || statement.source !== null) {
     return;
   }
-  for (const specifier of statement.specifiers) {
-    if (statement.exportKind === "type" || specifier.type !== AST_NODE_TYPES.ExportSpecifier || specifier.exportKind === "type") {
+  // Local named exports are represented as ExportSpecifier nodes by the parser;
+  // namespace exports always carry a source and returned above.
+  for (const specifier of statement.specifiers as readonly TSESTree.ExportSpecifier[]) {
+    if (statement.exportKind === "type" || specifier.exportKind === "type") {
       continue;
     }
-    names.add(specifier.local.name);
+    names.add((specifier.local as TSESTree.Identifier).name);
   }
 }
 
@@ -131,7 +133,7 @@ function classImplementation(
     band,
     bandName: classBandName(band),
     label: method ?? "constructor",
-    callableName: method === null ? null : methodCallKey(member),
+    callableName: method === null ? null : methodCallKey(member, method),
     isStatic: member.static,
   }];
 }
@@ -169,20 +171,13 @@ function methodName(member: TSESTree.MethodDefinition): string | null {
   if (member.computed) {
     return null;
   }
-  if (member.key.type === AST_NODE_TYPES.Literal) {
-    return typeof member.key.value === "string" ? member.key.value : null;
-  }
   if (member.key.type === AST_NODE_TYPES.Identifier || member.key.type === AST_NODE_TYPES.PrivateIdentifier) {
     return member.key.name;
   }
   return null;
 }
 
-function methodCallKey(member: TSESTree.MethodDefinition): string | null {
-  const name = methodName(member);
-  if (name === null) {
-    return null;
-  }
+function methodCallKey(member: TSESTree.MethodDefinition, name: string): string {
   return member.key.type === AST_NODE_TYPES.PrivateIdentifier ? `#${name}` : name;
 }
 

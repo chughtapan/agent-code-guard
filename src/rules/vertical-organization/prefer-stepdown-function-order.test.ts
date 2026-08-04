@@ -49,6 +49,22 @@ ruleTester.run("prefer-stepdown-function-order: top-level", rule, {
       `,
     },
     {
+      name: "a type-only export remains internal even after an internal declaration",
+      code: `
+        function internal() { return "value"; }
+        function typedOnly() { return "value"; }
+        export type { typedOnly };
+      `,
+    },
+    {
+      name: "a type export specifier remains internal even in a value export declaration",
+      code: `
+        function internal() { return "value"; }
+        function typedOnly() { return "value"; }
+        export { type typedOnly };
+      `,
+    },
+    {
       name: "anonymous default exports occupy the exported band but have no lexical target",
       code: `
         export default function() { return helper(); }
@@ -129,6 +145,16 @@ ruleTester.run("prefer-stepdown-function-order: top-level", rule, {
     },
   ],
   invalid: [
+    {
+      name: "a value export specifier moves its local declaration into the exported band",
+      code: `
+        function internal() { return "value"; }
+        function valueExport() { return "value"; }
+        export { valueExport };
+      `,
+      errors: [{ messageId: "declarationOutOfStoryBand" }],
+      output: null,
+    },
     {
       name: "class method names do not make a top-level lexical target ambiguous",
       code: `
