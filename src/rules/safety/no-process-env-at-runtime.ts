@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/safety/no-process-env-at-runtime rule, helper, or integration surface.
+ */
+
 import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { getStaticStringKey } from "../utils/ast-refinement/index.js";

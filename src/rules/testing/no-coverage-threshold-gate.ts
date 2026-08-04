@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/testing/no-coverage-threshold-gate rule, helper, or integration surface.
+ */
+
 import type { TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { getParent, getStaticStringKey } from "../utils/ast-refinement/index.js";

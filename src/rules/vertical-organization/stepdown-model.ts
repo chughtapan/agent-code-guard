@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/vertical-organization/stepdown-model rule, helper, or integration surface.
+ */
+
 import type { TSESTree } from "@typescript-eslint/utils";
 
 /** Function nodes that can own stepdown call edges. */

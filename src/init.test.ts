@@ -1,3 +1,7 @@
+/**
+ * @file Documents the init.test rule, helper, or integration surface.
+ */
+
 import { execFileSync } from "node:child_process";
 import { expect, it } from "vitest";
 

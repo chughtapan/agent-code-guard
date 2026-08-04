@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/vertical-organization/stepdown-graph rule, helper, or integration surface.
+ */
+
 import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
 import type { Container, Edge, FunctionImplementation, Implementation, Violation } from "./stepdown-model.js";
 import { violatingEdges } from "./stepdown-scc.js";

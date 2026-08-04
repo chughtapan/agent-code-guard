@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/utils/typed-linter/services rule, helper, or integration surface.
+ */
+
 import {
   type ParserServicesWithTypeInformation,
   type TSESLint,

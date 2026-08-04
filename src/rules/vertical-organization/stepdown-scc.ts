@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/vertical-organization/stepdown-scc rule, helper, or integration surface.
+ */
+
 import type { Edge, Implementation, Violation } from "./stepdown-model.js";
 
 interface Component {

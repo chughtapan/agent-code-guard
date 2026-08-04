@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/testing/no-test-skip-only rule, helper, or integration surface.
+ */
+
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";

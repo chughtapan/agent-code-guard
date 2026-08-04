@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/vertical-organization/stepdown-implementations rule, helper, or integration surface.
+ */
+
 import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import type { Container, Implementation } from "./stepdown-model.js";
 

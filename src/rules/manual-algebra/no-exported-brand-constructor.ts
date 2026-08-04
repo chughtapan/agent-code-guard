@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/manual-algebra/no-exported-brand-constructor rule, helper, or integration surface.
+ */
+
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { getStaticMemberExpression } from "../utils/ast-refinement/index.js";

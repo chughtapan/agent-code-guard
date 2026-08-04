@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/manual-algebra/detection/brand-helper rule, helper, or integration surface.
+ */
+
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 
 const BRAND_HELPER_RE = /^(as|make|to)[A-Z]/;

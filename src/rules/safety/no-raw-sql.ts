@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/safety/no-raw-sql rule, helper, or integration surface.
+ */
+
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { getFirst } from "../utils/ast-refinement/index.js";

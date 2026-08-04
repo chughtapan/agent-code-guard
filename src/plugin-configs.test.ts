@@ -1,3 +1,7 @@
+/**
+ * @file Documents the plugin-configs.test rule, helper, or integration surface.
+ */
+
 import * as fc from "fast-check";
 import { Linter } from "eslint";
 import { expect, it } from "vitest";

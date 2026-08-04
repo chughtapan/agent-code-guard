@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/manual-algebra/manual-brand rule, helper, or integration surface.
+ */
+
 import { createRule } from "../utils/create-rule.js";
 import { findManualBrandMatch } from "./detection/index.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";

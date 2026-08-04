@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/vertical-organization/no-vacuous-jsdoc rule, helper, or integration surface.
+ */
+
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 import { type DescriptionSpan, type ParsedJsdocBlock, parseJsdocBlocks } from "./jsdoc-fragments.js";

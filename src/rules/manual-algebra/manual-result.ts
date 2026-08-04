@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/manual-algebra/manual-result rule, helper, or integration surface.
+ */
+
 import { createRule } from "../utils/create-rule.js";
 import { findManualResultMatch } from "./detection/index.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";

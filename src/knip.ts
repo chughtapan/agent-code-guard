@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+/**
+ * @file Documents the knip rule, helper, or integration surface.
+ */
+
 
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";

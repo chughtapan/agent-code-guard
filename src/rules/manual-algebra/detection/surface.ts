@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/manual-algebra/detection/surface rule, helper, or integration surface.
+ */
+
 import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { getStaticStringKey, resolveStringLiteralValue } from "../../utils/ast-refinement/index.js";
 

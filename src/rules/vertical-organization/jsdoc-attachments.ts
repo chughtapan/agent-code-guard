@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/vertical-organization/jsdoc-attachments rule, helper, or integration surface.
+ */
+
 import { AST_NODE_TYPES, type TSESTree, type TSESLint } from "@typescript-eslint/utils";
 
 /** Captures names available to template matching for an attached declaration. */

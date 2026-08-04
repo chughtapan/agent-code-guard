@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/vertical-organization/require-stable-file-shell rule, helper, or integration surface.
+ */
+
 import { AST_NODE_TYPES, type TSESTree, type TSESLint } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";

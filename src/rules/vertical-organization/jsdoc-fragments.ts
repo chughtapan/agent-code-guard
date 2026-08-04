@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/vertical-organization/jsdoc-fragments rule, helper, or integration surface.
+ */
+
 import { type Block, type Line, type Spec, parse } from "comment-parser";
 import type { TSESTree, TSESLint } from "@typescript-eslint/utils";
 import { attachmentFor, type AttachedCandidates } from "./jsdoc-attachments.js";

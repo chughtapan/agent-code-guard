@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/tooling/require-knip-in-lint rule, helper, or integration surface.
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import { createRule } from "../utils/create-rule.js";

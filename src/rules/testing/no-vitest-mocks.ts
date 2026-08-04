@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/testing/no-vitest-mocks rule, helper, or integration surface.
+ */
+
 import { createRule } from "../utils/create-rule.js";
 import { getStaticMemberExpression } from "../utils/ast-refinement/index.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";

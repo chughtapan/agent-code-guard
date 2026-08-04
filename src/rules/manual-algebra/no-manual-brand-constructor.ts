@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/manual-algebra/no-manual-brand-constructor rule, helper, or integration surface.
+ */
+
 import type { TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { findManualBrandConstructorMatch } from "./detection/brand-helper.js";

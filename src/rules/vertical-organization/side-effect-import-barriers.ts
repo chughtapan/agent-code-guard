@@ -1,3 +1,7 @@
+/**
+ * @file Documents the rules/vertical-organization/side-effect-import-barriers rule, helper, or integration surface.
+ */
+
 import { AST_NODE_TYPES, type TSESTree, type TSESLint } from "@typescript-eslint/utils";
 
 const BARRIER_PREFIX = "// agent-code-guard: side-effect-import-";
