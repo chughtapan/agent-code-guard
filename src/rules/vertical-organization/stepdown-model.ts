@@ -1,7 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 
 export type FunctionImplementation = TSESTree.FunctionDeclaration | TSESTree.FunctionExpression;
-export type Declaration = TSESTree.FunctionDeclaration | TSESTree.MethodDefinition;
+type Declaration = TSESTree.FunctionDeclaration | TSESTree.MethodDefinition;
 export type Container = TSESTree.Program | TSESTree.ClassBody;
 
 export interface Implementation {

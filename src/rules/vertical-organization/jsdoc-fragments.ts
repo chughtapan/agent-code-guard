@@ -2,10 +2,8 @@ import { type Block, type Line, type Spec, parse } from "comment-parser";
 import { type TSESTree, type TSESLint } from "@typescript-eslint/utils";
 import { attachmentFor, type AttachedCandidates } from "./jsdoc-attachments.js";
 
-export type { AttachedCandidates } from "./jsdoc-attachments.js";
-
 /** Categorizes a JSDoc description by its physical source. */
-export type DescriptionKind = "block" | "tag";
+type DescriptionKind = "block" | "tag";
 
 /** Locates one prose description within a JSDoc block. */
 export interface DescriptionSpan {
@@ -18,7 +16,7 @@ export interface DescriptionSpan {
 }
 
 /** Represents one parsed JSDoc tag. */
-export interface ParsedJsdocTag {
+interface ParsedJsdocTag {
   readonly tag: string;
   readonly name: string;
   readonly description?: DescriptionSpan;
@@ -190,7 +188,7 @@ function isJSDoc(token: TSESLint.AST.Token, sourceCode: TSESLint.SourceCode): bo
  * @param token Block-comment token to parse.
  * @returns Parsed metadata when the token is a valid JSDoc block.
  */
-export function parseJsdocBlock(
+function parseJsdocBlock(
   sourceCode: TSESLint.SourceCode,
   token: TSESLint.AST.Token,
 ): ParsedJsdocBlock | undefined {
