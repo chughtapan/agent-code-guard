@@ -75,9 +75,6 @@ function groupClassTargets(
 ): ReadonlyMap<Container, ReadonlyMap<string, readonly Implementation[]>> {
   const grouped = new Map<Container, Map<string, Implementation[]>>();
   for (const implementation of implementations) {
-    if (implementation.container.type !== AST_NODE_TYPES.ClassBody || implementation.callableName === null) {
-      continue;
-    }
     const targets = grouped.get(implementation.container) ?? new Map<string, Implementation[]>();
     const key = `${implementation.isStatic}:${implementation.callableName}`;
     targets.set(key, [...(targets.get(key) ?? []), implementation]);
@@ -180,5 +177,5 @@ function directThisMethodName(member: TSESTree.MemberExpression): string | null 
   if (member.property.type === AST_NODE_TYPES.PrivateIdentifier) {
     return `#${member.property.name}`;
   }
-  return member.property.type === AST_NODE_TYPES.Identifier ? member.property.name : null;
+  return member.property.name;
 }
