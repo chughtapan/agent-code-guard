@@ -1,5 +1,5 @@
 /**
- * @file Tests the vertical-organization/prefer-stepdown-function-order.meta ESLint rule with representative valid and invalid lint fixtures.
+ * @file Verifies stepdown rule metadata, diagnostics, schema, and exported configuration contracts outside fixture-driven lint runs.
  */
 
 import { expect, test, vi } from "vitest";

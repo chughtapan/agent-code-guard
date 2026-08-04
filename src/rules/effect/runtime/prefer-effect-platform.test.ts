@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/runtime/prefer-effect-platform ESLint rule with representative valid and invalid lint fixtures.
+ * @file Covers raw I/O, HTTP, CLI, SQL, argv, and fetch usage in Effectful imports, including configured exemptions and pure namespaces.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

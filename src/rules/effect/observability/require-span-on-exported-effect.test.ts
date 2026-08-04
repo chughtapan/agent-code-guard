@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/observability/require-span-on-exported-effect ESLint rule with representative valid and invalid lint fixtures.
+ * @file Confirms exported Effect generators and functions carry a span through inline or piped composition, unlike private programs.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

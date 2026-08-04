@@ -1,5 +1,5 @@
 /**
- * @file Tests the async-flow/no-unbounded-concurrency ESLint rule with representative valid and invalid lint fixtures.
+ * @file Checks Effect collection combinators reject explicit unbounded concurrency, including computed option keys and mixed options.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

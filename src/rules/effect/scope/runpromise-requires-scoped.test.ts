@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/scope/runpromise-requires-scoped ESLint rule with representative valid and invalid lint fixtures.
+ * @file Uses typed fixtures to reject runPromise, runSync, and runPromiseExit when an Effect still requires Scope.
  */
 
 import { createTypedRuleTester } from "../../utils/typed-linter/test-support/rule-tester.js";

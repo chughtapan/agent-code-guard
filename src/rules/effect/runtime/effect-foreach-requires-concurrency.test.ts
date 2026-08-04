@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/runtime/effect-foreach-requires-concurrency ESLint rule with representative valid and invalid lint fixtures.
+ * @file Requires an explicit concurrency option on Effect.forEach, recognizing numeric, string, and quoted-key settings.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

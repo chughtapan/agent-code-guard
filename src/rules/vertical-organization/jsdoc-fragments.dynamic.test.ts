@@ -1,5 +1,5 @@
 /**
- * @file Tests the vertical-organization/jsdoc-fragments.dynamic ESLint rule with representative valid and invalid lint fixtures.
+ * @file Reloads the parser under mocks to preserve tag aliases, physical ranges, indentation, and exact comment-parser inputs.
  */
 
 import { Linter } from "eslint";

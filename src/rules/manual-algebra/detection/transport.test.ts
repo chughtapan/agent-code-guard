@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/detection/transport ESLint rule with representative valid and invalid lint fixtures.
+ * @file Documents transport and tagged-error exclusions that prevent discriminant unions from being misclassified as manual algebras.
  */
 
 import * as fc from "fast-check";

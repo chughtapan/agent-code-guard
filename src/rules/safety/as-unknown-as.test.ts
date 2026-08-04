@@ -1,5 +1,5 @@
 /**
- * @file Tests the safety/as-unknown-as ESLint rule with representative valid and invalid lint fixtures.
+ * @file Covers chained `as unknown as` escape hatches across expressions and retains single assertions and non-unknown chains.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

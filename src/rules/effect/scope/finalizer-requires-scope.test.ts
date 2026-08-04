@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/scope/finalizer-requires-scope ESLint rule with representative valid and invalid lint fixtures.
+ * @file Verifies Scope finalizers reside beneath Effect.scoped or Layer.scoped rather than bare expressions and generators.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

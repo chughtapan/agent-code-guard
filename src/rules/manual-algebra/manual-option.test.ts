@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/manual-option ESLint rule with representative valid and invalid lint fixtures.
+ * @file Checks manual option representations across tags, branch fields, helper functions, and safe non-algebraic lookalikes.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/error/no-effect-error-coalescing ESLint rule with representative valid and invalid lint fixtures.
+ * @file Validates that map and catch handlers cannot collapse errors into fresh wrappers, except for tag-specific or identity paths.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

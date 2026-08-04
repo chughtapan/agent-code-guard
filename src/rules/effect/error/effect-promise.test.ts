@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/error/effect-promise ESLint rule with representative valid and invalid lint fixtures.
+ * @file Ensures `Effect.promise` is diagnosed in callback and yielded forms but `tryPromise` and non-Effect calls remain valid.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

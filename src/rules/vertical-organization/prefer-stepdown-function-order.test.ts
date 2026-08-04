@@ -1,5 +1,5 @@
 /**
- * @file Tests the vertical-organization/prefer-stepdown-function-order ESLint rule with representative valid and invalid lint fixtures.
+ * @file Covers top-level stepdown ordering with declarations, expressions, overloads, callbacks, exemptions, and autofix expectations.
  */
 
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";

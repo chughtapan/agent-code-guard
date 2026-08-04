@@ -1,5 +1,5 @@
 /**
- * @file Tests the async-flow/async-keyword ESLint rule with representative valid and invalid lint fixtures.
+ * @file Covers async declarations, arrows, expressions, and methods, while preserving synchronous and suppressed forms.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

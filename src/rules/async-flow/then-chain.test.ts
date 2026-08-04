@@ -1,5 +1,5 @@
 /**
- * @file Tests the async-flow/then-chain ESLint rule with representative valid and invalid lint fixtures.
+ * @file Guards direct and nested `.then` invocations, including awaited chains, while allowing unrelated identifiers and methods.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

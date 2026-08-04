@@ -1,5 +1,5 @@
 /**
- * @file Covers call-graph component ordering, edge deduplication, and stack safety over a deep linear chain.
+ * @file Exercises dependency-graph ordering diagnostics for top-level functions, covering reachable calls, cycles, independent declarations, and stack safety over a deep chain.
  */
 
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";

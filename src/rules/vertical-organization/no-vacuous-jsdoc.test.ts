@@ -1,5 +1,5 @@
 /**
- * @file Tests the vertical-organization/no-vacuous-jsdoc ESLint rule with representative valid and invalid lint fixtures.
+ * @file Enforces substantive JSDoc by testing boilerplate, missing meaning, and source-preserving verification under the fixer API.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

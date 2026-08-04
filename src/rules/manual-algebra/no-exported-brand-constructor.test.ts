@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/no-exported-brand-constructor ESLint rule with representative valid and invalid lint fixtures.
+ * @file Checks exported direct brand-cast constructors across declarations and exports while allowing non-exported helper boundaries.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

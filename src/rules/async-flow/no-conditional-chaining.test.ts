@@ -1,5 +1,5 @@
 /**
- * @file Tests the async-flow/no-conditional-chaining ESLint rule with representative valid and invalid lint fixtures.
+ * @file Exercises calls fed by optional or nullable parameters, distinguishing explicit guards and defaults from unchecked flow.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

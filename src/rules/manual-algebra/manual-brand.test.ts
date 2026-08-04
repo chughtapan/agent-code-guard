@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/manual-brand ESLint rule with representative valid and invalid lint fixtures.
+ * @file Exercises diagnostics for hand-rolled branded types and constructors while excluding transport, schema, and ordinary payload structures.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

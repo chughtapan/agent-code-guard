@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/observability/prefer-annotate-logs ESLint rule with representative valid and invalid lint fixtures.
+ * @file Flags inline context objects passed to Effect log variants while accepting message-only, identifier, and non-Effect logging.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

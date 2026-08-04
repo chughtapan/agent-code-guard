@@ -1,5 +1,5 @@
 /**
- * @file Tests the vertical-organization/require-stable-file-shell ESLint rule with representative valid and invalid lint fixtures.
+ * @file Validates stable file-shell requirements for overview, imports, section boundaries, directive placement, and diagnostics.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

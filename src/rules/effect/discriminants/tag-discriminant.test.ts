@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/discriminants/tag-discriminant ESLint rule with representative valid and invalid lint fixtures.
+ * @file Type-checks manual Option and Either tag comparisons and switches without confusing custom tagged unions or dynamic access.
  */
 
 import { createTypedRuleTester } from "../../utils/typed-linter/test-support/rule-tester.js";

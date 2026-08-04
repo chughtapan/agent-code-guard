@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/schema/parse-into-schema-requires-effect ESLint rule with representative valid and invalid lint fixtures.
+ * @file Ensures JSON parsing before Schema decode happens inside Effect.try or tryPromise across sync, Effect, and Either decoders.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

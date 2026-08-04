@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/schema/no-schema-type-cast ESLint rule with representative valid and invalid lint fixtures.
+ * @file Rejects assertions to Schema Type and Encoded projections in long and short forms while allowing normal casts and decoders.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

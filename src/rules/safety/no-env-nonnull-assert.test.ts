@@ -1,5 +1,5 @@
 /**
- * @file Tests the safety/no-env-nonnull-assert ESLint rule with representative valid and invalid lint fixtures.
+ * @file Prohibits non-null assertions on environment reads while permitting optional access, defaults, and unrelated assertions.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

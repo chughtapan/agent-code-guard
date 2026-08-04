@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/error/effect-error-erasure ESLint rule with representative valid and invalid lint fixtures.
+ * @file Detects raw Error construction in Effect failures and error mappers while allowing typed domain errors and lookalikes.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

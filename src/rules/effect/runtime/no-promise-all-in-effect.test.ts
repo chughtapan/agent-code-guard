@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/runtime/no-promise-all-in-effect ESLint rule with representative valid and invalid lint fixtures.
+ * @file Prohibits Promise aggregation statics in Effect-aware modules while leaving ordinary code and Promise resolve/reject alone.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

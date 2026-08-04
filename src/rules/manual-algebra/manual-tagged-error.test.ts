@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/manual-tagged-error ESLint rule with representative valid and invalid lint fixtures.
+ * @file Covers manually tagged error definitions and construction paths, distinguishing genuine error tags from non-error tagged unions.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

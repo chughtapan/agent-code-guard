@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/detection/option ESLint rule with representative valid and invalid lint fixtures.
+ * @file Defines option-detector evidence for helper names, branch pairs, reusable surfaces, tagged-error exclusions, and property cases.
  */
 
 import * as fc from "fast-check";

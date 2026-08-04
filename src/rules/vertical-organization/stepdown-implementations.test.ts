@@ -1,5 +1,5 @@
 /**
- * @file Tests the vertical-organization/stepdown-implementations ESLint rule with representative valid and invalid lint fixtures.
+ * @file Asserts parsed implementation collection marks a top-level function callable and a class constructor non-callable.
  */
 
 import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";

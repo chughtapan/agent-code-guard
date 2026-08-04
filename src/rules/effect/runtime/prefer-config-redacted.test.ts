@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/runtime/prefer-config-redacted ESLint rule with representative valid and invalid lint fixtures.
+ * @file Routes secret-bearing Config.string names—keys, tokens, passwords, and bearer values—to redacted configuration access.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/manual-algebra-family ESLint rule with representative valid and invalid lint fixtures.
+ * @file Runs mutation-based properties proving manual result, option, brand, and constructor rules retain intended positive and negative boundaries.
  */
 
 import { Linter } from "eslint";

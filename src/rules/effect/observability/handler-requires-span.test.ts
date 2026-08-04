@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/observability/handler-requires-span ESLint rule with representative valid and invalid lint fixtures.
+ * @file Enforces span-wrapped Effect generators in handler, route, and handler-suffixed files while ignoring ordinary modules.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

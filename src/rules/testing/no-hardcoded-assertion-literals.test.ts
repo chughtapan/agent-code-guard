@@ -1,5 +1,5 @@
 /**
- * @file Tests the testing/no-hardcoded-assertion-literals ESLint rule with representative valid and invalid lint fixtures.
+ * @file Identifies literal expected values in assertion APIs while preserving matcher arguments, variables, and structural test setup.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

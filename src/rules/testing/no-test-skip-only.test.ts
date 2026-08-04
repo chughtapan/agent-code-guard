@@ -1,5 +1,5 @@
 /**
- * @file Tests the testing/no-test-skip-only ESLint rule with representative valid and invalid lint fixtures.
+ * @file Bans focused and skipped Vitest suites, cases, and modifiers across direct, chained, and computed invocation styles.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/detection/brand ESLint rule with representative valid and invalid lint fixtures.
+ * @file Probes manual-brand detection with direct cast constructors, supported helper prefixes, false-positive shapes, and generated names.
  */
 
 import * as fc from "fast-check";

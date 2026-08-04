@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/discriminants/either-discriminant ESLint rule with representative valid and invalid lint fixtures.
+ * @file Rejects Either predicate and `_tag` branching patterns while retaining unrelated tags, members, and suppressed comparisons.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

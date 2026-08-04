@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/detection/property ESLint rule with representative valid and invalid lint fixtures.
+ * @file Property-tests result, option, brand, transport, and tagged-error classification against generated names and evidence combinations.
  */
 
 import * as fc from "fast-check";

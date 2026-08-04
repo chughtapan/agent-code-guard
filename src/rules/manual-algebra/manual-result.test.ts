@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/manual-result ESLint rule with representative valid and invalid lint fixtures.
+ * @file Tests result-like discriminants, branch pairs, and helper constructors while preserving transport data and incomplete evidence cases.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

@@ -1,5 +1,5 @@
 /**
- * @file Tests the google-style/syntax ESLint rule with representative valid and invalid lint fixtures.
+ * @file Collects syntax-rule matrices for nullish aliases, optional properties, class modifiers, parameter defaults, and assertion rationales.
  */
 
 import * as tsParser from "@typescript-eslint/parser";

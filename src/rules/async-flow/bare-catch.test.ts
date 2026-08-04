@@ -1,5 +1,5 @@
 /**
- * @file Tests the async-flow/bare-catch ESLint rule with representative valid and invalid lint fixtures.
+ * @file Verifies unnamed and throwaway catch bindings report with an `err`-binding suggestion without flagging usable errors.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

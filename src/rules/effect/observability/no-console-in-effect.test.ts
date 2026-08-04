@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/observability/no-console-in-effect ESLint rule with representative valid and invalid lint fixtures.
+ * @file Checks console diagnostics only in Effect-importing non-CLI files, including side-effect imports and multiple console methods.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

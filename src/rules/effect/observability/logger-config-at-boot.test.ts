@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/observability/logger-config-at-boot ESLint rule with representative valid and invalid lint fixtures.
+ * @file Restricts Logger configuration calls to index, main, CLI, bin, and bootstrap entry points instead of feature code.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

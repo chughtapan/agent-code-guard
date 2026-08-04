@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/no-manual-brand-constructor ESLint rule with representative valid and invalid lint fixtures.
+ * @file Rejects direct manual brand helper constructors but keeps indirect casts, non-brand targets, and neutral functions clear.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

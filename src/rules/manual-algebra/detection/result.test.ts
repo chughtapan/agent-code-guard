@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/detection/result ESLint rule with representative valid and invalid lint fixtures.
+ * @file Establishes result-detector boundaries for helper names, left/right and ok/error evidence, surface kinds, and generated variants.
  */
 
 import * as fc from "fast-check";

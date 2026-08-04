@@ -1,5 +1,5 @@
 /**
- * @file Tests the vertical-organization/jsdoc-fragments ESLint rule with representative valid and invalid lint fixtures.
+ * @file Maps parsed JSDoc prose and tags back to exact offsets across line endings, spacing, malformed comments, and multiple blocks.
  */
 
 import { Linter } from "eslint";

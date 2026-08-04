@@ -1,5 +1,5 @@
 /**
- * @file Tests the manual-algebra/no-manual-enum-cast ESLint rule with representative valid and invalid lint fixtures.
+ * @file Detects unsafe casts into enum members and enum types while allowing non-enum assertions and legitimate enum expressions.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

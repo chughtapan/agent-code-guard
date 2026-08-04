@@ -1,5 +1,5 @@
 /**
- * @file Tests the testing/no-vitest-mocks ESLint rule with representative valid and invalid lint fixtures.
+ * @file Rejects Vitest mocking APIs and aliases while allowing ordinary test utilities and non-Vitest methods with matching names.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

@@ -1,5 +1,5 @@
 /**
- * @file Tests the safety/record-cast ESLint rule with representative valid and invalid lint fixtures.
+ * @file Guards assertions to Record shapes, including nested and generic forms, while accepting safer object and map typing patterns.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

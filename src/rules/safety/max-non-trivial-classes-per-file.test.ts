@@ -1,5 +1,5 @@
 /**
- * @file Tests the safety/max-non-trivial-classes-per-file ESLint rule with representative valid and invalid lint fixtures.
+ * @file Verifies configurable limits for substantive classes, excluding trivial declarations and reporting each excess class deterministically.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

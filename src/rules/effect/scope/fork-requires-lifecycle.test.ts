@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/scope/fork-requires-lifecycle ESLint rule with representative valid and invalid lint fixtures.
+ * @file Finds discarded `Effect.fork` results in statements and awaits while permitting captured fibers, scoped forks, and daemons.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

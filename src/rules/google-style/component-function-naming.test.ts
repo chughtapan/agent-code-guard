@@ -1,5 +1,5 @@
 /**
- * @file Tests the google-style/component-function-naming ESLint rule with representative valid and invalid lint fixtures.
+ * @file Separates lower-camel ordinary functions from UpperCamel React components across JSX, createElement, aliases, and nested views.
  */
 
 import * as tsParser from "@typescript-eslint/parser";

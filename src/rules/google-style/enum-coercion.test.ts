@@ -1,5 +1,5 @@
 /**
- * @file Tests the google-style/enum-coercion ESLint rule with representative valid and invalid lint fixtures.
+ * @file Type-checks enum values used as conditions, Boolean calls, negation, logical operands, and loops while allowing comparisons.
  */
 
 import { createTypedRuleTester } from "../utils/typed-linter/test-support/rule-tester.js";

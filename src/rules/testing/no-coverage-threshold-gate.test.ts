@@ -1,5 +1,5 @@
 /**
- * @file Tests the testing/no-coverage-threshold-gate ESLint rule with representative valid and invalid lint fixtures.
+ * @file Checks coverage threshold settings in Vitest configuration objects, nested coverage blocks, and allowed unrelated numbers.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

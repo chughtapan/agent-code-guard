@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/scope/acquire-release-requires-scope ESLint rule with representative valid and invalid lint fixtures.
+ * @file Detects acquire-release resource constructors outside Effect.scoped or Layer.scoped, including repeated acquisition sites.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

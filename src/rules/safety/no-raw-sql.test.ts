@@ -1,5 +1,5 @@
 /**
- * @file Tests the safety/no-raw-sql ESLint rule with representative valid and invalid lint fixtures.
+ * @file Flags SQL-bearing dot-query literals and sql tags, including recommendation messaging, while retaining builders and unrelated calls.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

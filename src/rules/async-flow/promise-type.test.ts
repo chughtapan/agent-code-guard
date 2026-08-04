@@ -1,5 +1,5 @@
 /**
- * @file Tests the async-flow/promise-type ESLint rule with representative valid and invalid lint fixtures.
+ * @file Covers direct Promise return annotations across function syntax and excludes nested, parameter, union, and non-return references.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

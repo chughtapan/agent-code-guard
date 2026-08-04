@@ -1,5 +1,5 @@
 /**
- * @file Tests the safety/no-process-env-at-runtime ESLint rule with representative valid and invalid lint fixtures.
+ * @file Rejects global and node-imported `process.env` reads, destructures, computed access, and writes while preserving local shadows.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

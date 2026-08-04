@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/observability/annotate-without-span ESLint rule with representative valid and invalid lint fixtures.
+ * @file Relates `annotateCurrentSpan` sites to local span creation, covering pipelines, call arguments, imports, and multiple annotations.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

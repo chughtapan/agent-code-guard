@@ -1,5 +1,5 @@
 /**
- * @file Tests the safety/no-raw-throw-new-error ESLint rule with representative valid and invalid lint fixtures.
+ * @file Rejects direct `throw new Error` variants while distinguishing rethrows, custom error classes, and permitted constructions.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

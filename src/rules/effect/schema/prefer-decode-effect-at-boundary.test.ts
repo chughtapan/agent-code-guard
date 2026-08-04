@@ -1,5 +1,5 @@
 /**
- * @file Tests the effect/schema/prefer-decode-effect-at-boundary ESLint rule with representative valid and invalid lint fixtures.
+ * @file Requires effectful Schema decoding at JSON and I/O boundaries, while retaining synchronous decoding of known in-memory values.
  */
 
 import { RuleTester } from "@typescript-eslint/rule-tester";

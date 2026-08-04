@@ -1,5 +1,5 @@
 /**
- * @file Tests the vertical-organization/jsdoc-attachments ESLint rule with representative valid and invalid lint fixtures.
+ * @file Specifies JSDoc attachment grammar for immediate blocks, export wrappers, declaration shapes, and quoted callable parameters.
  */
 
 import { Linter } from "eslint";

@@ -1,5 +1,5 @@
 /**
- * @file Tests the tooling/require-knip-in-lint ESLint rule with representative valid and invalid lint fixtures.
+ * @file Validates temporary package-manifest scripts invoke Knip directly or through aliases and rejects missing or bypassed shell forms.
  */
 
 import fs from "node:fs";

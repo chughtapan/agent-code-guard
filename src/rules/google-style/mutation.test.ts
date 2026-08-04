@@ -1,5 +1,5 @@
 /**
- * @file Tests the google-style/mutation ESLint rule with representative valid and invalid lint fixtures.
+ * @file Exercises numeric coercion, prototype mutation, and descriptor accessor bans through globals, computed properties, and aliases.
  */
 
 import * as tsParser from "@typescript-eslint/parser";
