@@ -196,7 +196,7 @@ function parseJsdocBlock(
       description: tagDescription(
         sourceCode,
         spec,
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion, agent-code-guard/require-assertion-rationale -- comment-parser spec.source line numbers are a subset of its enclosing block.source lines.
+        // eslint-disable-next-line agent-code-guard/require-assertion-rationale -- comment-parser spec.source line numbers are a subset of its enclosing block.source lines.
         spec.source.map((line) => mapped.find((entry) => entry.line.number === line.number)!),
       ),
     })),

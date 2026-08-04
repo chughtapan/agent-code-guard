@@ -140,5 +140,9 @@ function componentFromStack(
     members.push(member);
   } while (member !== root);
   const indexes = members.map((member) => member.index).sort((left, right) => left - right);
-  return { members, minIndex: indexes[0], maxIndex: indexes.at(-1)! };
+  const maxIndex = (
+    // Invariant guarantees a completed component contains at least its root member.
+    indexes.at(-1)!
+  );
+  return { members, minIndex: indexes[0], maxIndex };
 }

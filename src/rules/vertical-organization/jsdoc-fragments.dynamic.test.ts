@@ -59,3 +59,4 @@ describe("dynamic JSDoc fragment module", () => {
     vi.doUnmock("comment-parser");
   });
 });
+/* eslint-enable agent-code-guard/no-example-only-tests, agent-code-guard/require-assertion-rationale, max-statements-per-line, @typescript-eslint/consistent-type-imports, @typescript-eslint/naming-convention -- End dynamic module reload contracts. */

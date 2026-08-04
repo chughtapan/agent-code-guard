@@ -105,11 +105,18 @@ function addValueExports(names: Set<string>, statement: TSESTree.ProgramStatemen
   }
   // Local named exports are represented as ExportSpecifier nodes by the parser;
   // namespace exports always carry a source and returned above.
-  for (const specifier of statement.specifiers as readonly TSESTree.ExportSpecifier[]) {
+  const specifiers = (
+    // Safe because source-less named exports contain only ExportSpecifier nodes.
+    statement.specifiers as readonly TSESTree.ExportSpecifier[]
+  );
+  for (const specifier of specifiers) {
     if (statement.exportKind === "type" || specifier.exportKind === "type") {
       continue;
     }
-    names.add((specifier.local as TSESTree.Identifier).name);
+    names.add(
+      // Safe because a local ExportSpecifier names an in-file identifier binding.
+      (specifier.local as TSESTree.Identifier).name,
+    );
   }
 }
 

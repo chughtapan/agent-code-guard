@@ -114,13 +114,15 @@ describe("jsdoc fragments", () => {
     "uses the parsed name only for the %s tag family",
     (tag) => {
       const [block] = parse(`/** @${tag} {string} value descriptive text */\nexport {};`);
-      expect(block.tags).toEqual([
-        expect.objectContaining({
-          tag,
-          name: "value",
-          description: expect.objectContaining({ tag, tagName: "value", text: "descriptive text " }),
-        }),
-      ]);
+      const [parsedTag] = block.tags;
+      if (parsedTag?.description === undefined) {
+        throw new Error(`Expected a parsed description for the ${tag} tag.`);
+      }
+      expect(parsedTag).toMatchObject({
+        tag,
+        name: "value",
+        description: { tag, tagName: "value", text: "descriptive text " },
+      });
     },
   );
 
@@ -166,6 +168,7 @@ export {};`);
     expect(blocks[0].description?.text).toBe("Documented prose. ");
   });
 });
+/* eslint-enable max-lines-per-function, sonarjs/max-lines-per-function -- End physical range fixture table. */
 
 function sourceCodeLocation(source: string, range: readonly [number, number]): { start: { line: number; column: number }; end: { line: number; column: number } } {
   const position = (index: number) => {
