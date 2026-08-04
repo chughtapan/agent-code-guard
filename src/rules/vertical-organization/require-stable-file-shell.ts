@@ -10,6 +10,19 @@ const BARRIER_SEPARATOR = " -- evaluation-order: ";
 const TRIPLE_SLASH_DIRECTIVE = /^\/\/\/\s*<(?:reference\s+(?:path|types|lib)=(?:"[^"]+"|'[^']+')|amd-module\s+name=(?:"[^"]+"|'[^']+')|amd-dependency\s+path=(?:"[^"]+"|'[^']+'))\s*\/?>(?:\s*)$/u;
 
 type BarrierKind = "begin" | "end";
+type MessageIds =
+  | "missingCanonicalFileOverview"
+  | "multipleCanonicalFileOverviews"
+  | "duplicateFileTag"
+  | "disallowedPreamble"
+  | "contentBeforeFileOverview"
+  | "importShellInterrupted"
+  | "missingSideEffectImportBeginBarrier"
+  | "missingSideEffectImportEndBarrier"
+  | "invalidSideEffectImportBarrier"
+  | "mismatchedSideEffectImportBarrier";
+
+type ShellContext = Readonly<TSESLint.RuleContext<MessageIds, readonly []>>;
 
 interface Barrier {
   readonly kind: BarrierKind;
@@ -51,9 +64,7 @@ function barrier(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): Ba
 }
 
 function reportIndex(
-  context: Readonly<
-    TSESLint.RuleContext<"disallowedPreamble" | "contentBeforeFileOverview", readonly []>
-  >,
+  context: ShellContext,
   messageId: "disallowedPreamble" | "contentBeforeFileOverview",
   index: number,
 ): void {
@@ -146,9 +157,7 @@ function beginsImmediateBareSideEffectImport(
 }
 
 function reportInterimComments(
-  context: Readonly<
-    TSESLint.RuleContext<"disallowedPreamble" | "contentBeforeFileOverview", readonly []>
-  >,
+  context: ShellContext,
   program: TSESTree.Program,
   overview: ParsedJsdocBlock,
 ): void {
@@ -167,6 +176,145 @@ function reportInterimComments(
     ) {
       reportIndex(context, "disallowedPreamble", comment.range[0]);
     }
+  }
+}
+
+function reportOverviewViolations(
+  context: ShellContext,
+  sourceCode: TSESLint.SourceCode,
+  program: TSESTree.Program,
+  blocks: readonly ParsedJsdocBlock[],
+): ParsedJsdocBlock | undefined {
+  const canonical = canonicalBlocks(blocks);
+  const canonicalTags = new Set(canonical.flatMap((block) => block.tags.filter((tag) => tag.tag === "file")));
+  const allFileTags = blocks.flatMap((block) => block.tags.filter((tag) => tag.tag === "file"));
+  const firstFileTag = allFileTags.at(0);
+  for (const tag of allFileTags) {
+    if (tag !== firstFileTag && !canonicalTags.has(tag)) {
+      context.report({ loc: tag.description?.loc ?? sourceCode.getLocFromIndex(0), messageId: "duplicateFileTag" });
+    }
+  }
+  if (canonical.length === 0) {
+    context.report({ node: program, messageId: "missingCanonicalFileOverview" });
+  }
+  for (const block of canonical.slice(1)) {
+    context.report({ loc: sourceCode.getLocFromIndex(block.token.range[0]), messageId: "multipleCanonicalFileOverviews" });
+  }
+  return canonical.at(0);
+}
+
+function reportOverviewPreambleViolations(
+  context: ShellContext,
+  sourceCode: TSESLint.SourceCode,
+  program: TSESTree.Program,
+  overview: ParsedJsdocBlock | undefined,
+): void {
+  if (overview === undefined) {
+    return;
+  }
+  const illegalPreamble = firstUnpermittedPreamble(sourceCode, overview);
+  if (illegalPreamble !== undefined) {
+    reportIndex(context, "disallowedPreamble", illegalPreamble);
+  }
+  const statementBeforeOverview = program.body.find((statement) => statement.range[0] < overview.token.range[0]);
+  if (statementBeforeOverview !== undefined) {
+    reportIndex(context, "contentBeforeFileOverview", statementBeforeOverview.range[0]);
+  }
+  reportInterimComments(context, program, overview);
+}
+
+function reportImportShellViolations(
+  context: ShellContext,
+  program: TSESTree.Program,
+  overview: ParsedJsdocBlock | undefined,
+): void {
+  let state: "preamble" | "imports" | "after" = "preamble";
+  for (const statement of program.body) {
+    const precedesOverview = overview !== undefined && statement.range[0] < overview.token.range[1];
+    const isPreambleDirective = state === "preamble" && directiveExpression(statement);
+    if (!precedesOverview && !isPreambleDirective) {
+      if (statement.type === AST_NODE_TYPES.ImportDeclaration) {
+        if (state === "after") {
+          context.report({ node: statement, messageId: "importShellInterrupted" });
+        }
+        state = "imports";
+      } else {
+        state = "after";
+      }
+    }
+  }
+}
+
+function lexicalTokens(
+  sourceCode: TSESLint.SourceCode,
+  program: TSESTree.Program,
+): readonly TSESLint.AST.Token[] {
+  return [...sourceCode.getTokens(program), ...sourceCode.getAllComments()].sort(
+    (left, right) => left.range[0] - right.range[0],
+  );
+}
+
+function reportBareImportBarrierViolations(
+  context: ShellContext,
+  sourceCode: TSESLint.SourceCode,
+  program: TSESTree.Program,
+): void {
+  const tokens = lexicalTokens(sourceCode, program);
+  for (const statement of program.body) {
+    if (statement.type === AST_NODE_TYPES.ImportDeclaration && statement.specifiers.length === 0) {
+      reportBareImportBarriers(context, sourceCode, statement, tokens);
+    }
+  }
+}
+
+function reportBareImportBarriers(
+  context: ShellContext,
+  sourceCode: TSESLint.SourceCode,
+  statement: TSESTree.ImportDeclaration,
+  tokens: readonly TSESLint.AST.Token[],
+): void {
+  const before = directTokenBefore(tokens, statement.range);
+  const after = directTokenAfter(tokens, statement.range);
+  const begin = before === undefined ? undefined : barrier(sourceCode, before);
+  const end = after === undefined ? undefined : barrier(sourceCode, after);
+  reportBeginBarrierViolation(context, sourceCode, statement, before, begin);
+  reportEndBarrierViolation(context, sourceCode, statement, after, end);
+  if (begin?.kind === "begin" && end?.kind === "end" && begin.reason !== end.reason) {
+    context.report({ node: statement, messageId: "mismatchedSideEffectImportBarrier" });
+  }
+}
+
+function reportBeginBarrierViolation(
+  context: ShellContext,
+  sourceCode: TSESLint.SourceCode,
+  statement: TSESTree.ImportDeclaration,
+  before: TSESLint.AST.Token | undefined,
+  begin: Barrier | undefined,
+): void {
+  if (begin === undefined || !hasLineAdjacentGap(sourceCode, before ?? statement, statement)) {
+    context.report({
+      node: statement,
+      messageId: before?.type === "Line" ? "invalidSideEffectImportBarrier" : "missingSideEffectImportBeginBarrier",
+    });
+  } else if (begin.kind !== "begin") {
+    context.report({ node: statement, messageId: "invalidSideEffectImportBarrier" });
+  }
+}
+
+function reportEndBarrierViolation(
+  context: ShellContext,
+  sourceCode: TSESLint.SourceCode,
+  statement: TSESTree.ImportDeclaration,
+  after: TSESLint.AST.Token | undefined,
+  end: Barrier | undefined,
+): void {
+  if (end === undefined || !hasLineAdjacentGap(sourceCode, statement, after ?? statement)) {
+    context.report({
+      node: statement,
+      messageId: after?.type === "Line" ? "invalidSideEffectImportBarrier" : "missingSideEffectImportEndBarrier",
+    });
+  } else if (end.kind !== "end") {
+    context.report({ node: statement, messageId: "invalidSideEffectImportBarrier" });
   }
 }
 
@@ -196,100 +344,14 @@ export const requireStableFileShell = createRule({
     hasSuggestions: false,
   },
   defaultOptions: [],
-  // eslint-disable-next-line max-lines-per-function, sonarjs/max-lines-per-function -- The listener collection shares one source-code snapshot.
   create(context) {
     return {
-      // eslint-disable-next-line max-lines-per-function, sonarjs/cognitive-complexity, complexity, sonarjs/max-lines-per-function, sonarjs/cyclomatic-complexity, max-statements -- Validation phases deliberately share one canonical overview.
       "Program:exit"(program: TSESTree.Program) {
         const sourceCode = context.sourceCode;
-        const blocks = parseJsdocBlocks(sourceCode);
-        const canonical = canonicalBlocks(blocks);
-        const canonicalTags = new Set(
-          canonical.flatMap((block) => block.tags.filter((tag) => tag.tag === "file")),
-        );
-        const allFileTags = blocks.flatMap((block) => block.tags.filter((tag) => tag.tag === "file"));
-        const firstFileTag = allFileTags.at(0);
-        for (const tag of allFileTags) {
-          if (tag !== firstFileTag && !canonicalTags.has(tag)) {
-            context.report({
-              loc: tag.description?.loc ?? sourceCode.getLocFromIndex(0),
-              messageId: "duplicateFileTag",
-            });
-          }
-        }
-        if (canonical.length === 0) {
-          context.report({ node: program, messageId: "missingCanonicalFileOverview" });
-        }
-        if (canonical.length > 1) {
-          for (const block of canonical.slice(1)) {
-            context.report({ loc: sourceCode.getLocFromIndex(block.token.range[0]), messageId: "multipleCanonicalFileOverviews" });
-          }
-        }
-        const overview = canonical.at(0);
-        if (overview !== undefined) {
-          const illegalPreamble = firstUnpermittedPreamble(sourceCode, overview);
-          if (illegalPreamble !== undefined) {
-            reportIndex(context, "disallowedPreamble", illegalPreamble);
-          }
-          for (const statement of program.body) {
-            if (statement.range[0] < overview.token.range[0]) {
-              reportIndex(context, "contentBeforeFileOverview", statement.range[0]);
-              break;
-            }
-          }
-          reportInterimComments(context, program, overview);
-        }
-
-        let state: "preamble" | "imports" | "after" = "preamble";
-        // eslint-disable-next-line sonarjs/too-many-break-or-continue-in-loop -- Directive and overview statements are distinct skip cases.
-        for (const statement of program.body) {
-          if (overview !== undefined && statement.range[0] < overview.token.range[1]) {
-            continue;
-          }
-          if (state === "preamble" && directiveExpression(statement)) {
-            continue;
-          }
-          if (statement.type === AST_NODE_TYPES.ImportDeclaration) {
-            if (state === "after") {
-              context.report({ node: statement, messageId: "importShellInterrupted" });
-            }
-            state = "imports";
-          } else if (state !== "preamble" || !directiveExpression(statement)) {
-            state = "after";
-          }
-        }
-
-        const lexicalTokens = [...sourceCode.getTokens(program), ...sourceCode.getAllComments()].sort(
-          (left, right) => left.range[0] - right.range[0],
-        );
-        for (const statement of program.body) {
-          if (statement.type !== AST_NODE_TYPES.ImportDeclaration || statement.specifiers.length !== 0) {
-            continue;
-          }
-          const before = directTokenBefore(lexicalTokens, statement.range);
-          const after = directTokenAfter(lexicalTokens, statement.range);
-          const begin = before === undefined ? undefined : barrier(sourceCode, before);
-          const end = after === undefined ? undefined : barrier(sourceCode, after);
-          if (begin === undefined || !hasLineAdjacentGap(sourceCode, before ?? statement, statement)) {
-            context.report({
-              node: statement,
-              messageId: before?.type === "Line" ? "invalidSideEffectImportBarrier" : "missingSideEffectImportBeginBarrier",
-            });
-          } else if (begin.kind !== "begin") {
-            context.report({ node: statement, messageId: "invalidSideEffectImportBarrier" });
-          }
-          if (end === undefined || !hasLineAdjacentGap(sourceCode, statement, after ?? statement)) {
-            context.report({
-              node: statement,
-              messageId: after?.type === "Line" ? "invalidSideEffectImportBarrier" : "missingSideEffectImportEndBarrier",
-            });
-          } else if (end.kind !== "end") {
-            context.report({ node: statement, messageId: "invalidSideEffectImportBarrier" });
-          }
-          if (begin?.kind === "begin" && end?.kind === "end" && begin.reason !== end.reason) {
-            context.report({ node: statement, messageId: "mismatchedSideEffectImportBarrier" });
-          }
-        }
+        const overview = reportOverviewViolations(context, sourceCode, program, parseJsdocBlocks(sourceCode));
+        reportOverviewPreambleViolations(context, sourceCode, program, overview);
+        reportImportShellViolations(context, program, overview);
+        reportBareImportBarrierViolations(context, sourceCode, program);
       },
     };
   },

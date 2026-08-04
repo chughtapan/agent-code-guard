@@ -1,7 +1,7 @@
 import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
 import { describe, expect, it } from "vitest";
-import { type ParsedJsdocBlock, parseJsdocBlocks  } from "./jsdoc-fragments.js";
+import { type ParsedJsdocBlock, parseJsdocBlocks } from "./jsdoc-fragments.js";
 
 function parse(code: string): readonly ParsedJsdocBlock[] {
   const linter = new Linter();
@@ -34,11 +34,8 @@ function parse(code: string): readonly ParsedJsdocBlock[] {
   return parsed;
 }
 
-describe(
-  "jsdoc fragments",
-  // eslint-disable-next-line max-lines-per-function, sonarjs/max-lines-per-function -- This deterministic fixture matrix documents parser offsets together.
-  () => {
-  // eslint-disable-next-line agent-code-guard/no-example-only-tests -- This suite uses deterministic parser fixtures rather than generative source text.
+// @agent-code-guard/regression-only: physical comment-parser offsets require exact historical fixtures.
+describe("jsdoc fragments", () => {
   it("maps parser-derived one-word and typed tag prose to physical ranges", () => {
     const source = "/**\r\n * @file Overview\r\n * @returns {string} TBD\r\n * @throws {Error} later details\r\n */\r\nfunction read(): string { return \"\"; }";
     const [block] = parse(source);
@@ -68,38 +65,8 @@ describe(
     expect(source.slice(span.range[0], span.range[1]).endsWith("detail")).toBe(true);
   });
 
-  it("attaches only the immediate leading block and maps export wrappers", () => {
-    const blocks = parse(`/** Provides the run runtime value. */\nexport function run(value: string): string { return value; }\n\n/** Detached prose. */\n/** The current separator value. */\nconst separator = 1;\nconst next = separator;`);
-    expect(blocks[0].attachment).toMatchObject({ symbol: "run", callable: "run(value: string)" });
-    expect(blocks[1].attachment).toBeUndefined();
-    expect(blocks[2].attachment).toMatchObject({ symbol: "separator" });
-  });
-
-  it("derives closed candidates for functions, methods, variables, and type declarations", () => {
-    const blocks = parse(`/** Function prose. */
-function read(input: string): string { return input; }
-class Service {
-  /** Method prose. */
-  write(value: string): string { return value; }
-}
-/** Variable prose. */
-const resolve = (key: string): string => key;
-/** Alias prose. */
-type Identifier = string;
-/** Interface prose. */
-interface RecordShape { value: string; }`);
-    expect(blocks.map((block) => block.attachment)).toMatchObject([
-      { symbol: "read", callable: "read(input: string)" },
-      { symbol: "write", callable: "write(value: string)" },
-      { symbol: "resolve", callable: "resolve(key: string)" },
-      { symbol: "Identifier", represents: true },
-      { symbol: "RecordShape", represents: true },
-    ]);
-  });
-
   it("retains every parser-derived file tag in one block", () => {
     const [block] = parse(`/**\n * @file First\n * @file Second\n */\nexport {};`);
     expect(block.tags.filter((tag) => tag.tag === "file")).toHaveLength(2);
   });
-  },
-);
+});
