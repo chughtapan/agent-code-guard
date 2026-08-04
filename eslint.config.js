@@ -1,24 +1,32 @@
 import { plugin as guard } from "eslint-plugin-agent-code-guard";
 
-export default [
-  // Stryker copies the tree into sandboxes while it runs, so linting during a
-  // mutation run would otherwise report on generated output.
-  { ignores: [".stryker-tmp/**"] },
+const HANDWRITTEN_TS = ["**/*.{ts,tsx,mts,cts}"];
+const POLICY_IGNORES = ["node_modules/**", "dist/**", "coverage/**", "bench/fixtures/**", ".stryker-tmp/**"];
 
-  // Block 1: plugin source.
+export default [
+  // Apply the package policy consistently to every handwritten TypeScript file.
   {
     ...guard.configs.strict,
-    files: ["src/**/*.ts"],
-    ignores: [
-      "**/*.test.ts",
-      "**/*.spec.ts",
-      "**/test-support/**",
-      "dist/**",
-      "node_modules/**",
-    ],
+    files: HANDWRITTEN_TS,
+    ignores: POLICY_IGNORES,
+    languageOptions: {
+      ...guard.configs.strict.languageOptions,
+      parserOptions: {
+        ...guard.configs.strict.languageOptions.parserOptions,
+        projectService: {
+          allowDefaultProject: [
+            "bench/*.{ts,tsx,mts,cts}",
+            "scripts/*.{ts,tsx,mts,cts}",
+            "*.{ts,tsx,mts,cts}",
+          ],
+          defaultProject: "tsconfig.json",
+        },
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
   },
 
-  // Block 2: unit tests.
+  // Unit tests retain their test project and test-specific rule relaxations.
   {
     ...guard.configs.strict,
     files: [
@@ -43,10 +51,6 @@ export default [
   },
 
   {
-    ignores: [
-      "dist/**",
-      "node_modules/**",
-      "coverage/**",
-    ],
+    ignores: POLICY_IGNORES,
   },
 ];

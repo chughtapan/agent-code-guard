@@ -4,6 +4,22 @@ import { expect, it } from "vitest";
 import packageJson from "../package.json" with { type: "json" };
 import { plugin } from "./index.js";
 
+const verticalOrganizationRuleIds = [
+  "@typescript-eslint/adjacent-overload-signatures",
+  "agent-code-guard/no-vacuous-jsdoc",
+  "agent-code-guard/prefer-stepdown-function-order",
+  "agent-code-guard/require-stable-file-shell",
+  "import-x/first",
+  "jsdoc/require-file-overview",
+  "perfectionist/sort-export-attributes",
+  "perfectionist/sort-exports",
+  "perfectionist/sort-heritage-clauses",
+  "perfectionist/sort-import-attributes",
+  "perfectionist/sort-imports",
+  "perfectionist/sort-named-exports",
+  "perfectionist/sort-named-imports",
+] as const;
+
 it("strict preset bundles SonarJS and strict complexity rules", () => {
   expect(packageJson.dependencies).toHaveProperty("eslint-plugin-sonarjs");
   expect(plugin.configs.strict.plugins).toHaveProperty("agent-code-guard", plugin);
@@ -66,7 +82,7 @@ it("recommended and strict presets provide type-aware Google Style enforcement",
   }
 });
 
-it("ships the complete vertical-organization surface disabled outside documentation", () => {
+it("ships the complete vertical-organization surface at error outside documentation", () => {
   expect(packageJson.dependencies).toMatchObject({
     "comment-parser": "1.4.1",
     "eslint-plugin-jsdoc": "62.9.0",
@@ -75,25 +91,24 @@ it("ships the complete vertical-organization surface disabled outside documentat
   for (const config of [plugin.configs.recommended, plugin.configs.strict]) {
     expect(config.plugins).toHaveProperty("perfectionist");
     expect(config.rules).toMatchObject({
-      "agent-code-guard/no-vacuous-jsdoc": "off",
-      "agent-code-guard/require-stable-file-shell": "off",
-      "agent-code-guard/prefer-stepdown-function-order": "off",
-      "@typescript-eslint/adjacent-overload-signatures": "off",
-      "import-x/first": "off",
-      "jsdoc/require-file-overview": "off",
-      "perfectionist/sort-imports": ["off", expect.any(Object)],
-      "perfectionist/sort-exports": ["off", expect.any(Object)],
-      "perfectionist/sort-named-imports": ["off", expect.any(Object)],
-      "perfectionist/sort-named-exports": ["off", expect.any(Object)],
-      "perfectionist/sort-import-attributes": ["off", expect.any(Object)],
-      "perfectionist/sort-export-attributes": ["off", expect.any(Object)],
-      "perfectionist/sort-heritage-clauses": ["off", expect.any(Object)],
+      "agent-code-guard/no-vacuous-jsdoc": "error",
+      "agent-code-guard/require-stable-file-shell": "error",
+      "agent-code-guard/prefer-stepdown-function-order": "error",
+      "@typescript-eslint/adjacent-overload-signatures": "error",
+      "import-x/first": "error",
+      "jsdoc/require-file-overview": "error",
+      "perfectionist/sort-imports": ["error", expect.any(Object)],
+      "perfectionist/sort-exports": ["error", expect.any(Object)],
+      "perfectionist/sort-named-imports": ["error", expect.any(Object)],
+      "perfectionist/sort-named-exports": ["error", expect.any(Object)],
+      "perfectionist/sort-import-attributes": ["error", expect.any(Object)],
+      "perfectionist/sort-export-attributes": ["error", expect.any(Object)],
+      "perfectionist/sort-heritage-clauses": ["error", expect.any(Object)],
     });
   }
-  expect(plugin.configs.documentation.rules).not.toHaveProperty(
-    "agent-code-guard/no-vacuous-jsdoc",
-  );
-  expect(plugin.configs.documentation.rules).not.toHaveProperty("perfectionist/sort-imports");
+  for (const ruleId of verticalOrganizationRuleIds) {
+    expect(plugin.configs.documentation.rules).not.toHaveProperty(ruleId);
+  }
 });
 
 it("does not expose the removed TypeScript quality-gate rule", () => {

@@ -22,20 +22,20 @@ const alphabeticalCommentPartitionOptions = {
  * migration only after the stable-shell gate is clean.
  */
 export const verticalOrganizationRuleEntries: Record<string, RuleEntry> = {
-  "@typescript-eslint/adjacent-overload-signatures": "off",
-  "agent-code-guard/no-vacuous-jsdoc": "off",
-  "agent-code-guard/prefer-stepdown-function-order": "off",
-  "agent-code-guard/require-stable-file-shell": "off",
-  "import-x/first": "off",
-  "jsdoc/require-file-overview": "off",
-  "perfectionist/sort-export-attributes": ["off", alphabeticalCommentPartitionOptions],
-  "perfectionist/sort-exports": ["off", alphabeticalCommentPartitionOptions],
-  "perfectionist/sort-heritage-clauses": ["off", alphabeticalCommentPartitionOptions],
-  "perfectionist/sort-import-attributes": ["off", alphabeticalCommentPartitionOptions],
+  "@typescript-eslint/adjacent-overload-signatures": "error",
+  "agent-code-guard/no-vacuous-jsdoc": "error",
+  "agent-code-guard/prefer-stepdown-function-order": "error",
+  "agent-code-guard/require-stable-file-shell": "error",
+  "import-x/first": "error",
+  "jsdoc/require-file-overview": "error",
+  "perfectionist/sort-export-attributes": ["error", alphabeticalCommentPartitionOptions],
+  "perfectionist/sort-exports": ["error", alphabeticalCommentPartitionOptions],
+  "perfectionist/sort-heritage-clauses": ["error", alphabeticalCommentPartitionOptions],
+  "perfectionist/sort-import-attributes": ["error", alphabeticalCommentPartitionOptions],
   "perfectionist/sort-imports": [
-    "off",
+    "error",
     { ...alphabeticalCommentPartitionOptions, sortSideEffects: false },
   ],
-  "perfectionist/sort-named-exports": ["off", alphabeticalCommentPartitionOptions],
-  "perfectionist/sort-named-imports": ["off", alphabeticalCommentPartitionOptions],
+  "perfectionist/sort-named-exports": ["error", alphabeticalCommentPartitionOptions],
+  "perfectionist/sort-named-imports": ["error", alphabeticalCommentPartitionOptions],
 };
