@@ -2,8 +2,8 @@
  * @file Provides generators and lint helpers shared by rule-correctness property tests.
  */
 
-import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
+import { Linter } from "eslint";
 import * as fc from "fast-check";
 import * as ts from "typescript";
 import { plugin } from "../../index.js";
@@ -13,6 +13,8 @@ export const RECOMMENDED_RULE_IDS = Object.keys(plugin.configs.recommended.rules
 const parser: Linter.Parser = tsParser;
 /** Shared in-memory ESLint instance for rule-correctness properties. */
 export const linter = new Linter();
+const FIXTURE_OVERVIEW = "/**\n * @file Generated source under rule-correctness property runs.\n */\n\n";
+
 const CUSTOM_RECOMMENDED_RULES = Object.fromEntries(
   Object.entries(plugin.configs.recommended.rules).filter(([ruleId]) =>
     ruleId.startsWith("agent-code-guard/"),
@@ -142,6 +144,9 @@ export function baseConfig(rules: Linter.RulesRecord): Linter.Config {
 
 /**
  * Runs every recommended diagnostic against one source string.
+ *
+ * Generated sources are fragments rather than files, so a canonical overview
+ * is prepended to keep the file-shell contract from firing on every one.
  * @param code The source text to lint.
  * @param filename The project-relative fixture filename.
  * @returns The emitted lint diagnostics.
@@ -150,7 +155,9 @@ export function lintAll(
   code: string,
   filename = "src/lint-target.ts",
 ): Linter.LintMessage[] {
-  return linter.verify(code, baseConfig(CUSTOM_RECOMMENDED_RULES), { filename });
+  return linter.verify(`${FIXTURE_OVERVIEW}${code}`, baseConfig(CUSTOM_RECOMMENDED_RULES), {
+    filename,
+  });
 }
 
 /**
