@@ -5,7 +5,9 @@ from PR 1's disabled entries to PR 2's error-level entries. Inputs are read-only
 the script writes only the explicit `--out` Markdown path.
 
 Run the command below once for each corpus. Replace placeholder paths with
-absolute paths to immutable checkouts.
+absolute paths to immutable checkouts. `--revision` must resolve to the exact
+`HEAD` checked out at `--root`; calibration stops before inspection if it does
+not match.
 
 ```sh
 pnpm exec tsx scripts/calibrate-vertical-organization.mts \

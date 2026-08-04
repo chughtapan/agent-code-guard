@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { ESLint } from "eslint";
 
 const shellRule = "agent-code-guard/require-stable-file-shell";
+const perfectionistRulePrefix = "perfectionist/";
 const trackedFiles = execFileSync("git", ["ls-files", "--", "*.ts", "*.tsx", "*.mts", "*.cts"], {
   encoding: "utf8",
 }).split("\n").filter(Boolean);
@@ -16,7 +17,11 @@ if (shellMessages.length > 0) {
   process.stderr.write(`${shellRule} must be clean before Perfectionist fixes run.\n`);
   process.exitCode = 1;
 } else {
-  execFileSync("pnpm", ["exec", "eslint", "--fix", "--rule", "import-x/first: off", ...trackedFiles], {
-    stdio: "inherit",
+  const fixer = new ESLint({
+    cwd: process.cwd(),
+    fix: true,
+    ruleFilter: ({ ruleId }) => ruleId.startsWith(perfectionistRulePrefix),
   });
+  const fixedResults = await fixer.lintFiles(trackedFiles);
+  await ESLint.outputFixes(fixedResults);
 }

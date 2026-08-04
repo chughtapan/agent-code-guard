@@ -1,9 +1,9 @@
+import { execFileSync } from "node:child_process";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
-import { plugin } from "../src/index.js";
 
 const CUSTOM_RULE_IDS = [
   "agent-code-guard/no-vacuous-jsdoc",
@@ -25,6 +25,12 @@ type Finding = Readonly<{
   line: number;
   path: string;
   ruleId: string;
+}>;
+
+type InspectionTotals = Readonly<{
+  errors: number;
+  files: number;
+  warnings: number;
 }>;
 
 function parseCommaSeparated(value: string): readonly string[] {
@@ -79,6 +85,44 @@ function markdownTable(rows: readonly Finding[]): string {
   ].join("\n");
 }
 
+function verifyRevision(root: string, requestedRevision: string): void {
+  const actualRevision = execFileSync("git", ["-C", root, "rev-parse", "HEAD"], {
+    encoding: "utf8",
+  }).trim();
+  const expectedRevision = execFileSync("git", ["-C", root, "rev-parse", "--verify", `${requestedRevision}^{commit}`], {
+    encoding: "utf8",
+  }).trim();
+
+  if (actualRevision !== expectedRevision) {
+    throw new Error(
+      `--revision (${requestedRevision}) does not match the Git checkout at --root (${actualRevision}).`,
+    );
+  }
+}
+
+function inspectResults(results: Awaited<ReturnType<ESLint["lintFiles"]>>): InspectionTotals {
+  const totals = results.reduce(
+    (current, result) => ({
+      errors: current.errors + result.errorCount,
+      files: current.files + 1,
+      warnings: current.warnings + result.warningCount,
+    }),
+    { errors: 0, files: 0, warnings: 0 },
+  );
+  const fatalMessages = results.flatMap((result) =>
+    result.messages.filter((message) => message.fatal || message.ruleId === null),
+  );
+
+  if (fatalMessages.length > 0) {
+    const [firstFatalMessage] = fatalMessages;
+    throw new Error(
+      `Calibration aborted because ESLint reported a fatal, parser, or configuration message: ${firstFatalMessage?.message ?? "unknown error"}`,
+    );
+  }
+
+  return totals;
+}
+
 async function dependencyVersions(): Promise<Readonly<Record<string, string>>> {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as {
     dependencies: Record<string, string>;
@@ -94,6 +138,8 @@ async function main(): Promise<void> {
   if (!(await stat(args.root)).isDirectory()) {
     throw new Error(`--root is not a directory: ${args.root}`);
   }
+  verifyRevision(args.root, args.revision);
+  const { plugin } = await import("../src/index.js");
 
   const eslint = new ESLint({
     cwd: args.root,
@@ -116,6 +162,7 @@ async function main(): Promise<void> {
     ],
   });
   const results = await eslint.lintFiles([...args.globs]);
+  const totals = inspectResults(results);
   const findings = results
     .flatMap((result) =>
       result.messages.flatMap((message) => {
@@ -155,6 +202,14 @@ Status: pending review.
 | Command | \`${command}\` |
 | Globs | \`${args.globs.join(",")}\` |
 | Excludes | \`${args.exclude.join(",")}\` |
+
+## Inspection totals
+
+| Metric | Count |
+|---|---:|
+| Files inspected | ${totals.files} |
+| Error messages | ${totals.errors} |
+| Warning messages | ${totals.warnings} |
 
 ## Dependency versions
 
