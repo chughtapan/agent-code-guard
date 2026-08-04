@@ -2,7 +2,7 @@
  * @file Requires Effect resource acquisition and release to run in a scope.
  */
 
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 

@@ -2,8 +2,8 @@
  * @file Property-tests AST refinement helpers against generated TypeScript syntax trees.
  */
 
-import * as fc from "fast-check";
 import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
+import * as fc from "fast-check";
 import { expect, it } from "vitest";
 import {
   getEnclosingFunctionName,
@@ -12,9 +12,9 @@ import {
   getParent,
   getStaticMemberPropertyName,
   getStaticStringKey,
-  resolveStringLiteralValue,
   getTagAccess,
   isFunctionReturnTypeReference,
+  resolveStringLiteralValue,
 } from "./index.js";
 import {
   allNodes,

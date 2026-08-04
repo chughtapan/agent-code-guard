@@ -2,10 +2,10 @@
  * @file Covers manually tagged error definitions and construction paths, distinguishing genuine error tags from non-error tagged unions.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { manualTaggedError as rule } from "./manual-tagged-error.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

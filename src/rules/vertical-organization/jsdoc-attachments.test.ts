@@ -2,8 +2,8 @@
  * @file Specifies JSDoc attachment grammar for immediate blocks, export wrappers, declaration shapes, and quoted callable parameters.
  */
 
-import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
+import { Linter } from "eslint";
 import { describe, expect, it } from "vitest";
 import { type ParsedJsdocBlock, parseJsdocBlocks } from "./jsdoc-fragments.js";
 

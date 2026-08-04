@@ -4,10 +4,10 @@
  */
 
 import {
+  AST_NODE_TYPES,
   type ParserServicesWithTypeInformation,
   type TSESLint,
   type TSESTree,
-  AST_NODE_TYPES,
 } from "@typescript-eslint/utils";
 import * as ts from "typescript";
 import { createRule } from "../utils/create-rule.js";

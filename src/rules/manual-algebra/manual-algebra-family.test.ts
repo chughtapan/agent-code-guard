@@ -2,8 +2,8 @@
  * @file Runs mutation-based properties proving manual result, option, brand, and constructor rules retain intended positive and negative boundaries.
  */
 
-import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
+import { Linter } from "eslint";
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
 import { plugin } from "../../index.js";

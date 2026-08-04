@@ -2,10 +2,10 @@
  * @file Detects raw Error construction in Effect failures and error mappers while allowing typed domain errors and lookalikes.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { effectErrorErasure as rule } from "./effect-error-erasure.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

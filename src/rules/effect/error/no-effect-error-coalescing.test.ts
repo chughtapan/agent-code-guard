@@ -2,10 +2,10 @@
  * @file Validates that map and catch handlers cannot collapse errors into fresh wrappers, except for tag-specific or identity paths.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noEffectErrorCoalescing as rule } from "./no-effect-error-coalescing.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

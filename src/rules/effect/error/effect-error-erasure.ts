@@ -2,9 +2,9 @@
  * @file Reports generic Error construction that erases typed Effect error variants.
  */
 
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { isNamedMemberCall } from "../../utils/ast-refinement/index.js";
+import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const GENERIC_ERROR_CTORS = new Set(["Error", "TypeError", "RangeError"]);

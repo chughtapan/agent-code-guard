@@ -2,10 +2,10 @@
  * @file Rejects assertions to Schema Type and Encoded projections in long and short forms while allowing normal casts and decoders.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noSchemaTypeCast as rule } from "./no-schema-type-cast.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

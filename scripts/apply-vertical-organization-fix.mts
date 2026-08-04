@@ -2,8 +2,8 @@
  * @file Gates Perfectionist autofixes on a clean stable-file-shell lint result for tracked TypeScript files.
  */
 
-import { execFileSync } from "node:child_process";
 import { ESLint } from "eslint";
+import { execFileSync } from "node:child_process";
 
 const shellRule = "agent-code-guard/require-stable-file-shell";
 const perfectionistRulePrefix = "perfectionist/";

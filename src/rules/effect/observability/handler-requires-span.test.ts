@@ -2,10 +2,10 @@
  * @file Enforces span-wrapped Effect generators in handler, route, and handler-suffixed files while ignoring ordinary modules.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { handlerRequiresSpan as rule } from "./handler-requires-span.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

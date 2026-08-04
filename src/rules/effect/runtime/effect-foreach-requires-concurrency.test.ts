@@ -2,10 +2,10 @@
  * @file Requires an explicit concurrency option on Effect.forEach, recognizing numeric, string, and quoted-key settings.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { effectForeachRequiresConcurrency as rule } from "./effect-foreach-requires-concurrency.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

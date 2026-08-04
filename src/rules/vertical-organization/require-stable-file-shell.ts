@@ -3,7 +3,7 @@
  * import shell, with explicit barriers for bare side-effect imports.
  */
 
-import { AST_NODE_TYPES, type TSESTree, type TSESLint } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 import { type ParsedJsdocBlock, parseJsdocBlocks } from "./jsdoc-fragments.js";

@@ -6,6 +6,7 @@
  */
 
 import type { TSESTree } from "@typescript-eslint/utils";
+import { isTaggedErrorSurface, isTransportDataSurface } from "./exclusions.js";
 import {
   hasKeyPair,
   hasLiteralPair,
@@ -14,7 +15,6 @@ import {
   type Surface,
   surfaceFromNode,
 } from "./surface.js";
-import { isTaggedErrorSurface, isTransportDataSurface } from "./exclusions.js";
 
 type ManualAlgebraKind = "result" | "option" | "brand";
 

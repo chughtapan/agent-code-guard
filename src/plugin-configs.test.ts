@@ -3,8 +3,8 @@
  * severity guarantees, and package-owned tooling integration.
  */
 
-import * as fc from "fast-check";
 import { Linter } from "eslint";
+import * as fc from "fast-check";
 import { expect, it } from "vitest";
 import packageJson from "../package.json" with { type: "json" };
 import { plugin } from "./index.js";

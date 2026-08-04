@@ -2,13 +2,13 @@
  * @file Validates temporary package-manifest scripts invoke Knip directly or through aliases and rejects missing or bypassed shell forms.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
+import { RuleTester } from "@typescript-eslint/rule-tester";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { requireKnipInLint as rule } from "./require-knip-in-lint.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

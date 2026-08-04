@@ -2,10 +2,10 @@
  * @file Rejects Either predicate and `_tag` branching patterns while retaining unrelated tags, members, and suppressed comparisons.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { eitherDiscriminant as rule } from "./either-discriminant.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

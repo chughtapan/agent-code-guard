@@ -2,10 +2,10 @@
  * @file Rejects global and node-imported `process.env` reads, destructures, computed access, and writes while preserving local shadows.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noProcessEnvAtRuntime as rule } from "./no-process-env-at-runtime.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

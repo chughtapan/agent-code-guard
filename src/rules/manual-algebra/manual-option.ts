@@ -4,8 +4,8 @@
  */
 
 import { createRule } from "../utils/create-rule.js";
-import { findManualOptionMatch } from "./detection/index.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
+import { findManualOptionMatch } from "./detection/index.js";
 
 const VARIABLE_SURFACE_SELECTOR =
   "VariableDeclarator[init.type='ObjectExpression'], " +

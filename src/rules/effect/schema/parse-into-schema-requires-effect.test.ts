@@ -2,10 +2,10 @@
  * @file Ensures JSON parsing before Schema decode happens inside Effect.try or tryPromise across sync, Effect, and Either decoders.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { parseIntoSchemaRequiresEffect as rule } from "./parse-into-schema-requires-effect.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

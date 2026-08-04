@@ -15,16 +15,16 @@ import sonarjs from "eslint-plugin-sonarjs";
 import tseslint from "typescript-eslint";
 import packageJson from "../package.json" with { type: "json" };
 import {
-  integrationTestRuleEntries,
-  recommendedSyntaxRuleEntries,
-  syntaxRules,
-} from "./rules/registry.js";
-import {
   googleCoreRuleEntries,
   googleDirectiveCommentRuleEntries,
   googleImportRuleEntries,
 } from "./rules/google-style/rule-entries.js";
 import { googleTypeScriptRuleEntries } from "./rules/google-style/typescript-rule-entries.js";
+import {
+  integrationTestRuleEntries,
+  recommendedSyntaxRuleEntries,
+  syntaxRules,
+} from "./rules/registry.js";
 
 const rules = {
   ...syntaxRules,

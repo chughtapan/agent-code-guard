@@ -2,10 +2,10 @@
  * @file Guards assertions to Record shapes, including nested and generic forms, while accepting safer object and map typing patterns.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { recordCast as rule } from "./record-cast.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

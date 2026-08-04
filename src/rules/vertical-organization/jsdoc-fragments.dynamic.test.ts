@@ -2,8 +2,8 @@
  * @file Reloads the parser under mocks to preserve tag aliases, physical ranges, indentation, and exact comment-parser inputs.
  */
 
-import { Linter } from "eslint";
 import * as tsParser from "@typescript-eslint/parser";
+import { Linter } from "eslint";
 import { describe, expect, it, vi } from "vitest";
 
 /* eslint-disable agent-code-guard/no-example-only-tests, agent-code-guard/require-assertion-rationale, max-statements-per-line, @typescript-eslint/consistent-type-imports, @typescript-eslint/naming-convention -- Dynamic module reload contracts require compact mock wiring and exact range assertions. */

@@ -2,10 +2,10 @@
  * @file Covers chained `as unknown as` escape hatches across expressions and retains single assertions and non-unknown chains.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { asUnknownAs as rule } from "./as-unknown-as.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

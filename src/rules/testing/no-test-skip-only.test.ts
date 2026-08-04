@@ -2,10 +2,10 @@
  * @file Bans focused and skipped Vitest suites, cases, and modifiers across direct, chained, and computed invocation styles.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noTestSkipOnly as rule } from "./no-test-skip-only.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

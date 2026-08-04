@@ -2,7 +2,7 @@
  * @file Parameter-shape analysis for the no-conditional-chaining rule.
  */
 
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 
 function unresolvedParameterName(parameter: TSESTree.Parameter): string | null {
   if (parameter.type === AST_NODE_TYPES.Identifier) {

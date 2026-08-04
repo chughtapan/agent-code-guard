@@ -2,8 +2,8 @@
  * @file Tests the vertical-organization prefer-stepdown-function-order class fixtures.
  */
 
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import * as tsParser from "@typescript-eslint/parser";
+import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
 import { stepdownRuleTester } from "./test-support/stepdown.js";
 

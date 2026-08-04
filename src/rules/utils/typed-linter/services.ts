@@ -4,9 +4,9 @@
  */
 
 import {
+  ESLintUtils,
   type ParserServicesWithTypeInformation,
   type TSESLint,
-  ESLintUtils,
 } from "@typescript-eslint/utils";
 
 /**

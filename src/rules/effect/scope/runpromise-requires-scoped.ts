@@ -2,10 +2,10 @@
  * @file Prevents scoped Effects from being run through unscoped Effect runners.
  */
 
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
-import { requireServices } from "../../utils/typed-linter/index.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
+import { requireServices } from "../../utils/typed-linter/index.js";
 
 const SCOPED_RUNNERS = new Set(["runPromise", "runPromiseExit", "runSync", "runSyncExit"]);
 

@@ -2,10 +2,10 @@
  * @file Tests result-like discriminants, branch pairs, and helper constructors while preserving transport data and incomplete evidence cases.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { manualResult as rule } from "./manual-result.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

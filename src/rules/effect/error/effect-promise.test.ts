@@ -2,10 +2,10 @@
  * @file Ensures `Effect.promise` is diagnosed in callback and yielded forms but `tryPromise` and non-Effect calls remain valid.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { effectPromise as rule } from "./effect-promise.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

@@ -2,10 +2,10 @@
  * @file Covers direct Promise return annotations across function syntax and excludes nested, parameter, union, and non-return references.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { promiseType as rule } from "./promise-type.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

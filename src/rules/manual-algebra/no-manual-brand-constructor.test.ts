@@ -2,10 +2,10 @@
  * @file Rejects direct manual brand helper constructors but keeps indirect casts, non-brand targets, and neutral functions clear.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noManualBrandConstructor as rule } from "./no-manual-brand-constructor.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

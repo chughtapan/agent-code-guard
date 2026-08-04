@@ -2,10 +2,10 @@
  * @file Finds discarded `Effect.fork` results in statements and awaits while permitting captured fibers, scoped forks, and daemons.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { forkRequiresLifecycle as rule } from "./fork-requires-lifecycle.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

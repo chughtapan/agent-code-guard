@@ -5,7 +5,7 @@
  * member expressions, tag accesses, and the related extractor helpers.
  */
 
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 
 // Each brand uses its own `unique symbol` so the brand cannot be forged
 // from outside this module (no string property is sufficient) and so two

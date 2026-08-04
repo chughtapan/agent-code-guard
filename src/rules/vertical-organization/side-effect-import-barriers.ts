@@ -3,7 +3,7 @@
  * imports whose evaluation order cannot be freely reordered.
  */
 
-import { AST_NODE_TYPES, type TSESTree, type TSESLint } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
 
 const BARRIER_PREFIX = "// agent-code-guard: side-effect-import-";
 const BARRIER_SEPARATOR = " -- evaluation-order: ";

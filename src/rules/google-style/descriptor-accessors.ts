@@ -2,9 +2,9 @@
  * @file Rejects descriptor-defined accessors in favor of language syntax.
  */
 
-import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../utils/create-rule.js";
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
 import { getStaticStringKey } from "../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
 import { getUnshadowedGlobalStaticCall } from "../utils/global-namespace.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 

@@ -2,10 +2,10 @@
  * @file Rejects direct `throw new Error` variants while distinguishing rethrows, custom error classes, and permitted constructions.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noRawThrowNewError as rule } from "./no-raw-throw-new-error.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

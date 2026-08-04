@@ -2,10 +2,10 @@
  * @file Restricts Logger configuration calls to index, main, CLI, bin, and bootstrap entry points instead of feature code.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { loggerConfigAtBoot as rule } from "./logger-config-at-boot.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

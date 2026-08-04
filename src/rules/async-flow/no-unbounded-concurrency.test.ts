@@ -2,10 +2,10 @@
  * @file Checks Effect collection combinators reject explicit unbounded concurrency, including computed option keys and mixed options.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noUnboundedConcurrency as rule } from "./no-unbounded-concurrency.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

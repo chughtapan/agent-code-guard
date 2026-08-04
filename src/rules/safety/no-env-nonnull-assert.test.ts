@@ -2,10 +2,10 @@
  * @file Prohibits non-null assertions on environment reads while permitting optional access, defaults, and unrelated assertions.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noEnvNonnullAssert as rule } from "./no-env-nonnull-assert.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

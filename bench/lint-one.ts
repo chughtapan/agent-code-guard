@@ -2,9 +2,9 @@
  * @file Executes one repeatable ESLint workload and emits normalized diagnostic measurements.
  */
 
+import { ESLint } from "eslint";
 import crypto from "node:crypto";
 import { performance } from "node:perf_hooks";
-import { ESLint } from "eslint";
 
 interface Args {
   readonly cwd: string;

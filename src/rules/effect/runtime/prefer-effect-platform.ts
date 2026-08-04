@@ -2,10 +2,10 @@
  * @file Reports raw platform APIs where Effect platform services should be used.
  */
 
-import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
-import { PURE_EFFECT_NAMESPACES } from "../effect-namespaces.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
+import { PURE_EFFECT_NAMESPACES } from "../effect-namespaces.js";
 
 type Target = "fs" | "http" | "argv" | "fetch" | "sql" | "cli";
 type MessageId = "rawFs" | "rawHttp" | "rawArgv" | "rawFetch" | "rawSql" | "rawCli";

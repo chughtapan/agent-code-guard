@@ -3,7 +3,7 @@
  * casting their single returned expression for downstream diagnostics.
  */
 
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 
 const BRAND_HELPER_RE = /^(as|make|to)[A-Z]/;
 

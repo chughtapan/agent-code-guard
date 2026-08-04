@@ -4,11 +4,11 @@
 
 import type { TSESTree } from "@typescript-eslint/utils";
 import type * as ts from "typescript";
+import { getTagAccess, resolveStringLiteralValue } from "../../utils/ast-refinement/index.js";
 import { createRule } from "../../utils/create-rule.js";
-import { requireServices } from "../../utils/typed-linter/index.js";
-import { resolveStringLiteralValue, getTagAccess } from "../../utils/ast-refinement/index.js";
-import { EFFECT_TAGGED_TYPE_PATTERN } from "../effect-namespaces.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
+import { requireServices } from "../../utils/typed-linter/index.js";
+import { EFFECT_TAGGED_TYPE_PATTERN } from "../effect-namespaces.js";
 
 const EQUALITY_OPERATORS = new Set(["==", "===", "!=", "!=="]);
 

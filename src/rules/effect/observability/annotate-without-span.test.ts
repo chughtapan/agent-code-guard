@@ -2,10 +2,10 @@
  * @file Relates `annotateCurrentSpan` sites to local span creation, covering pipelines, call arguments, imports, and multiple annotations.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { annotateWithoutSpan as rule } from "./annotate-without-span.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

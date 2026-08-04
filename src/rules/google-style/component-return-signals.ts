@@ -2,7 +2,7 @@
  * @file Resolves the return shapes that make a function a React component.
  */
 
-import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
 
 /** Runtime function forms that can define a component. */
 export type ComponentFunctionNode = TSESTree.ArrowFunctionExpression |

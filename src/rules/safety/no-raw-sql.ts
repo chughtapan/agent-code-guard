@@ -3,9 +3,9 @@
  * project's database abstraction.
  */
 
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../utils/create-rule.js";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { getFirst } from "../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const SQL_KEYWORD_RE = /\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|WITH)\b/i;

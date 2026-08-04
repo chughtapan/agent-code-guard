@@ -3,9 +3,9 @@
  * ranges and declaration attachments for precise diagnostics.
  */
 
-import { type Block, type Line, type Spec, parse } from "comment-parser";
-import type { TSESTree, TSESLint } from "@typescript-eslint/utils";
-import { attachmentFor, type AttachedCandidates } from "./jsdoc-attachments.js";
+import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import { type Block, type Line, parse, type Spec } from "comment-parser";
+import { type AttachedCandidates, attachmentFor } from "./jsdoc-attachments.js";
 
 /** Categorizes a JSDoc description by its physical source. */
 type DescriptionKind = "block" | "tag";

@@ -2,10 +2,10 @@
  * @file Checks coverage threshold settings in Vitest configuration objects, nested coverage blocks, and allowed unrelated numbers.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noCoverageThresholdGate as rule } from "./no-coverage-threshold-gate.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

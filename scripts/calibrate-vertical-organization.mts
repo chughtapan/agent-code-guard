@@ -2,11 +2,11 @@
  * @file Calibrates vertical-organization rule findings across a chosen TypeScript corpus and writes a report.
  */
 
+import { ESLint } from "eslint";
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
 
 const CUSTOM_RULE_IDS = [

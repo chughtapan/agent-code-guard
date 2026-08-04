@@ -2,10 +2,10 @@
  * @file Checks manual option representations across tags, branch fields, helper functions, and safe non-algebraic lookalikes.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { manualOption as rule } from "./manual-option.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

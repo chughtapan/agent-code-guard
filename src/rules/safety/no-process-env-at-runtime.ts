@@ -3,9 +3,9 @@
  * reserving configuration access for boundary initialization.
  */
 
-import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../utils/create-rule.js";
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
 import { getStaticStringKey } from "../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
 function resolveLiteralStringValue(node: { type: string; value?: unknown } | null): string | null {

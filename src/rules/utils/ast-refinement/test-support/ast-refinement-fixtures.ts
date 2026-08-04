@@ -3,8 +3,8 @@
  */
 
 import * as tsParser from "@typescript-eslint/parser";
-import * as fc from "fast-check";
 import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
+import * as fc from "fast-check";
 
 const RESERVED = new Set([
   "async",

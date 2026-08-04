@@ -2,9 +2,9 @@
  * @file Verifies repository ESLint configuration and vertical-organization policy coverage by file class.
  */
 
+import { ESLint } from "eslint";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ESLint } from "eslint";
 import { describe, expect, it } from "vitest";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");

@@ -2,10 +2,10 @@
  * @file Covers async declarations, arrows, expressions, and methods, while preserving synchronous and suppressed forms.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { asyncKeyword as rule } from "./async-keyword.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

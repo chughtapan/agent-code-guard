@@ -2,7 +2,7 @@
  * @file Smoke-tests typed-linter utilities with project-service TypeScript fixtures.
  */
 
-import { ESLintUtils, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { requireServices } from "./services.js";
 import { createTypedRuleTester } from "./test-support/rule-tester.js";
 

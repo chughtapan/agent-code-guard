@@ -3,7 +3,7 @@
  * and derives exact symbol or callable candidates for filler detection.
  */
 
-import { AST_NODE_TYPES, type TSESTree, type TSESLint } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
 
 /** Captures names available to template matching for an attached declaration. */
 export interface AttachedCandidates {

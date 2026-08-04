@@ -2,10 +2,10 @@
  * @file Checks console diagnostics only in Effect-importing non-CLI files, including side-effect imports and multiple console methods.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noConsoleInEffect as rule } from "./no-console-in-effect.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

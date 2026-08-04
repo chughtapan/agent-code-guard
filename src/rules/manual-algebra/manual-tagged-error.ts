@@ -3,16 +3,16 @@
  * payloads that hand-roll variants while leaving ordinary tagged data alone.
  */
 
-import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../utils/create-rule.js";
-import { PRINCIPLE_URL } from "../utils/principles.js";
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
 import {
   getParent,
   getStaticMemberPropertyName,
   getStaticStringKey,
-  resolveStringLiteralValue,
   isNamedMemberCall,
+  resolveStringLiteralValue,
 } from "../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const ERROR_NAME_RE = /(Error|Failure|Failed|Exception)$/;
 

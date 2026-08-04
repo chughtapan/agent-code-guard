@@ -2,10 +2,10 @@
  * @file Identifies literal expected values in assertion APIs while preserving matcher arguments, variables, and structural test setup.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noHardcodedAssertionLiterals as rule } from "./no-hardcoded-assertion-literals.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

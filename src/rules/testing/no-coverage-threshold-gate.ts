@@ -4,8 +4,8 @@
  */
 
 import type { TSESTree } from "@typescript-eslint/utils";
-import { createRule } from "../utils/create-rule.js";
 import { getParent, getStaticStringKey } from "../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
 // Matches `jest.config.ts`, `vitest.config.unit.ts`, `jest.config.integration.cjs`,

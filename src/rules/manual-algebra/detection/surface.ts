@@ -3,7 +3,7 @@
  * rules can classify semantics without depending on source spelling.
  */
 
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { getStaticStringKey, resolveStringLiteralValue } from "../../utils/ast-refinement/index.js";
 
 type SurfaceKind = "type" | "interface" | "class" | "object" | "function";

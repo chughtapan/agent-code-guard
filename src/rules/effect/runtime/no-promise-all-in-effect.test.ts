@@ -2,10 +2,10 @@
  * @file Prohibits Promise aggregation statics in Effect-aware modules while leaving ordinary code and Promise resolve/reject alone.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noPromiseAllInEffect as rule } from "./no-promise-all-in-effect.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

@@ -2,10 +2,10 @@
  * @file Rejects Vitest mocking APIs and aliases while allowing ordinary test utilities and non-Vitest methods with matching names.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noVitestMocks as rule } from "./no-vitest-mocks.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

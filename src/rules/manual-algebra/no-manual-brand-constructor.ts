@@ -5,8 +5,8 @@
 
 import type { TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
-import { findManualBrandConstructorMatch } from "./detection/brand-helper.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
+import { findManualBrandConstructorMatch } from "./detection/brand-helper.js";
 
 const VARIABLE_FUNCTION_SELECTOR =
   "VariableDeclarator[init.type='FunctionExpression'], " +

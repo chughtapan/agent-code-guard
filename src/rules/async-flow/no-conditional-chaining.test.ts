@@ -2,10 +2,10 @@
  * @file Exercises calls fed by optional or nullable parameters, distinguishing explicit guards and defaults from unchecked flow.
  */
 
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noConditionalChaining as rule } from "./no-conditional-chaining.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

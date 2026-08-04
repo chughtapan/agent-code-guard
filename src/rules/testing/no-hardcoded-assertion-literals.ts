@@ -3,15 +3,15 @@
  * pushing tests toward named contracts or structural properties.
  */
 
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../utils/create-rule.js";
-import { isTestFile } from "../utils/is-test-file.js";
-import { PRINCIPLE_URL } from "../utils/principles.js";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import {
   getNumericLiteralValue,
   getStaticMemberPropertyName,
   resolveStringLiteralValue,
 } from "../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
+import { isTestFile } from "../utils/is-test-file.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const FIRST_ARG_MATCHERS = new Set(["toBe", "toEqual", "toStrictEqual", "toContain", "toMatch"]);
 
