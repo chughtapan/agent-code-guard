@@ -1,3 +1,7 @@
+/**
+ * @file Checks the exact side-effect-import barrier marker grammar and the single-line adjacency a marker must keep with its import.
+ */
+
 import { Linter } from "eslint";
 import { describe, expect, it, vi } from "vitest";
 import { AST_TOKEN_TYPES } from "@typescript-eslint/utils";
