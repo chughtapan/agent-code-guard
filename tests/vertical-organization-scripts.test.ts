@@ -135,7 +135,9 @@ afterEach(async () => {
   fixtureRoots.clear();
 });
 
-describe("vertical-organization scripts", () => {
+// Each case spawns a real ESLint run over a scratch corpus, which takes seconds
+// on an idle machine and longer under parallel load.
+describe("vertical-organization scripts", { timeout: 60_000 }, () => {
   it("leaves a non-Perfectionist fixable violation byte-identical", async () => {
     const root = await createFixtureRoot();
     await writeFileShellConfig(root, false);

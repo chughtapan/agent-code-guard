@@ -32,6 +32,18 @@ test("implementation model excludes abstract methods with empty function bodies"
   ]);
 });
 
+test("implementation model labels a method whose literal key is not dot addressable", () => {
+  const program = tsParser.parse(`
+    class Service { "read-value"() { return "value"; } }
+  `);
+  attachParents(program, null);
+  const classBody = findClassBody(program);
+
+  expect(collectImplementations(program, [classBody])).toMatchObject([
+    { callableName: null, label: "literal-key method", bandName: "public/protected" },
+  ]);
+});
+
 function attachParents(node: TSESTree.Node, parent: TSESTree.Node | null): void {
   Object.assign(node, { parent });
   for (const child of childNodes(node)) {

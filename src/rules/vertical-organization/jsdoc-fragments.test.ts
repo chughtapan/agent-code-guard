@@ -159,6 +159,14 @@ function malformed(broken: string) { return broken; }`);
     ]);
   });
 
+  it("rejects an ordinary block comment that encloses a Javadoc opener", () => {
+    const blocks = parse(`/*
+/** enclosed prose. */
+/** Documented prose. */
+export {};`);
+    expect(blocks.map((block) => block.description?.text)).toEqual(["Documented prose. "]);
+  });
+
   it("rejects line and ordinary block comments even when they resemble JSDoc prose", () => {
     const blocks = parse(`//** line prose
 /* * ordinary prose */

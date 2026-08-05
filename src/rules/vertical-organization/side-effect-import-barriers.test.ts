@@ -1,18 +1,19 @@
 import { Linter } from "eslint";
 import { describe, expect, it, vi } from "vitest";
+import { AST_TOKEN_TYPES } from "@typescript-eslint/utils";
 import * as tsParser from "@typescript-eslint/parser";
 import {
   hasLineAdjacentGap,
   parseSideEffectImportBarrier,
 } from "./side-effect-import-barriers.js";
 
-function sourceFor(code: string) {
+function sourceFor(code: string, filename = "barriers.ts") {
   let sourceCode: Parameters<typeof parseSideEffectImportBarrier>[0] | undefined;
   const linter = new Linter();
   linter.verify(
     code,
     {
-      files: ["**/*.ts"],
+      files: ["**/*.ts", "**/*.tsx"],
       languageOptions: { parser: tsParser, parserOptions: { ecmaVersion: 2022, sourceType: "module" } },
       plugins: {
         capture: {
@@ -29,7 +30,7 @@ function sourceFor(code: string) {
       },
       rules: { "capture/source": "error" },
     },
-    { filename: "barriers.ts" },
+    { filename },
   );
   if (sourceCode === undefined) {
     throw new Error("Expected ESLint to provide SourceCode.");
@@ -79,5 +80,18 @@ describe("side-effect-import barriers", () => {
     const [comment] = sourceCode.getAllComments();
     const [statement] = sourceCode.ast.body;
     expect(hasLineAdjacentGap(sourceCode, comment, statement)).toBe(expected);
+  });
+});
+
+describe("side-effect-import barrier token kinds", () => {
+  it("rejects a non-line token whose source text opens with the marker", () => {
+    const marker = "// agent-code-guard: side-effect-import-begin -- evaluation-order: registration";
+    const sourceCode = sourceFor(`const banner = <div>${marker}</div>;\nexport {};`, "barriers.tsx");
+    const token = sourceCode.getTokenByRangeStart(sourceCode.text.indexOf(marker));
+    if (token === null) {
+      throw new Error("Expected a token starting at the marker text.");
+    }
+    expect(token.type).toBe(AST_TOKEN_TYPES.JSXText);
+    expect(parseSideEffectImportBarrier(sourceCode, token)).toBeUndefined();
   });
 });

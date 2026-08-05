@@ -79,6 +79,31 @@ ruleTester.run("prefer-stepdown-function-order: graph", rule, {
         function helper() { return "value"; }
       `,
     },
+    {
+      name: "a three-member cycle keeps every member in one component",
+      code: `
+        function first() { return second(); }
+        function second() { return third(); }
+        function third() { return first(); }
+      `,
+    },
+    {
+      name: "a back edge from the deepest caller merges the whole chain into one component",
+      code: `
+        function first() { return second(); }
+        function second() { return third(); }
+        function third() { return fourth(); }
+        function fourth() { return second(); }
+      `,
+    },
+    {
+      name: "a cycle closed by a caller's later call still forms one component",
+      code: `
+        function first() { helper(); return second(); }
+        function second() { return first(); }
+        function helper() { return "value"; }
+      `,
+    },
   ],
   invalid: [
     {
