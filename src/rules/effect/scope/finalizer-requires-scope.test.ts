@@ -1,7 +1,11 @@
+/**
+ * @file Verifies Scope finalizers reside beneath Effect.scoped or Layer.scoped rather than bare expressions and generators.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { finalizerRequiresScope as rule } from "./finalizer-requires-scope.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

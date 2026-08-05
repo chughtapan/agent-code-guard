@@ -3,15 +3,23 @@
  * maintained ESLint rule surface.
  */
 
-import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
-function isFunctionBoundary(node: TSESTree.Node): boolean {
-  return (
-    node.type === AST_NODE_TYPES.FunctionDeclaration ||
-    node.type === AST_NODE_TYPES.FunctionExpression
-  );
+function belongsToStaticMember(node: TSESTree.ThisExpression): boolean {
+  let current: TSESTree.Node | undefined = node.parent;
+  while (current !== undefined) {
+    const staticValue = staticMemberValue(current);
+    if (staticValue !== null) {
+      return staticValue;
+    }
+    if (endsStaticThisLookup(current)) {
+      return false;
+    }
+    current = current.parent;
+  }
+  return false;
 }
 
 function staticMemberValue(node: TSESTree.Node): boolean | null {
@@ -44,19 +52,11 @@ function endsStaticThisLookup(node: TSESTree.Node): boolean {
   );
 }
 
-function belongsToStaticMember(node: TSESTree.ThisExpression): boolean {
-  let current: TSESTree.Node | undefined = node.parent;
-  while (current !== undefined) {
-    const staticValue = staticMemberValue(current);
-    if (staticValue !== null) {
-      return staticValue;
-    }
-    if (endsStaticThisLookup(current)) {
-      return false;
-    }
-    current = current.parent;
-  }
-  return false;
+function isFunctionBoundary(node: TSESTree.Node): boolean {
+  return (
+    node.type === AST_NODE_TYPES.FunctionDeclaration ||
+    node.type === AST_NODE_TYPES.FunctionExpression
+  );
 }
 
 /**
@@ -121,21 +121,6 @@ export const noPrivateIdentifiers = createRule({
   },
 });
 
-function publicMemberNode(
-  node:
-    | TSESTree.AccessorProperty
-    | TSESTree.MethodDefinition
-    | TSESTree.PropertyDefinition
-    | TSESTree.TSAbstractAccessorProperty
-    | TSESTree.TSAbstractMethodDefinition
-    | TSESTree.TSAbstractPropertyDefinition,
-): TSESTree.Node | null {
-  if (node.accessibility !== "public") {
-    return null;
-  }
-  return node.key;
-}
-
 function reportRedundantPublic(
   context: Readonly<TSESLint.RuleContext<"redundantPublic", []>>,
   node:
@@ -151,6 +136,21 @@ function reportRedundantPublic(
     return;
   }
   context.report({ node: reportNode, messageId: "redundantPublic" });
+}
+
+function publicMemberNode(
+  node:
+    | TSESTree.AccessorProperty
+    | TSESTree.MethodDefinition
+    | TSESTree.PropertyDefinition
+    | TSESTree.TSAbstractAccessorProperty
+    | TSESTree.TSAbstractMethodDefinition
+    | TSESTree.TSAbstractPropertyDefinition,
+): TSESTree.Node | null {
+  if (node.accessibility !== "public") {
+    return null;
+  }
+  return node.key;
 }
 
 /**

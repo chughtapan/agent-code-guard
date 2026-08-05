@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+/**
+ * @file Owns the package-local Knip launcher, resolving the installed binary
+ * and preserving its process outcome for callers.
+ */
+
 
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";

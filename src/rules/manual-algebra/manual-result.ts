@@ -1,6 +1,11 @@
+/**
+ * @file Detects success/failure declaration shapes that duplicate Result
+ * algebra instead of using discriminated Effect primitives.
+ */
+
 import { createRule } from "../utils/create-rule.js";
-import { findManualResultMatch } from "./detection/index.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
+import { findManualResultMatch } from "./detection/index.js";
 
 const VARIABLE_SURFACE_SELECTOR =
   "VariableDeclarator[init.type='ObjectExpression'], " +

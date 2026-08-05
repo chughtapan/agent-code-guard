@@ -1,6 +1,11 @@
+/**
+ * @file Rejects coverage thresholds in recognized test-runner config files so
+ * coverage remains evidence rather than a merge gate.
+ */
+
 import type { TSESTree } from "@typescript-eslint/utils";
-import { createRule } from "../utils/create-rule.js";
 import { getParent, getStaticStringKey } from "../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
 // Matches `jest.config.ts`, `vitest.config.unit.ts`, `jest.config.integration.cjs`,
@@ -13,10 +18,6 @@ function isConfigFile(filename: string): boolean {
   return CONFIG_FILE_PATTERN.test(filename);
 }
 
-function keyName(key: TSESTree.Expression | TSESTree.PrivateIdentifier): string | null {
-  return getStaticStringKey(key, false);
-}
-
 function parentCoverageKey(node: TSESTree.Property): boolean {
   const obj = getParent(node);
   if (obj === null || obj.type !== "ObjectExpression") {
@@ -27,6 +28,10 @@ function parentCoverageKey(node: TSESTree.Property): boolean {
     return false;
   }
   return keyName(prop.key) === "coverage";
+}
+
+function keyName(key: TSESTree.Expression | TSESTree.PrivateIdentifier): string | null {
+  return getStaticStringKey(key, false);
 }
 
 /**

@@ -1,5 +1,9 @@
-import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
+/**
+ * @file Asserts parsed implementation collection marks a top-level function callable and a class constructor non-callable.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { expect, test } from "vitest";
 import { collectImplementations } from "./stepdown-implementations.js";
 

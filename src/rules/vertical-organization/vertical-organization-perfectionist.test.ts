@@ -1,3 +1,7 @@
+/**
+ * @file Integrates the vertical-organization rules with perfectionist ordering to ensure coordinated diagnostics and shared configuration.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
 import { Linter } from "eslint";
 import perfectionist from "eslint-plugin-perfectionist";
@@ -6,6 +10,12 @@ import { describe, expect, it } from "vitest";
 import { verticalOrganizationRuleEntries } from "./rule-entries.js";
 
 const linter = new Linter();
+
+function fix(code: string, ruleId: string): string {
+  const result = linter.verifyAndFix(code, enabledRule(ruleId), { filename: "fixture.ts" });
+  expect(result.messages).toEqual([]);
+  return result.output;
+}
 
 function enabledRule(ruleId: string): Linter.Config {
   const entry = verticalOrganizationRuleEntries[ruleId];
@@ -24,14 +34,8 @@ function enabledRule(ruleId: string): Linter.Config {
   };
 }
 
-function fix(code: string, ruleId: string): string {
-  const result = linter.verifyAndFix(code, enabledRule(ruleId), { filename: "fixture.ts" });
-  expect(result.messages).toEqual([]);
-  return result.output;
-}
-
-describe("vertical-organization Perfectionist PR 1 entries", () => {
-  it("ships every approved entry disabled in PR 1", () => {
+describe("vertical-organization Perfectionist PR 2 entries", () => {
+  it("ships every approved entry at error level in PR 2", () => {
     expect(Object.keys(verticalOrganizationRuleEntries).sort((left, right) => left.localeCompare(right))).toEqual([
       "@typescript-eslint/adjacent-overload-signatures",
       "agent-code-guard/no-vacuous-jsdoc",
@@ -48,13 +52,11 @@ describe("vertical-organization Perfectionist PR 1 entries", () => {
       "perfectionist/sort-named-imports",
     ]);
     expect(
-      Object.values(verticalOrganizationRuleEntries).every(
-        (entry) => entry === "off" || entry[0] === "off",
-      ),
+      Object.values(verticalOrganizationRuleEntries).every((entry) => entry === "error" || entry[0] === "error"),
     ).toBe(true);
   });
 
-  it("keeps every configured Perfectionist entry disabled", () => {
+  it("keeps every configured Perfectionist entry at error level", () => {
     fc.assert(
       fc.property(
         fc.constantFrom(...Object.entries(verticalOrganizationRuleEntries)),
@@ -62,7 +64,7 @@ describe("vertical-organization Perfectionist PR 1 entries", () => {
           if (!ruleId.startsWith("perfectionist/")) {
             return;
           }
-          expect(Array.isArray(entry) && entry[0] === "off").toBe(true);
+          expect(Array.isArray(entry) && entry[0] === "error").toBe(true);
         },
       ),
     );
@@ -131,7 +133,7 @@ describe("vertical-organization Perfectionist syntax surfaces", () => {
 describe("vertical-organization Perfectionist import options", () => {
   it("pins the only import-order safety options to comment partitioning and unsorted side effects", () => {
     expect(verticalOrganizationRuleEntries["perfectionist/sort-imports"]).toEqual([
-      "off",
+      "error",
       {
         ignoreCase: true,
         newlinesBetween: "ignore",

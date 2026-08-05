@@ -1,6 +1,10 @@
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
+/**
+ * @file Prevents Effect error handlers from collapsing distinct error variants into one tag.
+ */
+
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { isNamedMemberCall } from "../../utils/ast-refinement/index.js";
+import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const ERROR_COALESCING_METHODS = new Set(["catchAll", "catchAllCause", "mapError"]);

@@ -1,3 +1,7 @@
+/**
+ * @file Documents transport and tagged-error exclusions that prevent discriminant unions from being misclassified as manual algebras.
+ */
+
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
 import {

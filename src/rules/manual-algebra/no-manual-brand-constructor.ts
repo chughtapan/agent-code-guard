@@ -1,7 +1,12 @@
+/**
+ * @file Rejects direct-cast functions named like brand constructors, where
+ * convenience would bypass the validation that earns the brand.
+ */
+
 import type { TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
-import { findManualBrandConstructorMatch } from "./detection/brand-helper.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
+import { findManualBrandConstructorMatch } from "./detection/brand-helper.js";
 
 const VARIABLE_FUNCTION_SELECTOR =
   "VariableDeclarator[init.type='FunctionExpression'], " +

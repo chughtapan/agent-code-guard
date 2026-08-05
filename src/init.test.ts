@@ -1,3 +1,8 @@
+/**
+ * @file Exercises the initialization CLI as a subprocess, checking that its
+ * emitted setup keeps type-aware linting and Knip in their intended lanes.
+ */
+
 import { execFileSync } from "node:child_process";
 import { expect, it } from "vitest";
 

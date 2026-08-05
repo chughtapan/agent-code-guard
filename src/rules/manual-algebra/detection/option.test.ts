@@ -1,3 +1,7 @@
+/**
+ * @file Defines option-detector evidence for helper names, branch pairs, reusable surfaces, tagged-error exclusions, and property cases.
+ */
+
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
 import {

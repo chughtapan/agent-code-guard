@@ -1,3 +1,8 @@
+/**
+ * @file Defines shared AST records connecting ordered implementations,
+ * containers, and resolved local call edges.
+ */
+
 import type { TSESTree } from "@typescript-eslint/utils";
 
 /** Function nodes that can own stepdown call edges. */

@@ -4,10 +4,10 @@
  */
 
 import {
+  AST_NODE_TYPES,
   type ParserServicesWithTypeInformation,
   type TSESLint,
   type TSESTree,
-  AST_NODE_TYPES,
 } from "@typescript-eslint/utils";
 import * as ts from "typescript";
 import { createRule } from "../utils/create-rule.js";
@@ -46,6 +46,26 @@ function reportBooleanCall(
   reportIfEnum(argument);
 }
 
+function enumBooleanListeners(
+  context: TSESLint.RuleContext<"enumBoolean", []>,
+  services: ParserServicesWithTypeInformation,
+): TSESLint.RuleListener {
+  const checker = services.program.getTypeChecker();
+
+  function reportIfEnum(node: TSESTree.Expression): void {
+    const tsNode = services.esTreeNodeToTSNodeMap.get(node);
+    if (tsNode === undefined) {
+      return;
+    }
+    if (!containsEnum(checker.getTypeAtLocation(tsNode))) {
+      return;
+    }
+    context.report({ node, messageId: "enumBoolean" });
+  }
+
+  return enumBooleanVisitor(context.sourceCode, reportIfEnum);
+}
+
 function enumBooleanVisitor(
   sourceCode: Readonly<TSESLint.SourceCode>,
   reportIfEnum: ReportIfEnum,
@@ -82,26 +102,6 @@ function enumBooleanVisitor(
       reportIfEnum(node.test);
     },
   };
-}
-
-function enumBooleanListeners(
-  context: TSESLint.RuleContext<"enumBoolean", []>,
-  services: ParserServicesWithTypeInformation,
-): TSESLint.RuleListener {
-  const checker = services.program.getTypeChecker();
-
-  function reportIfEnum(node: TSESTree.Expression): void {
-    const tsNode = services.esTreeNodeToTSNodeMap.get(node);
-    if (tsNode === undefined) {
-      return;
-    }
-    if (!containsEnum(checker.getTypeAtLocation(tsNode))) {
-      return;
-    }
-    context.report({ node, messageId: "enumBoolean" });
-  }
-
-  return enumBooleanVisitor(context.sourceCode, reportIfEnum);
 }
 
 /**

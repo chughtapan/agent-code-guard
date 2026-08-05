@@ -1,3 +1,7 @@
+/**
+ * @file Reports Promise then chains that obscure Effect-style control flow and errors.
+ */
+
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";

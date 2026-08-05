@@ -1,3 +1,7 @@
+/**
+ * @file Collects syntax-rule matrices for nullish aliases, optional properties, class modifiers, parameter defaults, and assertion rationales.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";

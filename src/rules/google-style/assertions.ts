@@ -3,7 +3,7 @@
  * suppress compiler evidence.
  */
 
-import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
@@ -17,6 +17,18 @@ function isConstAssertion(node: TSESTree.TSAsExpression): boolean {
     annotation.typeName.type === AST_NODE_TYPES.Identifier &&
     annotation.typeName.name === "const"
   );
+}
+
+function hasRationale(sourceCode: Readonly<TSESLint.SourceCode>, node: TSESTree.Node): boolean {
+  const comment = closestCommentBefore(sourceCode, node);
+  if (comment === undefined) {
+    return false;
+  }
+  if (!hasOnlyNearbyTransparentParentheses(sourceCode, comment, node)) {
+    return false;
+  }
+  const explanation = comment.value.trim();
+  return explanation.length >= 10 && RATIONALE_PATTERN.test(explanation);
 }
 
 function closestCommentBefore(
@@ -41,18 +53,6 @@ function hasOnlyNearbyTransparentParentheses(
   const gap = sourceCode.text.slice(comment.range[1], node.range[0]);
   const hasBlankLine = /\n[ \t]*\n/u.test(gap);
   return /^[\s(]*$/u.test(gap) && !hasBlankLine;
-}
-
-function hasRationale(sourceCode: Readonly<TSESLint.SourceCode>, node: TSESTree.Node): boolean {
-  const comment = closestCommentBefore(sourceCode, node);
-  if (comment === undefined) {
-    return false;
-  }
-  if (!hasOnlyNearbyTransparentParentheses(sourceCode, comment, node)) {
-    return false;
-  }
-  const explanation = comment.value.trim();
-  return explanation.length >= 10 && RATIONALE_PATTERN.test(explanation);
 }
 
 /**

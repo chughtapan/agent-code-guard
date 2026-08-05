@@ -1,7 +1,12 @@
+/**
+ * @file Obtains TypeScript parser services only when the ESLint config exposes
+ * a program, letting typed rules decline untyped execution.
+ */
+
 import {
+  ESLintUtils,
   type ParserServicesWithTypeInformation,
   type TSESLint,
-  ESLintUtils,
 } from "@typescript-eslint/utils";
 
 /**

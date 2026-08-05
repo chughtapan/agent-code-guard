@@ -1,3 +1,7 @@
+/**
+ * @file Property-tests rule-specific anti-pattern mutations against the recommended rule set.
+ */
+
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
 import { plugin } from "../index.js";

@@ -1,6 +1,11 @@
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../utils/create-rule.js";
+/**
+ * @file Prevents brand and schema constructors from escaping their validating
+ * module, preserving its single construction boundary.
+ */
+
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { getStaticMemberExpression } from "../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type ConstructorKind = "brand" | "schema";

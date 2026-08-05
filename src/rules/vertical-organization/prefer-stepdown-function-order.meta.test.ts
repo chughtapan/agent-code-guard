@@ -1,3 +1,7 @@
+/**
+ * @file Verifies stepdown rule metadata, diagnostics, schema, and exported configuration contracts outside fixture-driven lint runs.
+ */
+
 import { expect, test, vi } from "vitest";
 
 test("stepdown rule exposes its exact public metadata", async () => {

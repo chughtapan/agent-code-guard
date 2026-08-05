@@ -1,12 +1,39 @@
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../utils/create-rule.js";
+/**
+ * @file Flags query-like calls whose literal or template SQL bypasses the
+ * project's database abstraction.
+ */
+
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { getFirst } from "../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const SQL_KEYWORD_RE = /\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|WITH)\b/i;
 
-function stringLooksLikeSql(value: string): boolean {
-  return SQL_KEYWORD_RE.test(value);
+function isRawSqlQueryCall(node: TSESTree.CallExpression): boolean {
+  if (!isQueryMethodCall(node)) {
+    return false;
+  }
+  const first = node.arguments[0];
+  return first !== undefined && firstArgLooksLikeSql(first);
+}
+
+function isQueryMethodCall(node: TSESTree.CallExpression): boolean {
+  const callee = node.callee;
+  if (callee.type !== AST_NODE_TYPES.MemberExpression) {
+    return false;
+  }
+  if (callee.computed) {
+    return false;
+  }
+  const prop = callee.property;
+  return prop.type === AST_NODE_TYPES.Identifier && prop.name === "query";
+}
+
+function firstArgLooksLikeSql(arg: TSESTree.CallExpressionArgument): boolean {
+  return (
+    literalLooksLikeSql(arg) || templateLiteralLooksLikeSql(arg) || taggedTemplateLooksLikeSql(arg)
+  );
 }
 
 function literalLooksLikeSql(arg: TSESTree.CallExpressionArgument): boolean {
@@ -33,30 +60,8 @@ function taggedTemplateLooksLikeSql(arg: TSESTree.CallExpressionArgument): boole
   );
 }
 
-function firstArgLooksLikeSql(arg: TSESTree.CallExpressionArgument): boolean {
-  return (
-    literalLooksLikeSql(arg) || templateLiteralLooksLikeSql(arg) || taggedTemplateLooksLikeSql(arg)
-  );
-}
-
-function isQueryMethodCall(node: TSESTree.CallExpression): boolean {
-  const callee = node.callee;
-  if (callee.type !== AST_NODE_TYPES.MemberExpression) {
-    return false;
-  }
-  if (callee.computed) {
-    return false;
-  }
-  const prop = callee.property;
-  return prop.type === AST_NODE_TYPES.Identifier && prop.name === "query";
-}
-
-function isRawSqlQueryCall(node: TSESTree.CallExpression): boolean {
-  if (!isQueryMethodCall(node)) {
-    return false;
-  }
-  const first = node.arguments[0];
-  return first !== undefined && firstArgLooksLikeSql(first);
+function stringLooksLikeSql(value: string): boolean {
+  return SQL_KEYWORD_RE.test(value);
 }
 
 /**

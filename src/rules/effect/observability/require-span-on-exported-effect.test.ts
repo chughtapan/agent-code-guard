@@ -1,7 +1,11 @@
+/**
+ * @file Confirms exported Effect generators and functions carry a span through inline or piped composition, unlike private programs.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { requireSpanOnExportedEffect as rule } from "./require-span-on-exported-effect.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

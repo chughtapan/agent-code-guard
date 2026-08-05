@@ -1,7 +1,11 @@
+/**
+ * @file Enforces substantive JSDoc by testing boilerplate, missing meaning, and source-preserving verification under the fixer API.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { Linter } from "eslint";
 import { afterAll, describe, expect, it, vi } from "vitest";
-import * as tsParser from "@typescript-eslint/parser";
 import { noVacuousJsdoc as rule } from "./no-vacuous-jsdoc.js";
 
 RuleTester.afterAll = afterAll;

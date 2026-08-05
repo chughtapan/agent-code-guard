@@ -1,3 +1,7 @@
+/**
+ * @file Covers top-level stepdown ordering with declarations, expressions, overloads, callbacks, exemptions, and autofix expectations.
+ */
+
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
 import { stepdownRuleTester } from "./test-support/stepdown.js";

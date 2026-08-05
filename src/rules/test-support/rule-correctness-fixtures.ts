@@ -1,5 +1,9 @@
-import { Linter } from "eslint";
+/**
+ * @file Provides generators and lint helpers shared by rule-correctness property tests.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
+import { Linter } from "eslint";
 import * as fc from "fast-check";
 import * as ts from "typescript";
 import { plugin } from "../../index.js";
@@ -9,6 +13,8 @@ export const RECOMMENDED_RULE_IDS = Object.keys(plugin.configs.recommended.rules
 const parser: Linter.Parser = tsParser;
 /** Shared in-memory ESLint instance for rule-correctness properties. */
 export const linter = new Linter();
+const FIXTURE_OVERVIEW = "/**\n * @file Generated source under rule-correctness property runs.\n */\n\n";
+
 const CUSTOM_RECOMMENDED_RULES = Object.fromEntries(
   Object.entries(plugin.configs.recommended.rules).filter(([ruleId]) =>
     ruleId.startsWith("agent-code-guard/"),
@@ -105,6 +111,39 @@ export const safeSourceArb = fc
   .map((statements) => statements.join("\n"));
 
 /**
+ * Runs every recommended diagnostic against one source string.
+ *
+ * Generated sources are fragments rather than files, so a canonical overview
+ * is prepended to keep the file-shell contract from firing on every one.
+ * @param code The source text to lint.
+ * @param filename The project-relative fixture filename.
+ * @returns The emitted lint diagnostics.
+ */
+export function lintAll(
+  code: string,
+  filename = "src/lint-target.ts",
+): Linter.LintMessage[] {
+  return linter.verify(`${FIXTURE_OVERVIEW}${code}`, baseConfig(CUSTOM_RECOMMENDED_RULES), {
+    filename,
+  });
+}
+
+/**
+ * Runs one named rule against one source string.
+ * @param code The source text to lint.
+ * @param ruleId The fully qualified rule identifier.
+ * @param filename The project-relative fixture filename.
+ * @returns The emitted lint diagnostics.
+ */
+export function lintOne(
+  code: string,
+  ruleId: string,
+  filename = "src/lint-target.ts",
+): Linter.LintMessage[] {
+  return linter.verify(code, baseConfig({ [ruleId]: "error" }), { filename });
+}
+
+/**
  * Builds a typed flat config around an arbitrary rule map.
  * @param rules The rules to enable in the fixture configuration.
  * @returns A typed flat configuration for in-memory linting.
@@ -134,34 +173,6 @@ export function baseConfig(rules: Linter.RulesRecord): Linter.Config {
     rules,
     settings: plugin.configs.recommended.settings,
   };
-}
-
-/**
- * Runs every recommended diagnostic against one source string.
- * @param code The source text to lint.
- * @param filename The project-relative fixture filename.
- * @returns The emitted lint diagnostics.
- */
-export function lintAll(
-  code: string,
-  filename = "src/lint-target.ts",
-): Linter.LintMessage[] {
-  return linter.verify(code, baseConfig(CUSTOM_RECOMMENDED_RULES), { filename });
-}
-
-/**
- * Runs one named rule against one source string.
- * @param code The source text to lint.
- * @param ruleId The fully qualified rule identifier.
- * @param filename The project-relative fixture filename.
- * @returns The emitted lint diagnostics.
- */
-export function lintOne(
-  code: string,
-  ruleId: string,
-  filename = "src/lint-target.ts",
-): Linter.LintMessage[] {
-  return linter.verify(code, baseConfig({ [ruleId]: "error" }), { filename });
 }
 
 /**
@@ -208,20 +219,6 @@ export function messageDetails(messages: readonly Linter.LintMessage[]): string 
 export const FIXABLE_RULE_IDS = Object.entries(plugin.rules)
   .filter(([, rule]) => rule.meta.fixable)
   .map(([name]) => `agent-code-guard/${name}`);
-
-function literalArbForType(typeName: string): fc.Arbitrary<string> {
-  if (typeName === "number") {
-    return safeNumberArb;
-  }
-  if (typeName === "string") {
-    return safeStringArb;
-  }
-  return safeBoolArb;
-}
-
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 const IDENTS_BY_SEED: Record<string, string> = {
   "agent-code-guard/async-keyword": "foo",
@@ -276,4 +273,18 @@ const IDENTS_BY_SEED: Record<string, string> = {
  */
 export function seedIdent(ruleId: string): string {
   return IDENTS_BY_SEED[ruleId] ?? "";
+}
+
+function literalArbForType(typeName: string): fc.Arbitrary<string> {
+  if (typeName === "number") {
+    return safeNumberArb;
+  }
+  if (typeName === "string") {
+    return safeStringArb;
+  }
+  return safeBoolArb;
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

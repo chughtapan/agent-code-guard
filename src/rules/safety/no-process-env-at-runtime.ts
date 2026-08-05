@@ -1,16 +1,31 @@
-import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../utils/create-rule.js";
-import { getStaticStringKey } from "../utils/ast-refinement/index.js";
-import { PRINCIPLE_URL } from "../utils/principles.js";
+/**
+ * @file Detects direct, aliased, and required `process.env` reads at runtime,
+ * reserving configuration access for boundary initialization.
+ */
 
-function resolveLiteralStringValue(node: { type: string; value?: unknown } | null): string | null {
-  return node?.type === AST_NODE_TYPES.Literal && typeof node.value === "string"
-    ? node.value
-    : null;
-}
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
+import { getStaticStringKey } from "../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 interface ScopeLookup {
   getScope(node: TSESTree.Node): TSESLint.Scope.Scope;
+}
+
+function isProcessEnvAccess(sourceCode: ScopeLookup, node: TSESTree.MemberExpression): boolean {
+  return (
+    node.object.type === AST_NODE_TYPES.Identifier &&
+    isProcessReference(sourceCode, node.object) &&
+    getStaticStringKey(node.property, node.computed) === "env"
+  );
+}
+
+function isProcessReference(sourceCode: ScopeLookup, identifier: TSESTree.Identifier): boolean {
+  if (identifier.name !== "process") {
+    return false;
+  }
+  const variable = resolveVariable(sourceCode, identifier);
+  return variable === null || variable.defs.length === 0 || variableTargetsProcessModule(variable);
 }
 
 function resolveVariable(
@@ -67,20 +82,10 @@ function resolveProcessSource(node: { type: string; value?: unknown } | null): b
   return source === "node:process" || source === "process";
 }
 
-function isProcessReference(sourceCode: ScopeLookup, identifier: TSESTree.Identifier): boolean {
-  if (identifier.name !== "process") {
-    return false;
-  }
-  const variable = resolveVariable(sourceCode, identifier);
-  return variable === null || variable.defs.length === 0 || variableTargetsProcessModule(variable);
-}
-
-function isProcessEnvAccess(sourceCode: ScopeLookup, node: TSESTree.MemberExpression): boolean {
-  return (
-    node.object.type === AST_NODE_TYPES.Identifier &&
-    isProcessReference(sourceCode, node.object) &&
-    getStaticStringKey(node.property, node.computed) === "env"
-  );
+function resolveLiteralStringValue(node: { type: string; value?: unknown } | null): string | null {
+  return node?.type === AST_NODE_TYPES.Literal && typeof node.value === "string"
+    ? node.value
+    : null;
 }
 
 /**

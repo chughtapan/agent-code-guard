@@ -1,3 +1,8 @@
+/**
+ * @file Uses Tarjan components to forgive recursive cycles while selecting
+ * same-band call edges that reverse component-level declaration order.
+ */
+
 import type { Edge, Implementation, Violation } from "./stepdown-model.js";
 
 interface Component {
@@ -44,22 +49,6 @@ function componentMembers(
   components: readonly Component[],
 ): ReadonlyMap<Implementation, Component> {
   return new Map(components.flatMap((component) => component.members.map((member) => [member, component] as const)));
-}
-
-function graphFromEdges(edges: readonly Edge[]): {
-  readonly vertices: ReadonlySet<Implementation>;
-  readonly adjacency: ReadonlyMap<Implementation, readonly Implementation[]>;
-} {
-  const vertices = new Set<Implementation>();
-  const adjacency = new Map<Implementation, Implementation[]>();
-  for (const edge of edges) {
-    vertices.add(edge.caller);
-    vertices.add(edge.callee);
-    const neighbours = adjacency.get(edge.caller) ?? [];
-    neighbours.push(edge.callee);
-    adjacency.set(edge.caller, neighbours);
-  }
-  return { vertices, adjacency };
 }
 
 class TarjanState {
@@ -111,14 +100,6 @@ class TarjanState {
     return neighbour;
   }
 
-  private enter(vertex: Implementation): void {
-    this.indexes.set(vertex, this.nextIndex);
-    this.lowlinks.set(vertex, this.nextIndex);
-    this.nextIndex += 1;
-    this.stack.push(vertex);
-    this.onStack.add(vertex);
-  }
-
   private visitNeighbour(
     vertex: Implementation,
     neighbour: Implementation,
@@ -132,6 +113,14 @@ class TarjanState {
     if (this.onStack.has(neighbour)) {
       this.reduceLowlinkFrom(vertex, this.indexes, neighbour);
     }
+  }
+
+  private enter(vertex: Implementation): void {
+    this.indexes.set(vertex, this.nextIndex);
+    this.lowlinks.set(vertex, this.nextIndex);
+    this.nextIndex += 1;
+    this.stack.push(vertex);
+    this.onStack.add(vertex);
   }
 
   private reduceLowlinkFrom(
@@ -172,6 +161,22 @@ function stronglyConnectedComponents(edges: readonly Edge[]): readonly Component
     state.visitIfUnseen(vertex);
   }
   return state.components;
+}
+
+function graphFromEdges(edges: readonly Edge[]): {
+  readonly vertices: ReadonlySet<Implementation>;
+  readonly adjacency: ReadonlyMap<Implementation, readonly Implementation[]>;
+} {
+  const vertices = new Set<Implementation>();
+  const adjacency = new Map<Implementation, Implementation[]>();
+  for (const edge of edges) {
+    vertices.add(edge.caller);
+    vertices.add(edge.callee);
+    const neighbours = adjacency.get(edge.caller) ?? [];
+    neighbours.push(edge.callee);
+    adjacency.set(edge.caller, neighbours);
+  }
+  return { vertices, adjacency };
 }
 
 function componentFromStack(

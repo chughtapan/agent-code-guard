@@ -1,5 +1,9 @@
-import { Linter } from "eslint";
+/**
+ * @file Property-tests the plugin's registered ESLint rules and their lint behavior.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
+import { Linter } from "eslint";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { plugin } from "../index.js";
@@ -19,6 +23,14 @@ function compareStrings(left: string, right: string): number {
 
 const linter = new Linter();
 
+function lintOne(code: string, ruleId: string): Linter.LintMessage[] {
+  return linter.verify(code, configFor(ruleId), { filename: "src/test.ts" });
+}
+
+function lintTestFile(code: string, ruleId: string): Linter.LintMessage[] {
+  return linter.verify(code, configFor(ruleId), { filename: "src/example.test.ts" });
+}
+
 function configFor(ruleId: string): Linter.Config {
   return {
     files: ["**/*.ts"],
@@ -29,14 +41,6 @@ function configFor(ruleId: string): Linter.Config {
     plugins: { "agent-code-guard": pluginEntry },
     rules: { [ruleId]: "error" },
   };
-}
-
-function lintOne(code: string, ruleId: string): Linter.LintMessage[] {
-  return linter.verify(code, configFor(ruleId), { filename: "src/test.ts" });
-}
-
-function lintTestFile(code: string, ruleId: string): Linter.LintMessage[] {
-  return linter.verify(code, configFor(ruleId), { filename: "src/example.test.ts" });
 }
 
 const typeNameArb = fc.stringMatching(/^[A-Z][a-zA-Z]{2,8}$/);

@@ -1,4 +1,8 @@
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+/**
+ * @file Reports console calls in Effect-aware modules outside permitted CLI boundaries.
+ */
+
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 

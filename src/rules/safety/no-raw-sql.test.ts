@@ -1,7 +1,11 @@
+/**
+ * @file Flags SQL-bearing dot-query literals and sql tags, including recommendation messaging, while retaining builders and unrelated calls.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noRawSql as rule } from "./no-raw-sql.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

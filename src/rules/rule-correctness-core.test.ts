@@ -1,6 +1,11 @@
+/**
+ * @file Property-tests that recommended rules stay quiet on safe TypeScript and report seeded anti-patterns.
+ */
+
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
 import {
+  isSyntacticallyValid,
   lintAll,
   messageDetails,
   mutate,
@@ -8,9 +13,8 @@ import {
   renameArb,
   safeSourceArb,
   seedIdent,
-  isSyntacticallyValid,
 } from "./test-support/rule-correctness-fixtures.js";
-import { SEEDS, type RuleSeed } from "./test-support/rule-correctness-seeds.js";
+import { type RuleSeed, SEEDS } from "./test-support/rule-correctness-seeds.js";
 
 it("Property 1: no recommended rule fires on safe TS sources", () => {
   expect.hasAssertions();

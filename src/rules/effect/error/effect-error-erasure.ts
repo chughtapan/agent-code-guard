@@ -1,21 +1,13 @@
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../../utils/create-rule.js";
+/**
+ * @file Reports generic Error construction that erases typed Effect error variants.
+ */
+
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { isNamedMemberCall } from "../../utils/ast-refinement/index.js";
+import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 const GENERIC_ERROR_CTORS = new Set(["Error", "TypeError", "RangeError"]);
-
-function resolveGenericErrorCtor(node: TSESTree.Node | null): node is TSESTree.NewExpression {
-  return (
-    node?.type === AST_NODE_TYPES.NewExpression &&
-    node.callee.type === AST_NODE_TYPES.Identifier &&
-    GENERIC_ERROR_CTORS.has(node.callee.name)
-  );
-}
-
-function isEffectCall(node: TSESTree.CallExpression, name: string): boolean {
-  return isNamedMemberCall(node, "Effect", name);
-}
 
 function functionReturnsGenericError(node: TSESTree.Expression): boolean {
   if (
@@ -34,6 +26,18 @@ function functionReturnsGenericError(node: TSESTree.Expression): boolean {
       statement.type === AST_NODE_TYPES.ReturnStatement &&
       resolveGenericErrorCtor(statement.argument),
   );
+}
+
+function resolveGenericErrorCtor(node: TSESTree.Node | null): node is TSESTree.NewExpression {
+  return (
+    node?.type === AST_NODE_TYPES.NewExpression &&
+    node.callee.type === AST_NODE_TYPES.Identifier &&
+    GENERIC_ERROR_CTORS.has(node.callee.name)
+  );
+}
+
+function isEffectCall(node: TSESTree.CallExpression, name: string): boolean {
+  return isNamedMemberCall(node, "Effect", name);
 }
 
 /**

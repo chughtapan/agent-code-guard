@@ -1,4 +1,8 @@
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+/**
+ * @file Prevents unresolved optional parameters from propagating through conditional chains.
+ */
+
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 import { unresolvedParameter } from "./conditional-chaining-parameters.js";

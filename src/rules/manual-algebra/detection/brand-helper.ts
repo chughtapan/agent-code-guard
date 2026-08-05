@@ -1,13 +1,13 @@
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+/**
+ * @file Recognizes local functions that fabricate nominal brands by directly
+ * casting their single returned expression for downstream diagnostics.
+ */
+
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 
 const BRAND_HELPER_RE = /^(as|make|to)[A-Z]/;
 
 type FunctionInitializer = TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression;
-
-function getBrandHelperCastName(node: TSESTree.Node): string | null {
-  const expression = getBrandHelperExpression(node);
-  return expression === null ? null : getCastAnnotationName(expression);
-}
 
 /** Describes one hand-rolled nominal-brand constructor. */
 export interface ManualBrandConstructorMatch {
@@ -33,6 +33,11 @@ export function findManualBrandConstructorMatch(
     return null;
   }
   return { displayName, node, targetType };
+}
+
+function getBrandHelperCastName(node: TSESTree.Node): string | null {
+  const expression = getBrandHelperExpression(node);
+  return expression === null ? null : getCastAnnotationName(expression);
 }
 
 function matchesBrandHelperName(displayName: string, targetType: string): boolean {

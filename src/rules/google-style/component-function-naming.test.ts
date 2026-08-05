@@ -1,3 +1,7 @@
+/**
+ * @file Separates lower-camel ordinary functions from UpperCamel React components across JSX, createElement, aliases, and nested views.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";

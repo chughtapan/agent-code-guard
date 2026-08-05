@@ -1,7 +1,12 @@
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+/**
+ * @file Warns when a test suite accumulates examples without property evidence,
+ * except for configured regression, end-to-end, and snapshot scope.
+ */
+
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
+import { getStaticMemberPropertyName } from "../utils/ast-refinement/index.js";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
-import { getStaticMemberPropertyName } from "../utils/ast-refinement/index.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
 type MessageIds = "exampleOnly";

@@ -1,3 +1,7 @@
+/**
+ * @file Type-checks enum values used as conditions, Boolean calls, negation, logical operands, and loops while allowing comparisons.
+ */
+
 import { createTypedRuleTester } from "../utils/typed-linter/test-support/rule-tester.js";
 import { noEnumBooleanCoercion } from "./enum-coercion.js";
 

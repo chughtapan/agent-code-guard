@@ -1,7 +1,11 @@
+/**
+ * @file Guards direct and nested `.then` invocations, including awaited chains, while allowing unrelated identifiers and methods.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { thenChain as rule } from "./then-chain.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

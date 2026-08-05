@@ -1,5 +1,9 @@
-import { Linter } from "eslint";
+/**
+ * @file Maps parsed JSDoc prose and tags back to exact offsets across line endings, spacing, malformed comments, and multiple blocks.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
+import { Linter } from "eslint";
 import { describe, expect, it } from "vitest";
 import { type ParsedJsdocBlock, parseJsdocBlocks } from "./jsdoc-fragments.js";
 

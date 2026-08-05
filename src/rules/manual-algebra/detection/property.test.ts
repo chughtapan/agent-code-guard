@@ -1,12 +1,16 @@
+/**
+ * @file Property-tests result, option, brand, transport, and tagged-error classification against generated names and evidence combinations.
+ */
+
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
+import { findManualBrandConstructorMatch } from "./brand-helper.js";
 import {
   findManualOptionMatch,
   findManualResultMatch,
   isTaggedErrorCollision,
   isTransportDataShape,
 } from "./index.js";
-import { findManualBrandConstructorMatch } from "./brand-helper.js";
 import { parseSubject } from "./test-support/fixtures.js";
 
 const typeNameArb = fc.stringMatching(/^[A-Z][a-zA-Z]{2,8}$/);

@@ -1,21 +1,32 @@
+/**
+ * @file Validates tagged Effect values are narrowed with supported discriminant comparisons.
+ */
+
 import type { TSESTree } from "@typescript-eslint/utils";
 import type * as ts from "typescript";
+import { getTagAccess, resolveStringLiteralValue } from "../../utils/ast-refinement/index.js";
 import { createRule } from "../../utils/create-rule.js";
-import { requireServices } from "../../utils/typed-linter/index.js";
-import { resolveStringLiteralValue, getTagAccess } from "../../utils/ast-refinement/index.js";
-import { EFFECT_TAGGED_TYPE_PATTERN } from "../effect-namespaces.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
+import { requireServices } from "../../utils/typed-linter/index.js";
+import { EFFECT_TAGGED_TYPE_PATTERN } from "../effect-namespaces.js";
 
 const EQUALITY_OPERATORS = new Set(["==", "===", "!=", "!=="]);
-
-function resolveStringLiteral(node: TSESTree.Node | null): string | null {
-  return resolveStringLiteralValue(node);
-}
 
 interface TagComparison {
   readonly tagAccess: TSESTree.Node;
   readonly receiver: TSESTree.Node;
   readonly comparedValue: TSESTree.Node;
+}
+
+function reportableTagComparison(node: TSESTree.BinaryExpression): TagComparison | null {
+  const comparison = tagComparison(node);
+  if (comparison === null) {
+    return null;
+  }
+  if (resolveStringLiteral(comparison.comparedValue) === null) {
+    return null;
+  }
+  return comparison;
 }
 
 function tagComparison(node: TSESTree.BinaryExpression): TagComparison | null {
@@ -33,15 +44,8 @@ function tagComparison(node: TSESTree.BinaryExpression): TagComparison | null {
   return null;
 }
 
-function reportableTagComparison(node: TSESTree.BinaryExpression): TagComparison | null {
-  const comparison = tagComparison(node);
-  if (comparison === null) {
-    return null;
-  }
-  if (resolveStringLiteral(comparison.comparedValue) === null) {
-    return null;
-  }
-  return comparison;
+function resolveStringLiteral(node: TSESTree.Node | null): string | null {
+  return resolveStringLiteralValue(node);
 }
 
 function typeMentionsEffectTagged(type: ts.Type, checker: ts.TypeChecker): boolean {

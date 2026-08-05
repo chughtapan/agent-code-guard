@@ -1,7 +1,11 @@
+/**
+ * @file Checks exported direct brand-cast constructors across declarations and exports while allowing non-exported helper boundaries.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noExportedBrandConstructor as rule } from "./no-exported-brand-constructor.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

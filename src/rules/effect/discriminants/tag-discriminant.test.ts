@@ -1,3 +1,7 @@
+/**
+ * @file Type-checks manual Option and Either tag comparisons and switches without confusing custom tagged unions or dynamic access.
+ */
+
 import { createTypedRuleTester } from "../../utils/typed-linter/test-support/rule-tester.js";
 import { tagDiscriminant as rule } from "./tag-discriminant.js";
 

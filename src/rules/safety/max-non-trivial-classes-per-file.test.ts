@@ -1,7 +1,11 @@
+/**
+ * @file Verifies configurable limits for substantive classes, excluding trivial declarations and reporting each excess class deterministically.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { maxNonTrivialClassesPerFile as rule } from "./max-non-trivial-classes-per-file.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

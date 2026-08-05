@@ -1,7 +1,12 @@
+/**
+ * @file Prohibits throwing newly constructed built-in Error types, directing
+ * failures into typed error channels.
+ */
+
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { getEnclosingFunctionName } from "../utils/ast-refinement/index.js";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
-import { getEnclosingFunctionName } from "../utils/ast-refinement/index.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const ERROR_CTORS = new Set(["Error", "TypeError", "RangeError"]);

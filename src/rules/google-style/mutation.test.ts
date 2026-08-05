@@ -1,3 +1,7 @@
+/**
+ * @file Exercises numeric coercion, prototype mutation, and descriptor accessor bans through globals, computed properties, and aliases.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";

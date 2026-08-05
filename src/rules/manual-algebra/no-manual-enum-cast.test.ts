@@ -1,7 +1,11 @@
+/**
+ * @file Detects unsafe casts into enum members and enum types while allowing non-enum assertions and legitimate enum expressions.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { noManualEnumCast as rule } from "./no-manual-enum-cast.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

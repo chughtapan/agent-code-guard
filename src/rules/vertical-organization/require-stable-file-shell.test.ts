@@ -1,7 +1,11 @@
+/**
+ * @file Validates stable file-shell requirements for overview, imports, section boundaries, directive placement, and diagnostics.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { Linter } from "eslint";
 import { afterAll, describe, expect, it, vi } from "vitest";
-import * as tsParser from "@typescript-eslint/parser";
 import { requireStableFileShell as rule } from "./require-stable-file-shell.js";
 
 /* eslint-disable max-lines -- Mutation grammar tables deliberately keep all shell-rule partitions in one specification file. */

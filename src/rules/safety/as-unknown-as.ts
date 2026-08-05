@@ -1,10 +1,11 @@
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+/**
+ * @file Blocks double casts through unknown, requiring runtime validation or a
+ * typed conversion at the unsafe boundary.
+ */
+
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
-
-function isUnknownKeyword(node: TSESTree.TypeNode): boolean {
-  return node.type === AST_NODE_TYPES.TSUnknownKeyword;
-}
 
 function isCastToUnknown(
   node: TSESTree.Expression,
@@ -13,6 +14,10 @@ function isCastToUnknown(
     (node.type === AST_NODE_TYPES.TSAsExpression || node.type === AST_NODE_TYPES.TSTypeAssertion) &&
     isUnknownKeyword(node.typeAnnotation)
   );
+}
+
+function isUnknownKeyword(node: TSESTree.TypeNode): boolean {
+  return node.type === AST_NODE_TYPES.TSUnknownKeyword;
 }
 
 /**

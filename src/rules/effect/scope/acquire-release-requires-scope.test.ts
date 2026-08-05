@@ -1,7 +1,11 @@
+/**
+ * @file Detects acquire-release resource constructors outside Effect.scoped or Layer.scoped, including repeated acquisition sites.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { acquireReleaseRequiresScope as rule } from "./acquire-release-requires-scope.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

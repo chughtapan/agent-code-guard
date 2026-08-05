@@ -1,5 +1,9 @@
-import { createRule } from "../../utils/create-rule.js";
+/**
+ * @file Reports Effect.promise calls that turn Promise rejections into defects.
+ */
+
 import { isNamedMemberCall } from "../../utils/ast-refinement/index.js";
+import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
 /**

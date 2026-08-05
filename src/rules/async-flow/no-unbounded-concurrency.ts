@@ -1,11 +1,15 @@
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "../utils/create-rule.js";
-import { PRINCIPLE_URL } from "../utils/principles.js";
+/**
+ * @file Requires bounded concurrency instead of unbounded Effect collection execution.
+ */
+
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import {
   getStaticMemberExpression,
   getStaticStringKey,
   resolveStringLiteralValue,
 } from "../utils/ast-refinement/index.js";
+import { createRule } from "../utils/create-rule.js";
+import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const CONCURRENCY_METHODS = new Set(["all", "forEach", "validateAll"]);
 

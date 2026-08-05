@@ -1,7 +1,11 @@
+/**
+ * @file Verifies unnamed and throwaway catch bindings report with an `err`-binding suggestion without flagging usable errors.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { bareCatch as rule } from "./bare-catch.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

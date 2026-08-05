@@ -1,7 +1,12 @@
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+/**
+ * @file Prevents committed test and suite skip/only modifiers, including
+ * aliases and table syntax, unless an option explicitly permits one.
+ */
+
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
+import { getStaticMemberPropertyName } from "../utils/ast-refinement/index.js";
 import { createRule } from "../utils/create-rule.js";
 import { isTestFile } from "../utils/is-test-file.js";
-import { getStaticMemberPropertyName } from "../utils/ast-refinement/index.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
 const TEST_FNS = new Set(["it", "test", "describe"]);

@@ -1,7 +1,11 @@
+/**
+ * @file Routes secret-bearing Config.string names—keys, tokens, passwords, and bearer values—to redacted configuration access.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { preferConfigRedacted as rule } from "./prefer-config-redacted.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

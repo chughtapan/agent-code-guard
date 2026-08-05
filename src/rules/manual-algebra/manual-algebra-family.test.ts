@@ -1,11 +1,25 @@
-import { Linter } from "eslint";
+/**
+ * @file Runs mutation-based properties proving manual result, option, brand, and constructor rules retain intended positive and negative boundaries.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
+import { Linter } from "eslint";
 import * as fc from "fast-check";
 import { expect, it } from "vitest";
 import { plugin } from "../../index.js";
 
 const parser: Linter.Parser = tsParser;
 const pluginEntry: NonNullable<Linter.Config["plugins"]>[string] = plugin;
+
+const linter = new Linter();
+const identArb = fc.stringMatching(/^[A-Z][a-zA-Z]{2,8}$/);
+const transportSuffixArb = fc.constantFrom("Response", "Payload", "State", "Config");
+const paddingArb = fc.constantFrom("", " ", "\n", "  ", "\n\n", "\t");
+const renameArb = fc.stringMatching(/^[a-z][a-zA-Z0-9]{1,8}$/);
+
+function lintOne(code: string, ruleId: string, filename = "src/test.ts"): Linter.LintMessage[] {
+  return linter.verify(code, configFor(ruleId), { filename });
+}
 
 function configFor(ruleId: string): Linter.Config {
   return {
@@ -19,16 +33,6 @@ function configFor(ruleId: string): Linter.Config {
     },
     rules: { [ruleId]: "error" },
   };
-}
-
-const linter = new Linter();
-const identArb = fc.stringMatching(/^[A-Z][a-zA-Z]{2,8}$/);
-const transportSuffixArb = fc.constantFrom("Response", "Payload", "State", "Config");
-const paddingArb = fc.constantFrom("", " ", "\n", "  ", "\n\n", "\t");
-const renameArb = fc.stringMatching(/^[a-z][a-zA-Z0-9]{1,8}$/);
-
-function lintOne(code: string, ruleId: string, filename = "src/test.ts"): Linter.LintMessage[] {
-  return linter.verify(code, configFor(ruleId), { filename });
 }
 
 function mutate(seed: string, pad: string, ident: string, rename: string): string {

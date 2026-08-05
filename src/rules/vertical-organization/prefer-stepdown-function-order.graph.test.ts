@@ -1,8 +1,12 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+/**
+ * @file Exercises dependency-graph ordering diagnostics for top-level functions, covering reachable calls, cycles, independent declarations, and stack safety over a deep chain.
+ */
+
 import * as tsParser from "@typescript-eslint/parser";
+import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { expect, test } from "vitest";
-import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
 import type { Edge, Implementation } from "./stepdown-model.js";
+import { preferStepdownFunctionOrder as rule } from "./prefer-stepdown-function-order.js";
 import { violatingEdges } from "./stepdown-scc.js";
 import { stepdownRuleTester } from "./test-support/stepdown.js";
 

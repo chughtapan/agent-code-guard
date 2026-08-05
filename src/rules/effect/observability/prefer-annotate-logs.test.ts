@@ -1,7 +1,11 @@
+/**
+ * @file Flags inline context objects passed to Effect log variants while accepting message-only, identifier, and non-Effect logging.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { preferAnnotateLogs as rule } from "./prefer-annotate-logs.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

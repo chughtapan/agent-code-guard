@@ -1,22 +1,11 @@
-import { type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+/**
+ * @file Reports casts to a string-keyed record of unknown values that present
+ * unvalidated external data as safely indexed objects.
+ */
+
+import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
-
-function isStringKeyword(node: TSESTree.TypeNode): boolean {
-  return node.type === AST_NODE_TYPES.TSStringKeyword;
-}
-
-function isUnknownKeyword(node: TSESTree.TypeNode): boolean {
-  return node.type === AST_NODE_TYPES.TSUnknownKeyword;
-}
-
-function isRecordTypeReference(node: TSESTree.TypeNode): node is TSESTree.TSTypeReference {
-  return (
-    node.type === AST_NODE_TYPES.TSTypeReference &&
-    node.typeName.type === AST_NODE_TYPES.Identifier &&
-    node.typeName.name === "Record"
-  );
-}
 
 function isRecordStringUnknownCast(node: TSESTree.TSAsExpression): boolean {
   const target = node.typeAnnotation;
@@ -28,6 +17,22 @@ function isRecordStringUnknownCast(node: TSESTree.TSAsExpression): boolean {
     return false;
   }
   return isStringKeyword(params[0]) && isUnknownKeyword(params[1]);
+}
+
+function isRecordTypeReference(node: TSESTree.TypeNode): node is TSESTree.TSTypeReference {
+  return (
+    node.type === AST_NODE_TYPES.TSTypeReference &&
+    node.typeName.type === AST_NODE_TYPES.Identifier &&
+    node.typeName.name === "Record"
+  );
+}
+
+function isStringKeyword(node: TSESTree.TypeNode): boolean {
+  return node.type === AST_NODE_TYPES.TSStringKeyword;
+}
+
+function isUnknownKeyword(node: TSESTree.TypeNode): boolean {
+  return node.type === AST_NODE_TYPES.TSUnknownKeyword;
 }
 
 /**

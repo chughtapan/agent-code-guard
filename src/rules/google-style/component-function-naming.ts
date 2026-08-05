@@ -3,7 +3,7 @@
  * ordinary functions.
  */
 
-import { type TSESLint, type TSESTree, AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 import {
@@ -31,6 +31,15 @@ interface ClassificationState {
 
 const CONSTANT_CASE_PATTERN = /^[A-Z][A-Z0-9_]*$/;
 
+function containingFunction(node: TSESTree.Node): CandidateFunction | null {
+  let current: TSESTree.Node | null | undefined = node.parent;
+  while (current != null && !isFunctionNode(current)) {
+    current = current.parent;
+  }
+  const candidate = current ?? null;
+  return isFunctionNode(candidate) ? candidate : null;
+}
+
 function isFunctionNode(node: TSESTree.Node | null): node is CandidateFunction {
   return node?.type === AST_NODE_TYPES.ArrowFunctionExpression ||
     node?.type === AST_NODE_TYPES.FunctionDeclaration ||
@@ -52,15 +61,6 @@ function declaredVariable(
   ) ?? null;
 }
 
-function containingFunction(node: TSESTree.Node): CandidateFunction | null {
-  let current: TSESTree.Node | null | undefined = node.parent;
-  while (current != null && !isFunctionNode(current)) {
-    current = current.parent;
-  }
-  const candidate = current ?? null;
-  return isFunctionNode(candidate) ? candidate : null;
-}
-
 function topLevelVariable(node: TSESTree.VariableDeclarator): boolean {
   const declaration = node.parent;
   if (declaration.type !== AST_NODE_TYPES.VariableDeclaration) {
@@ -70,25 +70,6 @@ function topLevelVariable(node: TSESTree.VariableDeclarator): boolean {
   return parent.type === AST_NODE_TYPES.Program ||
     (parent.type === AST_NODE_TYPES.ExportNamedDeclaration &&
       parent.parent.type === AST_NODE_TYPES.Program);
-}
-
-function isComponent(
-  sourceCode: Readonly<TSESLint.SourceCode>,
-  state: ClassificationState,
-  candidate: FunctionCandidate,
-  upperCamel: boolean,
-): boolean {
-  if (candidate.binding !== null && state.jsxBindings.has(candidate.binding)) {
-    return true;
-  }
-  if (returnTypeSignalsComponent(sourceCode, candidate.functionNode, upperCamel)) {
-    return true;
-  }
-  return functionHasComponentReturnSignal(
-    sourceCode,
-    state.recordedReturns,
-    candidate.functionNode,
-  );
 }
 
 function reportCandidate(
@@ -111,6 +92,25 @@ function reportCandidate(
   if (!component && upperCamel && !globalConstant) {
     context.report({ node: candidate.name, messageId: "ordinaryLowerCamel" });
   }
+}
+
+function isComponent(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  state: ClassificationState,
+  candidate: FunctionCandidate,
+  upperCamel: boolean,
+): boolean {
+  if (candidate.binding !== null && state.jsxBindings.has(candidate.binding)) {
+    return true;
+  }
+  if (returnTypeSignalsComponent(sourceCode, candidate.functionNode, upperCamel)) {
+    return true;
+  }
+  return functionHasComponentReturnSignal(
+    sourceCode,
+    state.recordedReturns,
+    candidate.functionNode,
+  );
 }
 
 /**

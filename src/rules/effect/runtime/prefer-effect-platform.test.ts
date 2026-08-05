@@ -1,7 +1,11 @@
+/**
+ * @file Covers raw I/O, HTTP, CLI, SQL, argv, and fetch usage in Effectful imports, including configured exemptions and pure namespaces.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { preferEffectPlatform as rule } from "./prefer-effect-platform.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

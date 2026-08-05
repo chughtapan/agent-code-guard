@@ -1,7 +1,11 @@
+/**
+ * @file Requires effectful Schema decoding at JSON and I/O boundaries, while retaining synchronous decoding of known in-memory values.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { preferDecodeEffectAtBoundary as rule } from "./prefer-decode-effect-at-boundary.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;

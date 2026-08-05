@@ -3,15 +3,15 @@
  */
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type { FunctionImplementation, Implementation, Violation } from "./stepdown-model.js";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
+import { collectViolatingEdges } from "./stepdown-graph.js";
 import {
   collectImplementations,
   diagnosticDeclaration,
   groupByContainer,
 } from "./stepdown-implementations.js";
-import { collectViolatingEdges } from "./stepdown-graph.js";
-import type { FunctionImplementation, Implementation, Violation } from "./stepdown-model.js";
 
 type MessageIds = "declarationOutOfStoryBand" | "callerMustPrecedeCallee" | "cyclicCallerMustPrecedeCallee";
 

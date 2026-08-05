@@ -1,7 +1,11 @@
+/**
+ * @file Exercises diagnostics for hand-rolled branded types and constructors while excluding transport, schema, and ordinary payload structures.
+ */
+
+import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import { afterAll, describe, it } from "vitest";
 import { manualBrand as rule } from "./manual-brand.js";
-import * as tsParser from "@typescript-eslint/parser";
 
 RuleTester.afterAll = afterAll;
 RuleTester.it = it;
