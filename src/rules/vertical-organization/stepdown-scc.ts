@@ -34,7 +34,7 @@ function violationFor(
 
 function cycleBlockerFor(component: Component, caller: Implementation): Implementation | null {
   const last = (
-    // A completed component always contains at least its root member.
+    // Invariant guarantees a completed component contains at least its root member.
     component.members.at(-1)!
   );
   return last === caller ? null : last;
@@ -189,7 +189,7 @@ function componentFromStack(
     onStack.delete(member);
     members.push(member);
   } while (member !== root);
-  const ordered = members.sort((left, right) => left.index - right.index);
+  const ordered = [...members].sort((left, right) => left.index - right.index);
   const last = (
     // Invariant guarantees a completed component contains at least its root member.
     ordered.at(-1)!
