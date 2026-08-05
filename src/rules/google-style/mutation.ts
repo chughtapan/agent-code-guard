@@ -14,6 +14,18 @@ import { isUnshadowedGlobal } from "../utils/unshadowed-global.js";
 
 const NUMBER_NAMESPACE: ReadonlySet<string> = new Set(["Number"]);
 
+function isNumericParserCall(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  node: TSESTree.CallExpression,
+  name: string,
+): boolean {
+  return (
+    isGlobalCall(sourceCode, node, name) ||
+    isNumberNamespaceCall(sourceCode, node, name) ||
+    isGlobalThisCall(sourceCode, node, name)
+  );
+}
+
 function isGlobalCall(
   sourceCode: Readonly<TSESLint.SourceCode>,
   node: TSESTree.CallExpression,
@@ -52,18 +64,6 @@ function isGlobalThisCall(
     node.callee.object.name === "globalThis" &&
     isUnshadowedGlobal(sourceCode, node.callee.object) &&
     staticMemberName(node.callee) === name
-  );
-}
-
-function isNumericParserCall(
-  sourceCode: Readonly<TSESLint.SourceCode>,
-  node: TSESTree.CallExpression,
-  name: string,
-): boolean {
-  return (
-    isGlobalCall(sourceCode, node, name) ||
-    isNumberNamespaceCall(sourceCode, node, name) ||
-    isGlobalThisCall(sourceCode, node, name)
   );
 }
 
@@ -123,30 +123,6 @@ export const noUnsafeNumericCoercion = createRule({
   },
 });
 
-function staticMemberName(node: TSESTree.Expression): string | null {
-  if (node.type !== AST_NODE_TYPES.MemberExpression) {
-    return null;
-  }
-  if (node.property.type === AST_NODE_TYPES.Identifier && !node.computed) {
-    return node.property.name;
-  }
-  if (node.property.type !== AST_NODE_TYPES.Literal) {
-    return null;
-  }
-  return typeof node.property.value === "string" ? node.property.value : null;
-}
-
-function targetsPrototype(node: TSESTree.Expression): boolean {
-  if (node.type !== AST_NODE_TYPES.MemberExpression) {
-    return false;
-  }
-  const name = staticMemberName(node);
-  if (name === "prototype" || name === "__proto__") {
-    return true;
-  }
-  return targetsPrototype(node.object);
-}
-
 const OBJECT_PROTOTYPE_MUTATION_METHODS: ReadonlySet<string> = new Set([
   "assign",
   "defineProperties",
@@ -162,35 +138,6 @@ const PROTOTYPE_MUTATION_NAMESPACES: ReadonlySet<string> = new Set([
   "Reflect",
 ]);
 
-function isSetPrototypeOf(call: GlobalStaticCallReference): boolean {
-  if (call.method !== "setPrototypeOf") {
-    return false;
-  }
-  return call.owner === "Object" || call.owner === "Reflect";
-}
-
-function firstArgumentTargetsPrototype(node: TSESTree.CallExpression): boolean {
-  const target = node.arguments[0];
-  return target?.type !== AST_NODE_TYPES.SpreadElement && targetsPrototype(target);
-}
-
-function supportsPrototypeTargetMutation(call: GlobalStaticCallReference): boolean {
-  if (call.owner === "Object") {
-    return OBJECT_PROTOTYPE_MUTATION_METHODS.has(call.method);
-  }
-  if (call.owner === "Reflect") {
-    return REFLECT_PROTOTYPE_MUTATION_METHODS.has(call.method);
-  }
-  return false;
-}
-
-function isPrototypeTargetMutation(
-  call: GlobalStaticCallReference,
-  node: TSESTree.CallExpression,
-): boolean {
-  return supportsPrototypeTargetMutation(call) && firstArgumentTargetsPrototype(node);
-}
-
 function isPrototypeMutationCall(
   sourceCode: Readonly<TSESLint.SourceCode>,
   node: TSESTree.CallExpression,
@@ -204,6 +151,63 @@ function isPrototypeMutationCall(
     return false;
   }
   return isSetPrototypeOf(call) || isPrototypeTargetMutation(call, node);
+}
+
+function isSetPrototypeOf(call: GlobalStaticCallReference): boolean {
+  if (call.method !== "setPrototypeOf") {
+    return false;
+  }
+  return call.owner === "Object" || call.owner === "Reflect";
+}
+
+function isPrototypeTargetMutation(
+  call: GlobalStaticCallReference,
+  node: TSESTree.CallExpression,
+): boolean {
+  return supportsPrototypeTargetMutation(call) && firstArgumentTargetsPrototype(node);
+}
+
+function supportsPrototypeTargetMutation(call: GlobalStaticCallReference): boolean {
+  if (call.owner === "Object") {
+    return OBJECT_PROTOTYPE_MUTATION_METHODS.has(call.method);
+  }
+  if (call.owner === "Reflect") {
+    return REFLECT_PROTOTYPE_MUTATION_METHODS.has(call.method);
+  }
+  return false;
+}
+
+function firstArgumentTargetsPrototype(node: TSESTree.CallExpression): boolean {
+  const target = node.arguments[0];
+  return target?.type !== AST_NODE_TYPES.SpreadElement && targetsPrototype(target);
+}
+
+function targetsPrototype(node: TSESTree.Expression): boolean {
+  if (node.type !== AST_NODE_TYPES.MemberExpression) {
+    return false;
+  }
+  const name = staticMemberName(node);
+  if (name === "prototype" || name === "__proto__") {
+    return true;
+  }
+  return targetsPrototype(node.object);
+}
+
+function staticMemberName(node: TSESTree.Expression): string | null {
+  if (node.type !== AST_NODE_TYPES.MemberExpression) {
+    return null;
+  }
+  if (node.property.type === AST_NODE_TYPES.Identifier && !node.computed) {
+    return node.property.name;
+  }
+  if (node.property.type !== AST_NODE_TYPES.Literal) {
+    return null;
+  }
+  return typeof node.property.value === "string" ? node.property.value : null;
+}
+
+function isObjectLiteralPrototypeSetter(node: TSESTree.Property): boolean {
+  return isObjectLiteralDataProperty(node) && isPrototypeSetterKey(node.key);
 }
 
 function isObjectLiteralDataProperty(node: TSESTree.Property): boolean {
@@ -221,10 +225,6 @@ function isPrototypeSetterKey(node: TSESTree.Property["key"]): boolean {
     return node.name === "__proto__";
   }
   return node.type === AST_NODE_TYPES.Literal && node.value === "__proto__";
-}
-
-function isObjectLiteralPrototypeSetter(node: TSESTree.Property): boolean {
-  return isObjectLiteralDataProperty(node) && isPrototypeSetterKey(node.key);
 }
 
 /**

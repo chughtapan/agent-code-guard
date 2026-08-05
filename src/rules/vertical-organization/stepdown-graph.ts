@@ -88,6 +88,20 @@ function groupClassTargets(
   return grouped;
 }
 
+function uniqueTopLevelImplementations(
+  implementations: readonly Implementation[],
+): ReadonlyMap<string, Implementation> {
+  const grouped = new Map<string, Implementation[]>();
+  for (const implementation of implementations) {
+    if (implementation.container.type === AST_NODE_TYPES.Program && implementation.callableName !== null) {
+      const group = grouped.get(implementation.callableName) ?? [];
+      group.push(implementation);
+      grouped.set(implementation.callableName, group);
+    }
+  }
+  return uniqueTargets(grouped);
+}
+
 function uniqueTargets(
   targets: ReadonlyMap<string, readonly Implementation[]>,
 ): ReadonlyMap<string, Implementation> {
@@ -115,20 +129,6 @@ function isFunctionBoundary(
   return node.type === AST_NODE_TYPES.FunctionDeclaration ||
     node.type === AST_NODE_TYPES.FunctionExpression ||
     node.type === AST_NODE_TYPES.ArrowFunctionExpression;
-}
-
-function uniqueTopLevelImplementations(
-  implementations: readonly Implementation[],
-): ReadonlyMap<string, Implementation> {
-  const grouped = new Map<string, Implementation[]>();
-  for (const implementation of implementations) {
-    if (implementation.container.type === AST_NODE_TYPES.Program && implementation.callableName !== null) {
-      const group = grouped.get(implementation.callableName) ?? [];
-      group.push(implementation);
-      grouped.set(implementation.callableName, group);
-    }
-  }
-  return uniqueTargets(grouped);
 }
 
 function topLevelCallee(

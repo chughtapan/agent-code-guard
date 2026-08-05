@@ -62,21 +62,6 @@ export const nonNegativeIntArb = fc.integer({ min: 0, max: 1000 });
 export const positiveIntArb = fc.integer({ min: 1, max: 1000 });
 
 /**
- * Parses TypeScript source and attaches parent links to every AST node.
- * @param code The TypeScript source to parse.
- * @returns The parsed program with parent links.
- */
-export function parseWithParents(code: string): TSESTree.Program {
-  const program = tsParser.parse(code, {
-    ecmaVersion: 2022,
-    sourceType: "module",
-    range: true,
-  });
-  attachParents(program);
-  return program;
-}
-
-/**
  * Returns the first object-literal property in a fixture program.
  * @param code The TypeScript fixture source.
  * @returns The first object-literal property.
@@ -125,6 +110,21 @@ export function firstExpression(code: string): TSESTree.Expression {
     throw new Error(`expected expression statement in:\n${code}`);
   }
   return statement.expression;
+}
+
+/**
+ * Parses TypeScript source and attaches parent links to every AST node.
+ * @param code The TypeScript source to parse.
+ * @returns The parsed program with parent links.
+ */
+export function parseWithParents(code: string): TSESTree.Program {
+  const program = tsParser.parse(code, {
+    ecmaVersion: 2022,
+    sourceType: "module",
+    range: true,
+  });
+  attachParents(program);
+  return program;
 }
 
 /**

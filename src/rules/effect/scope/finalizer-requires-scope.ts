@@ -28,16 +28,6 @@ function isScopeFinalizerCall(node: TSESTree.CallExpression): boolean {
 
 const SCOPE_FRAME_NAMES = new Set(["scoped", "scopedDiscard"]);
 
-function isScopeFrameMember(node: TSESTree.MemberExpression): boolean {
-  if (node.computed) {
-    return false;
-  }
-  if (node.property.type !== AST_NODE_TYPES.Identifier) {
-    return false;
-  }
-  return SCOPE_FRAME_NAMES.has(node.property.name);
-}
-
 function mentionsScopeFrame(node: TSESTree.Node): boolean {
   if (node.type === AST_NODE_TYPES.MemberExpression) {
     return isScopeFrameMember(node);
@@ -46,6 +36,16 @@ function mentionsScopeFrame(node: TSESTree.Node): boolean {
     return SCOPE_FRAME_NAMES.has(node.name);
   }
   return false;
+}
+
+function isScopeFrameMember(node: TSESTree.MemberExpression): boolean {
+  if (node.computed) {
+    return false;
+  }
+  if (node.property.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
+  return SCOPE_FRAME_NAMES.has(node.property.name);
 }
 
 /**

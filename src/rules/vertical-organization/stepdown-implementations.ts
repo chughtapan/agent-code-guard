@@ -29,6 +29,40 @@ export function collectImplementations(
   return [...topLevel, ...classBodies.flatMap(collectClassImplementations)];
 }
 
+/**
+ * Groups implementations by their program or class-body container.
+ *
+ * @param implementations Implementations to group.
+ * @returns Implementations keyed by their containing AST node.
+ */
+export function groupByContainer(
+  implementations: readonly Implementation[],
+): ReadonlyMap<Container, readonly Implementation[]> {
+  const groups = new Map<Container, Implementation[]>();
+  for (const implementation of implementations) {
+    const group = groups.get(implementation.container);
+    if (group === undefined) {
+      groups.set(implementation.container, [implementation]);
+    } else {
+      group.push(implementation);
+    }
+  }
+  return groups;
+}
+
+/**
+ * Selects the most useful declaration node for an ordering diagnostic.
+ *
+ * @param implementation Implementation being reported.
+ * @returns Named declaration node when available.
+ */
+export function diagnosticDeclaration(implementation: Implementation): TSESTree.Node {
+  if (implementation.declaration.type === AST_NODE_TYPES.FunctionDeclaration) {
+    return implementation.declaration.id ?? implementation.declaration;
+  }
+  return implementation.declaration.key;
+}
+
 function collectTopLevelImplementations(program: TSESTree.Program): readonly Implementation[] {
   const exportedNames = exportedLocalNames(program);
   const candidates = program.body
@@ -216,38 +250,4 @@ function assignIndexes(
   candidates: ReadonlyArray<Omit<Implementation, "index">>,
 ): readonly Implementation[] {
   return candidates.map((candidate, index) => ({ ...candidate, index }));
-}
-
-/**
- * Groups implementations by their program or class-body container.
- *
- * @param implementations Implementations to group.
- * @returns Implementations keyed by their containing AST node.
- */
-export function groupByContainer(
-  implementations: readonly Implementation[],
-): ReadonlyMap<Container, readonly Implementation[]> {
-  const groups = new Map<Container, Implementation[]>();
-  for (const implementation of implementations) {
-    const group = groups.get(implementation.container);
-    if (group === undefined) {
-      groups.set(implementation.container, [implementation]);
-    } else {
-      group.push(implementation);
-    }
-  }
-  return groups;
-}
-
-/**
- * Selects the most useful declaration node for an ordering diagnostic.
- *
- * @param implementation Implementation being reported.
- * @returns Named declaration node when available.
- */
-export function diagnosticDeclaration(implementation: Implementation): TSESTree.Node {
-  if (implementation.declaration.type === AST_NODE_TYPES.FunctionDeclaration) {
-    return implementation.declaration.id ?? implementation.declaration;
-  }
-  return implementation.declaration.key;
 }

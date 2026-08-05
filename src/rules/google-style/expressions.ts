@@ -11,6 +11,85 @@ const PURE_LEAF_TYPES: ReadonlySet<string> = new Set([
   AST_NODE_TYPES.Literal,
 ]);
 
+const PARAMETER_WRAPPER_TYPES: ReadonlySet<string> = new Set([
+  AST_NODE_TYPES.ArrayPattern,
+  AST_NODE_TYPES.ObjectPattern,
+  AST_NODE_TYPES.Property,
+  AST_NODE_TYPES.RestElement,
+  AST_NODE_TYPES.TSParameterProperty,
+]);
+
+type ObjectParameterContext = Readonly<{
+  report(descriptor: {
+    messageId: "computedDestructuring" | "nestedDestructuring";
+    node: TSESTree.Node;
+  }): void;
+}>;
+
+function isFunctionParameterDefault(node: TSESTree.AssignmentPattern): boolean {
+  let current: TSESTree.Node = node;
+  while (current.parent !== undefined) {
+    const parent: TSESTree.Node = current.parent;
+    if (isFunctionNode(parent)) {
+      return functionOwnsNode(parent, current);
+    }
+    if (!PARAMETER_WRAPPER_TYPES.has(parent.type)) {
+      return false;
+    }
+    current = parent;
+  }
+  return false;
+}
+
+function hasEmptyDestructuringDefault(node: TSESTree.AssignmentPattern): boolean {
+  if (node.left.type === AST_NODE_TYPES.ObjectPattern) {
+    return (
+      node.right.type === AST_NODE_TYPES.ObjectExpression && node.right.properties.length === 0
+    );
+  }
+  if (node.left.type === AST_NODE_TYPES.ArrayPattern) {
+    return node.right.type === AST_NODE_TYPES.ArrayExpression && node.right.elements.length === 0;
+  }
+  return true;
+}
+
+function isPureDefault(node: TSESTree.Node): boolean {
+  if (PURE_LEAF_TYPES.has(node.type)) {
+    return true;
+  }
+  if (isPureComposite(node)) {
+    return true;
+  }
+  if (node.type === AST_NODE_TYPES.SequenceExpression) {
+    return node.expressions.every(isPureDefault);
+  }
+  if (node.type === AST_NODE_TYPES.TemplateLiteral) {
+    return node.expressions.length === 0;
+  }
+  if (isTransparentTypeExpression(node)) {
+    return isPureDefault(node.expression);
+  }
+  if (node.type === AST_NODE_TYPES.UnaryExpression) {
+    return node.operator !== "delete" && isPureDefault(node.argument);
+  }
+  return false;
+}
+
+function isPureComposite(node: TSESTree.Node): boolean {
+  if (node.type === AST_NODE_TYPES.ArrayExpression) {
+    return isPureArray(node);
+  }
+  if (isBinaryLike(node)) {
+    return isPureDefault(node.left) && isPureDefault(node.right);
+  }
+  if (node.type === AST_NODE_TYPES.ConditionalExpression) {
+    return (
+      isPureDefault(node.test) && isPureDefault(node.consequent) && isPureDefault(node.alternate)
+    );
+  }
+  return node.type === AST_NODE_TYPES.ObjectExpression && isPureObject(node);
+}
+
 function isPureArray(node: TSESTree.ArrayExpression): boolean {
   return node.elements.every((element) => {
     if (element === null) {
@@ -38,6 +117,14 @@ function isPureObject(node: TSESTree.ObjectExpression): boolean {
   });
 }
 
+function isBinaryLike(
+  node: TSESTree.Node,
+): node is TSESTree.BinaryExpression | TSESTree.LogicalExpression {
+  return (
+    node.type === AST_NODE_TYPES.BinaryExpression || node.type === AST_NODE_TYPES.LogicalExpression
+  );
+}
+
 function isTransparentTypeExpression(
   node: TSESTree.Node,
 ): node is
@@ -57,49 +144,57 @@ function isTransparentTypeExpression(
   return node.type === AST_NODE_TYPES.TSTypeAssertion;
 }
 
-function isPureComposite(node: TSESTree.Node): boolean {
-  if (node.type === AST_NODE_TYPES.ArrayExpression) {
-    return isPureArray(node);
+function reportUnsafeObjectParameter(
+  context: ObjectParameterContext,
+  node: TSESTree.ObjectPattern,
+): void {
+  if (!isObjectParameterPattern(node)) {
+    return;
   }
-  if (isBinaryLike(node)) {
-    return isPureDefault(node.left) && isPureDefault(node.right);
+  for (const property of node.properties) {
+    reportUnsafeObjectProperty(context, property);
   }
-  if (node.type === AST_NODE_TYPES.ConditionalExpression) {
-    return (
-      isPureDefault(node.test) && isPureDefault(node.consequent) && isPureDefault(node.alternate)
-    );
-  }
-  return node.type === AST_NODE_TYPES.ObjectExpression && isPureObject(node);
 }
 
-function isBinaryLike(
-  node: TSESTree.Node,
-): node is TSESTree.BinaryExpression | TSESTree.LogicalExpression {
+function isObjectParameterPattern(node: TSESTree.ObjectPattern): boolean {
+  if (isDirectFunctionParameter(node)) {
+    return true;
+  }
+  const parent = node.parent;
   return (
-    node.type === AST_NODE_TYPES.BinaryExpression || node.type === AST_NODE_TYPES.LogicalExpression
+    parent.type === AST_NODE_TYPES.AssignmentPattern &&
+    parent.left === node &&
+    isDirectFunctionParameter(parent)
   );
 }
 
-function isPureDefault(node: TSESTree.Node): boolean {
-  if (PURE_LEAF_TYPES.has(node.type)) {
-    return true;
+function isDirectFunctionParameter(node: TSESTree.Node): boolean {
+  const parent = node.parent;
+  return parent !== undefined && isFunctionNode(parent) && functionOwnsNode(parent, node);
+}
+
+function reportUnsafeObjectProperty(
+  context: ObjectParameterContext,
+  property: TSESTree.RestElement | TSESTree.Property,
+): void {
+  if (property.type !== AST_NODE_TYPES.Property) {
+    return;
   }
-  if (isPureComposite(node)) {
-    return true;
+  if (nestedPattern(property.value)) {
+    context.report({ node: property.value, messageId: "nestedDestructuring" });
+    return;
   }
-  if (node.type === AST_NODE_TYPES.SequenceExpression) {
-    return node.expressions.every(isPureDefault);
+  if (
+    property.computed ||
+    property.key.type !== AST_NODE_TYPES.Identifier ||
+    !property.shorthand
+  ) {
+    context.report({ node: property.key, messageId: "computedDestructuring" });
   }
-  if (node.type === AST_NODE_TYPES.TemplateLiteral) {
-    return node.expressions.length === 0;
-  }
-  if (isTransparentTypeExpression(node)) {
-    return isPureDefault(node.expression);
-  }
-  if (node.type === AST_NODE_TYPES.UnaryExpression) {
-    return node.operator !== "delete" && isPureDefault(node.argument);
-  }
-  return false;
+}
+
+function nestedPattern(node: TSESTree.Node): boolean {
+  return node.type === AST_NODE_TYPES.ArrayPattern || node.type === AST_NODE_TYPES.ObjectPattern;
 }
 
 function isFunctionNode(node: TSESTree.Node): node is TSESTree.FunctionLike {
@@ -130,103 +225,8 @@ function isDeclarationOnlyFunctionNode(
   );
 }
 
-const PARAMETER_WRAPPER_TYPES: ReadonlySet<string> = new Set([
-  AST_NODE_TYPES.ArrayPattern,
-  AST_NODE_TYPES.ObjectPattern,
-  AST_NODE_TYPES.Property,
-  AST_NODE_TYPES.RestElement,
-  AST_NODE_TYPES.TSParameterProperty,
-]);
-
-function isFunctionParameterDefault(node: TSESTree.AssignmentPattern): boolean {
-  let current: TSESTree.Node = node;
-  while (current.parent !== undefined) {
-    const parent: TSESTree.Node = current.parent;
-    if (isFunctionNode(parent)) {
-      return functionOwnsNode(parent, current);
-    }
-    if (!PARAMETER_WRAPPER_TYPES.has(parent.type)) {
-      return false;
-    }
-    current = parent;
-  }
-  return false;
-}
-
 function functionOwnsNode(parent: TSESTree.FunctionLike, node: TSESTree.Node): boolean {
   return parent.params.some((parameter) => parameter === node);
-}
-
-function isDirectFunctionParameter(node: TSESTree.Node): boolean {
-  const parent = node.parent;
-  return parent !== undefined && isFunctionNode(parent) && functionOwnsNode(parent, node);
-}
-
-function isObjectParameterPattern(node: TSESTree.ObjectPattern): boolean {
-  if (isDirectFunctionParameter(node)) {
-    return true;
-  }
-  const parent = node.parent;
-  return (
-    parent.type === AST_NODE_TYPES.AssignmentPattern &&
-    parent.left === node &&
-    isDirectFunctionParameter(parent)
-  );
-}
-
-function nestedPattern(node: TSESTree.Node): boolean {
-  return node.type === AST_NODE_TYPES.ArrayPattern || node.type === AST_NODE_TYPES.ObjectPattern;
-}
-
-type ObjectParameterContext = Readonly<{
-  report(descriptor: {
-    messageId: "computedDestructuring" | "nestedDestructuring";
-    node: TSESTree.Node;
-  }): void;
-}>;
-
-function reportUnsafeObjectProperty(
-  context: ObjectParameterContext,
-  property: TSESTree.RestElement | TSESTree.Property,
-): void {
-  if (property.type !== AST_NODE_TYPES.Property) {
-    return;
-  }
-  if (nestedPattern(property.value)) {
-    context.report({ node: property.value, messageId: "nestedDestructuring" });
-    return;
-  }
-  if (
-    property.computed ||
-    property.key.type !== AST_NODE_TYPES.Identifier ||
-    !property.shorthand
-  ) {
-    context.report({ node: property.key, messageId: "computedDestructuring" });
-  }
-}
-
-function reportUnsafeObjectParameter(
-  context: ObjectParameterContext,
-  node: TSESTree.ObjectPattern,
-): void {
-  if (!isObjectParameterPattern(node)) {
-    return;
-  }
-  for (const property of node.properties) {
-    reportUnsafeObjectProperty(context, property);
-  }
-}
-
-function hasEmptyDestructuringDefault(node: TSESTree.AssignmentPattern): boolean {
-  if (node.left.type === AST_NODE_TYPES.ObjectPattern) {
-    return (
-      node.right.type === AST_NODE_TYPES.ObjectExpression && node.right.properties.length === 0
-    );
-  }
-  if (node.left.type === AST_NODE_TYPES.ArrayPattern) {
-    return node.right.type === AST_NODE_TYPES.ArrayExpression && node.right.elements.length === 0;
-  }
-  return true;
 }
 
 /**

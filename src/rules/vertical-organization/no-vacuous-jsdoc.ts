@@ -37,19 +37,9 @@ const FIXED_TEMPLATES = new Set([
   "protocol definition to process",
 ]);
 
-function normalize(text: string): string {
-  const collapsed = text.trim().replace(/\s+/gu, " ");
-  const withoutPeriod = collapsed.endsWith(".") ? collapsed.slice(0, -1) : collapsed;
-  return withoutPeriod.replace(/[A-Z]/gu, (letter) => letter.toLowerCase());
-}
-
-function values(candidates: ReadonlyArray<string | undefined>): readonly string[] {
-  return candidates.filter((candidate): candidate is string => candidate !== undefined).map(normalize);
-}
-
-function matchesRepresentedTemplate(prose: string, block: ParsedJsdocBlock): boolean {
-  const attachment = block.attachment;
-  return attachment?.represents === true && attachment.symbol !== undefined && prose === `represents ${normalize(attachment.symbol)} values`;
+function isVacuous(span: DescriptionSpan, block: ParsedJsdocBlock): boolean {
+  const prose = normalize(span.text);
+  return PLACEHOLDERS.has(prose) || templateMatches(span, block);
 }
 
 // eslint-disable-next-line complexity, sonarjs/cyclomatic-complexity -- The closed template grammar stays explicit for auditability.
@@ -80,9 +70,19 @@ function templateMatches(span: DescriptionSpan, block: ParsedJsdocBlock): boolea
   return matchesRepresentedTemplate(prose, block);
 }
 
-function isVacuous(span: DescriptionSpan, block: ParsedJsdocBlock): boolean {
-  const prose = normalize(span.text);
-  return PLACEHOLDERS.has(prose) || templateMatches(span, block);
+function matchesRepresentedTemplate(prose: string, block: ParsedJsdocBlock): boolean {
+  const attachment = block.attachment;
+  return attachment?.represents === true && attachment.symbol !== undefined && prose === `represents ${normalize(attachment.symbol)} values`;
+}
+
+function values(candidates: ReadonlyArray<string | undefined>): readonly string[] {
+  return candidates.filter((candidate): candidate is string => candidate !== undefined).map(normalize);
+}
+
+function normalize(text: string): string {
+  const collapsed = text.trim().replace(/\s+/gu, " ");
+  const withoutPeriod = collapsed.endsWith(".") ? collapsed.slice(0, -1) : collapsed;
+  return withoutPeriod.replace(/[A-Z]/gu, (letter) => letter.toLowerCase());
 }
 
 /** Rejects the finite, evidence-based grammar of JSDoc filler prose. */

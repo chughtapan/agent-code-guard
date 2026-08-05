@@ -40,6 +40,36 @@ function isSchemaSyncDecodeCall(node: TSESTree.CallExpression): string | null {
   return callee.property.name;
 }
 
+function appliedArgumentIsIoLike(appliedCall: TSESTree.CallExpression): boolean {
+  const arg = appliedCall.arguments[0];
+  if (arg === undefined) {
+    return false;
+  }
+  if (arg.type === AST_NODE_TYPES.SpreadElement) {
+    return false;
+  }
+  if (isJsonParseCall(arg)) {
+    return true;
+  }
+  if (isFetchOrIoCall(arg)) {
+    return true;
+  }
+  return false;
+}
+
+function describeIoSource(node?: TSESTree.CallExpressionArgument): string {
+  if (node === undefined) {
+    return "I/O";
+  }
+  if (isJsonParseCall(node)) {
+    return "JSON.parse";
+  }
+  if (isFetchOrIoCall(node)) {
+    return "an I/O call (fs.read*, fetch, etc.)";
+  }
+  return "I/O";
+}
+
 function isJsonParseCall(node: TSESTree.Node): boolean {
   if (node.type !== AST_NODE_TYPES.CallExpression) {
     return false;
@@ -105,23 +135,6 @@ function matchesIoCall(
   return callee.object.type === AST_NODE_TYPES.Identifier && callee.object.name === objectName;
 }
 
-function appliedArgumentIsIoLike(appliedCall: TSESTree.CallExpression): boolean {
-  const arg = appliedCall.arguments[0];
-  if (arg === undefined) {
-    return false;
-  }
-  if (arg.type === AST_NODE_TYPES.SpreadElement) {
-    return false;
-  }
-  if (isJsonParseCall(arg)) {
-    return true;
-  }
-  if (isFetchOrIoCall(arg)) {
-    return true;
-  }
-  return false;
-}
-
 /**
  * Enforces the `prefer-decode-effect-at-boundary` Agent Code Guard rule.
  */
@@ -173,16 +186,3 @@ export const preferDecodeEffectAtBoundary = createRule({
     };
   },
 });
-
-function describeIoSource(node?: TSESTree.CallExpressionArgument): string {
-  if (node === undefined) {
-    return "I/O";
-  }
-  if (isJsonParseCall(node)) {
-    return "JSON.parse";
-  }
-  if (isFetchOrIoCall(node)) {
-    return "an I/O call (fs.read*, fetch, etc.)";
-  }
-  return "I/O";
-}

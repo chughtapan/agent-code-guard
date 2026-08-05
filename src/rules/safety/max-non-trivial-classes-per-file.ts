@@ -29,6 +29,17 @@ const DEFAULT_TAG_CLASS_FACTORIES: readonly string[] = [
   "Effect.Tag",
 ];
 
+function extendsTagClassFactory(
+  node: TSESTree.ClassDeclaration | TSESTree.ClassExpression,
+  factories: ReadonlySet<string>,
+): boolean {
+  if (node.superClass === null) {
+    return false;
+  }
+  const factory = factoryMemberName(node.superClass);
+  return factory !== null && factories.has(factory);
+}
+
 function factoryMemberName(node: TSESTree.Expression): string | null {
   let current: TSESTree.Expression | TSESTree.Super = node;
   while (current.type === AST_NODE_TYPES.CallExpression) {
@@ -47,17 +58,6 @@ function factoryMemberName(node: TSESTree.Expression): string | null {
     return null;
   }
   return `${current.object.name}.${current.property.name}`;
-}
-
-function extendsTagClassFactory(
-  node: TSESTree.ClassDeclaration | TSESTree.ClassExpression,
-  factories: ReadonlySet<string>,
-): boolean {
-  if (node.superClass === null) {
-    return false;
-  }
-  const factory = factoryMemberName(node.superClass);
-  return factory !== null && factories.has(factory);
 }
 
 /**

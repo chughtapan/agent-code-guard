@@ -30,14 +30,6 @@ const TRANSPORT_HELPERS = new Set([
   "unwrapor",
 ]);
 
-function hasDiscriminantStyle(surface: Surface): boolean {
-  return surface.hasTagKey || hasNormalized(surface.keys, ["type", "kind", "status"]);
-}
-
-function displayNameMatches(surface: Surface, pattern: RegExp): boolean {
-  return surface.displayName !== null && pattern.test(surface.displayName);
-}
-
 /**
  * Tests whether a surface is ordinary transport data rather than a reusable
  * result or option algebra.
@@ -70,4 +62,12 @@ export function isTaggedErrorSurface(surface: Surface): boolean {
     return true;
   }
   return [...surface.stringLiterals].some((value) => ERROR_NAME_RE.test(value));
+}
+
+function hasDiscriminantStyle(surface: Surface): boolean {
+  return surface.hasTagKey || hasNormalized(surface.keys, ["type", "kind", "status"]);
+}
+
+function displayNameMatches(surface: Surface, pattern: RegExp): boolean {
+  return surface.displayName !== null && pattern.test(surface.displayName);
 }

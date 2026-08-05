@@ -23,6 +23,14 @@ function compareStrings(left: string, right: string): number {
 
 const linter = new Linter();
 
+function lintOne(code: string, ruleId: string): Linter.LintMessage[] {
+  return linter.verify(code, configFor(ruleId), { filename: "src/test.ts" });
+}
+
+function lintTestFile(code: string, ruleId: string): Linter.LintMessage[] {
+  return linter.verify(code, configFor(ruleId), { filename: "src/example.test.ts" });
+}
+
 function configFor(ruleId: string): Linter.Config {
   return {
     files: ["**/*.ts"],
@@ -33,14 +41,6 @@ function configFor(ruleId: string): Linter.Config {
     plugins: { "agent-code-guard": pluginEntry },
     rules: { [ruleId]: "error" },
   };
-}
-
-function lintOne(code: string, ruleId: string): Linter.LintMessage[] {
-  return linter.verify(code, configFor(ruleId), { filename: "src/test.ts" });
-}
-
-function lintTestFile(code: string, ruleId: string): Linter.LintMessage[] {
-  return linter.verify(code, configFor(ruleId), { filename: "src/example.test.ts" });
 }
 
 const typeNameArb = fc.stringMatching(/^[A-Z][a-zA-Z]{2,8}$/);

@@ -4,6 +4,19 @@
 
 import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 
+/**
+ * Finds an optional or nullable parameter with the requested local name.
+ * @param params The enclosing function parameters.
+ * @param name The argument identifier being forwarded.
+ * @returns The unresolved parameter, or `null`.
+ */
+export function unresolvedParameter(
+  params: readonly TSESTree.Parameter[],
+  name: string,
+): TSESTree.Parameter | null {
+  return params.find((parameter) => unresolvedParameterName(parameter) === name) ?? null;
+}
+
 function unresolvedParameterName(parameter: TSESTree.Parameter): string | null {
   if (parameter.type === AST_NODE_TYPES.Identifier) {
     return identifierParameterIsUnresolved(parameter) ? parameter.name : null;
@@ -100,17 +113,4 @@ function typeAnnotationIsNullable(node: TSESTree.TypeNode): boolean {
     return true;
   }
   return node.type === AST_NODE_TYPES.TSUnionType && node.types.some(typeAnnotationIsNullable);
-}
-
-/**
- * Finds an optional or nullable parameter with the requested local name.
- * @param params The enclosing function parameters.
- * @param name The argument identifier being forwarded.
- * @returns The unresolved parameter, or `null`.
- */
-export function unresolvedParameter(
-  params: readonly TSESTree.Parameter[],
-  name: string,
-): TSESTree.Parameter | null {
-  return params.find((parameter) => unresolvedParameterName(parameter) === name) ?? null;
 }

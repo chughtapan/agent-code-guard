@@ -53,21 +53,6 @@ export function getFirst<T>(values: readonly T[]): T | null {
 }
 
 /**
- * Parent of `node`, branded as `NodeWithParent` when present.
- * @param node AST node to read the parent of.
- * @returns The parent node branded as non-null, or `null` for roots.
- */
-export function getParent(node: TSESTree.Node): NodeWithParent | null {
-  if (node.parent === undefined) {
-    return null;
-  }
-  return (
-    // Safe because the branch proves that the parent reference is present.
-    node.parent as NodeWithParent
-  );
-}
-
-/**
  * Extract a statically-known string from an object key or template
  * literal. Handles non-computed identifiers, string literals, and
  * empty-expression template literals.
@@ -104,14 +89,6 @@ export function resolveStringLiteralValue(node: TSESTree.Node | null): StaticStr
   return node?.type === AST_NODE_TYPES.TemplateLiteral ? getStaticTemplateValue(node) : null;
 }
 
-function getStaticTemplateValue(node: TSESTree.TemplateLiteral): StaticString | null {
-  if (node.expressions.length > 0) {
-    return null;
-  }
-  const head = getFirst(node.quasis);
-  return head === null ? null : staticString(head.value.cooked ?? head.value.raw);
-}
-
 /**
  * Resolve a numeric-literal node (including unary-minus prefixed ones)
  * into its number value.
@@ -132,27 +109,6 @@ export function getNumericLiteralValue(node: TSESTree.Node): number | null {
     return -node.argument.value;
   }
   return null;
-}
-
-/**
- * Narrow a node to a static (non-computed, identifier-property) member
- * expression, unwrapping optional-chaining wrappers when present.
- * @param node The AST node to inspect.
- * @returns The branded static member expression, or `null` if `node`
- * is dynamic or not a member expression.
- */
-export function getStaticMemberExpression(node: TSESTree.Node): StaticMemberExpression | null {
-  const unwrapped = node.type === AST_NODE_TYPES.ChainExpression ? node.expression : node;
-  if (unwrapped.type !== AST_NODE_TYPES.MemberExpression || unwrapped.computed) {
-    return null;
-  }
-  if (unwrapped.property.type !== AST_NODE_TYPES.Identifier) {
-    return null;
-  }
-  return (
-    // Safe because both the static shape and identifier property are proven above.
-    unwrapped as StaticMemberExpression
-  );
 }
 
 /**
@@ -205,6 +161,27 @@ export function isNamedMemberCall(
 }
 
 /**
+ * Narrow a node to a static (non-computed, identifier-property) member
+ * expression, unwrapping optional-chaining wrappers when present.
+ * @param node The AST node to inspect.
+ * @returns The branded static member expression, or `null` if `node`
+ * is dynamic or not a member expression.
+ */
+export function getStaticMemberExpression(node: TSESTree.Node): StaticMemberExpression | null {
+  const unwrapped = node.type === AST_NODE_TYPES.ChainExpression ? node.expression : node;
+  if (unwrapped.type !== AST_NODE_TYPES.MemberExpression || unwrapped.computed) {
+    return null;
+  }
+  if (unwrapped.property.type !== AST_NODE_TYPES.Identifier) {
+    return null;
+  }
+  return (
+    // Safe because both the static shape and identifier property are proven above.
+    unwrapped as StaticMemberExpression
+  );
+}
+
+/**
  * Walk up the AST from `node` and return the name of the nearest
  * enclosing function (function declaration, variable-assigned arrow,
  * or named property carrier).
@@ -222,6 +199,48 @@ export function getEnclosingFunctionName(node: TSESTree.Node): StaticString | nu
     current = getParent(current);
   }
   return null;
+}
+
+/**
+ * Whether `node` sits directly inside a function's return-type
+ * annotation (as opposed to a parameter type, variable annotation,
+ * etc.).
+ * @param node The TS type reference to inspect.
+ * @returns `true` when `node` is the function's declared return type.
+ */
+export function isFunctionReturnTypeReference(node: TSESTree.TSTypeReference): boolean {
+  const annotation = getParent(node);
+  if (annotation === null || annotation.type !== AST_NODE_TYPES.TSTypeAnnotation) {
+    return false;
+  }
+  const owner = getParent(annotation);
+  if (owner === null) {
+    return false;
+  }
+  return isFunctionReturnTypeOwner(owner) && owner.returnType === annotation;
+}
+
+/**
+ * Parent of `node`, branded as `NodeWithParent` when present.
+ * @param node AST node to read the parent of.
+ * @returns The parent node branded as non-null, or `null` for roots.
+ */
+export function getParent(node: TSESTree.Node): NodeWithParent | null {
+  if (node.parent === undefined) {
+    return null;
+  }
+  return (
+    // Safe because the branch proves that the parent reference is present.
+    node.parent as NodeWithParent
+  );
+}
+
+function getStaticTemplateValue(node: TSESTree.TemplateLiteral): StaticString | null {
+  if (node.expressions.length > 0) {
+    return null;
+  }
+  const head = getFirst(node.quasis);
+  return head === null ? null : staticString(head.value.cooked ?? head.value.raw);
 }
 
 function getFunctionNameAtNode(node: NodeWithParent): StaticString | null | undefined {
@@ -288,23 +307,4 @@ const FUNCTION_RETURN_TYPE_OWNER_TYPES = new Set<string>([
 
 function isFunctionReturnTypeOwner(node: TSESTree.Node): node is FunctionReturnTypeOwner {
   return FUNCTION_RETURN_TYPE_OWNER_TYPES.has(node.type);
-}
-
-/**
- * Whether `node` sits directly inside a function's return-type
- * annotation (as opposed to a parameter type, variable annotation,
- * etc.).
- * @param node The TS type reference to inspect.
- * @returns `true` when `node` is the function's declared return type.
- */
-export function isFunctionReturnTypeReference(node: TSESTree.TSTypeReference): boolean {
-  const annotation = getParent(node);
-  if (annotation === null || annotation.type !== AST_NODE_TYPES.TSTypeAnnotation) {
-    return false;
-  }
-  const owner = getParent(annotation);
-  if (owner === null) {
-    return false;
-  }
-  return isFunctionReturnTypeOwner(owner) && owner.returnType === annotation;
 }

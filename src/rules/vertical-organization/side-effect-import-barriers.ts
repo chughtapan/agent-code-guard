@@ -44,8 +44,17 @@ interface BareImportOptions {
   readonly report: ReportBarrierViolation;
 }
 
-function raw(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): string {
-  return sourceCode.text.slice(token.range[0], token.range[1]);
+/**
+ * Reports barrier violations for every bare side-effect import in a program.
+ * @param options Source, program, and diagnostic callback for the validation pass.
+ */
+export function reportBareImportBarrierViolations(options: BareImportOptions): void {
+  const { program } = options;
+  for (const statement of program.body) {
+    if (statement.type === AST_NODE_TYPES.ImportDeclaration && statement.specifiers.length === 0) {
+      reportBareImportBarriers(options, statement);
+    }
+  }
 }
 
 /**
@@ -91,6 +100,28 @@ export function hasLineAdjacentGap(
   return /^[ \t]*\r?\n[ \t]*$/u.test(sourceCode.text.slice(left.range[1], right.range[0]));
 }
 
+function reportBareImportBarriers(
+  options: BareImportOptions,
+  statement: TSESTree.ImportDeclaration,
+): void {
+  const { report, sourceCode } = options;
+  const begin = candidateFor(
+    sourceCode,
+    sourceCode.getTokenBefore(statement, { includeComments: true }) ?? undefined,
+  );
+  const end = candidateFor(
+    sourceCode,
+    sourceCode.getTokenAfter(statement, { includeComments: true }) ?? undefined,
+  );
+  reportBeginBarrierViolation({ sourceCode, statement, candidate: begin, report });
+  reportEndBarrierViolation({ sourceCode, statement, candidate: end, report });
+  if (begin.barrier?.kind === "begin" &&
+      end.barrier?.kind === "end" &&
+      begin.barrier.reason !== end.barrier.reason) {
+    report(statement, "mismatchedSideEffectImportBarrier");
+  }
+}
+
 function candidateFor(
   sourceCode: TSESLint.SourceCode,
   token?: TSESLint.AST.Token,
@@ -132,37 +163,6 @@ function reportEndBarrierViolation(options: BarrierSideOptions): void {
   }
 }
 
-function reportBareImportBarriers(
-  options: BareImportOptions,
-  statement: TSESTree.ImportDeclaration,
-): void {
-  const { report, sourceCode } = options;
-  const begin = candidateFor(
-    sourceCode,
-    sourceCode.getTokenBefore(statement, { includeComments: true }) ?? undefined,
-  );
-  const end = candidateFor(
-    sourceCode,
-    sourceCode.getTokenAfter(statement, { includeComments: true }) ?? undefined,
-  );
-  reportBeginBarrierViolation({ sourceCode, statement, candidate: begin, report });
-  reportEndBarrierViolation({ sourceCode, statement, candidate: end, report });
-  if (begin.barrier?.kind === "begin" &&
-      end.barrier?.kind === "end" &&
-      begin.barrier.reason !== end.barrier.reason) {
-    report(statement, "mismatchedSideEffectImportBarrier");
-  }
-}
-
-/**
- * Reports barrier violations for every bare side-effect import in a program.
- * @param options Source, program, and diagnostic callback for the validation pass.
- */
-export function reportBareImportBarrierViolations(options: BareImportOptions): void {
-  const { program } = options;
-  for (const statement of program.body) {
-    if (statement.type === AST_NODE_TYPES.ImportDeclaration && statement.specifiers.length === 0) {
-      reportBareImportBarriers(options, statement);
-    }
-  }
+function raw(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): string {
+  return sourceCode.text.slice(token.range[0], token.range[1]);
 }

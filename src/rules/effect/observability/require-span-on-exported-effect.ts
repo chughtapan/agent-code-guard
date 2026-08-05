@@ -6,6 +6,20 @@ import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint
 import { createRule } from "../../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../../utils/principles.js";
 
+function exportName(node: TSESTree.ExportNamedDeclaration): string | null {
+  const declaration = node.declaration;
+  if (declaration === null || declaration === undefined) {
+    return null;
+  }
+  if (declaration.type === AST_NODE_TYPES.FunctionDeclaration) {
+    return functionExportName(declaration);
+  }
+  if (declaration.type === AST_NODE_TYPES.VariableDeclaration) {
+    return variableExportName(declaration);
+  }
+  return null;
+}
+
 function functionExportName(declaration: TSESTree.FunctionDeclaration): string | null {
   return declaration.id?.name ?? null;
 }
@@ -19,20 +33,6 @@ function variableExportName(declaration: TSESTree.VariableDeclaration): string |
     return null;
   }
   return first.id.name;
-}
-
-function exportName(node: TSESTree.ExportNamedDeclaration): string | null {
-  const declaration = node.declaration;
-  if (declaration === null || declaration === undefined) {
-    return null;
-  }
-  if (declaration.type === AST_NODE_TYPES.FunctionDeclaration) {
-    return functionExportName(declaration);
-  }
-  if (declaration.type === AST_NODE_TYPES.VariableDeclaration) {
-    return variableExportName(declaration);
-  }
-  return null;
 }
 
 interface PendingExport {

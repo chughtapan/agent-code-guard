@@ -111,38 +111,6 @@ export const safeSourceArb = fc
   .map((statements) => statements.join("\n"));
 
 /**
- * Builds a typed flat config around an arbitrary rule map.
- * @param rules The rules to enable in the fixture configuration.
- * @returns A typed flat configuration for in-memory linting.
- */
-export function baseConfig(rules: Linter.RulesRecord): Linter.Config {
-  return {
-    files: ["**/*.ts", "**/*.js"],
-    languageOptions: {
-      parser,
-      parserOptions: {
-        ecmaVersion: 2022,
-        projectService: {
-          allowDefaultProject: [
-            "jest.config.js",
-            "src/auth.test.ts",
-            "src/foo.test.ts",
-            "src/handlers/test.ts",
-            "src/lint-target.ts",
-            "test.ts",
-          ],
-        },
-        sourceType: "module",
-        tsconfigRootDir: process.cwd(),
-      },
-    },
-    plugins: plugin.configs.recommended.plugins,
-    rules,
-    settings: plugin.configs.recommended.settings,
-  };
-}
-
-/**
  * Runs every recommended diagnostic against one source string.
  *
  * Generated sources are fragments rather than files, so a canonical overview
@@ -173,6 +141,38 @@ export function lintOne(
   filename = "src/lint-target.ts",
 ): Linter.LintMessage[] {
   return linter.verify(code, baseConfig({ [ruleId]: "error" }), { filename });
+}
+
+/**
+ * Builds a typed flat config around an arbitrary rule map.
+ * @param rules The rules to enable in the fixture configuration.
+ * @returns A typed flat configuration for in-memory linting.
+ */
+export function baseConfig(rules: Linter.RulesRecord): Linter.Config {
+  return {
+    files: ["**/*.ts", "**/*.js"],
+    languageOptions: {
+      parser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        projectService: {
+          allowDefaultProject: [
+            "jest.config.js",
+            "src/auth.test.ts",
+            "src/foo.test.ts",
+            "src/handlers/test.ts",
+            "src/lint-target.ts",
+            "test.ts",
+          ],
+        },
+        sourceType: "module",
+        tsconfigRootDir: process.cwd(),
+      },
+    },
+    plugins: plugin.configs.recommended.plugins,
+    rules,
+    settings: plugin.configs.recommended.settings,
+  };
 }
 
 /**
@@ -219,20 +219,6 @@ export function messageDetails(messages: readonly Linter.LintMessage[]): string 
 export const FIXABLE_RULE_IDS = Object.entries(plugin.rules)
   .filter(([, rule]) => rule.meta.fixable)
   .map(([name]) => `agent-code-guard/${name}`);
-
-function literalArbForType(typeName: string): fc.Arbitrary<string> {
-  if (typeName === "number") {
-    return safeNumberArb;
-  }
-  if (typeName === "string") {
-    return safeStringArb;
-  }
-  return safeBoolArb;
-}
-
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 const IDENTS_BY_SEED: Record<string, string> = {
   "agent-code-guard/async-keyword": "foo",
@@ -287,4 +273,18 @@ const IDENTS_BY_SEED: Record<string, string> = {
  */
 export function seedIdent(ruleId: string): string {
   return IDENTS_BY_SEED[ruleId] ?? "";
+}
+
+function literalArbForType(typeName: string): fc.Arbitrary<string> {
+  if (typeName === "number") {
+    return safeNumberArb;
+  }
+  if (typeName === "string") {
+    return safeStringArb;
+  }
+  return safeBoolArb;
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

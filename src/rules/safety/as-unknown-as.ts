@@ -7,10 +7,6 @@ import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";
 import { createRule } from "../utils/create-rule.js";
 import { PRINCIPLE_URL } from "../utils/principles.js";
 
-function isUnknownKeyword(node: TSESTree.TypeNode): boolean {
-  return node.type === AST_NODE_TYPES.TSUnknownKeyword;
-}
-
 function isCastToUnknown(
   node: TSESTree.Expression,
 ): node is TSESTree.TSAsExpression | TSESTree.TSTypeAssertion {
@@ -18,6 +14,10 @@ function isCastToUnknown(
     (node.type === AST_NODE_TYPES.TSAsExpression || node.type === AST_NODE_TYPES.TSTypeAssertion) &&
     isUnknownKeyword(node.typeAnnotation)
   );
+}
+
+function isUnknownKeyword(node: TSESTree.TypeNode): boolean {
+  return node.type === AST_NODE_TYPES.TSUnknownKeyword;
 }
 
 /**

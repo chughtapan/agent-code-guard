@@ -50,12 +50,6 @@ const PARAMETER_WRAPPER_TYPES: ReadonlySet<string> = new Set([
   AST_NODE_TYPES.TSParameterProperty,
 ]);
 
-function isParameterOwner(
-  node: TSESTree.Node,
-): node is TSESTree.Node & { readonly params: readonly TSESTree.Parameter[] } {
-  return PARAMETER_OWNER_TYPES.has(node.type) && "params" in node;
-}
-
 function functionOwnsParameter(node: TSESTree.Parameter): boolean {
   let current: TSESTree.Node = node;
   while (current.parent !== undefined) {
@@ -70,6 +64,12 @@ function functionOwnsParameter(node: TSESTree.Parameter): boolean {
     current = parent;
   }
   return false;
+}
+
+function isParameterOwner(
+  node: TSESTree.Node,
+): node is TSESTree.Node & { readonly params: readonly TSESTree.Parameter[] } {
+  return PARAMETER_OWNER_TYPES.has(node.type) && "params" in node;
 }
 
 /**

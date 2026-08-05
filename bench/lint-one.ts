@@ -13,6 +13,44 @@ interface Args {
   readonly dumpPath: string | null;
 }
 
+async function main(): Promise<void> {
+  const args = parseArgs(process.argv.slice(2));
+  const eslint = new ESLint({ cwd: args.cwd });
+
+  const timings: number[] = [];
+  let lastRows: DiagnosticRow[] = [];
+  let peakRss = 0;
+
+  for (let i = 0; i < args.repeats; i++) {
+    if (global.gc) global.gc();
+    const before = process.memoryUsage().rss;
+    const t0 = performance.now();
+    const results = await eslint.lintFiles([...args.patterns]);
+    const t1 = performance.now();
+    const after = process.memoryUsage().rss;
+    timings.push(t1 - t0);
+    peakRss = Math.max(peakRss, before, after);
+    lastRows = flatten(results, args.cwd);
+  }
+
+  if (args.dumpPath !== null) {
+    const fs = await import("node:fs");
+    fs.writeFileSync(args.dumpPath, JSON.stringify(lastRows, null, 2));
+  }
+
+  const output = {
+    cwd: args.cwd,
+    repeats: args.repeats,
+    cold_ms: timings[0],
+    warm_ms: timings.slice(1),
+    diagnostics: lastRows.length,
+    diagnosticsHash: hash(lastRows),
+    peakRssBytes: peakRss,
+  };
+
+  process.stdout.write(JSON.stringify(output) + "\n");
+}
+
 function parseArgs(argv: readonly string[]): Args {
   let cwd: string | null = null;
   let patternsCsv: string | null = null;
@@ -83,44 +121,6 @@ function hash(rows: readonly DiagnosticRow[]): string {
   const h = crypto.createHash("sha256");
   for (const r of rows) h.update(`${r.file}\t${r.ruleId}\t${r.severity}\t${r.message}\n`);
   return h.digest("hex").slice(0, 16);
-}
-
-async function main(): Promise<void> {
-  const args = parseArgs(process.argv.slice(2));
-  const eslint = new ESLint({ cwd: args.cwd });
-
-  const timings: number[] = [];
-  let lastRows: DiagnosticRow[] = [];
-  let peakRss = 0;
-
-  for (let i = 0; i < args.repeats; i++) {
-    if (global.gc) global.gc();
-    const before = process.memoryUsage().rss;
-    const t0 = performance.now();
-    const results = await eslint.lintFiles([...args.patterns]);
-    const t1 = performance.now();
-    const after = process.memoryUsage().rss;
-    timings.push(t1 - t0);
-    peakRss = Math.max(peakRss, before, after);
-    lastRows = flatten(results, args.cwd);
-  }
-
-  if (args.dumpPath !== null) {
-    const fs = await import("node:fs");
-    fs.writeFileSync(args.dumpPath, JSON.stringify(lastRows, null, 2));
-  }
-
-  const output = {
-    cwd: args.cwd,
-    repeats: args.repeats,
-    cold_ms: timings[0],
-    warm_ms: timings.slice(1),
-    diagnostics: lastRows.length,
-    diagnosticsHash: hash(lastRows),
-    peakRssBytes: peakRss,
-  };
-
-  process.stdout.write(JSON.stringify(output) + "\n");
 }
 
 main().catch((err: unknown) => {

@@ -65,6 +65,63 @@ interface Piece {
   readonly range: readonly [number, number];
 }
 
+/**
+ * Parses every JSDoc block comment in a source file.
+ * @param sourceCode Source text and locations for the current file.
+ * @returns Parsed metadata for every JSDoc block comment.
+ */
+export function parseJsdocBlocks(sourceCode: TSESLint.SourceCode): readonly ParsedJsdocBlock[] {
+  return sourceCode
+    .getAllComments()
+    .filter((token) => isJSDoc(token, sourceCode))
+    .flatMap((token) => {
+      const block = parseJsdocBlock(sourceCode, token);
+      return block === undefined ? [] : [block];
+    });
+}
+
+/**
+ * Parses one JSDoc token using comment-parser's physical token offsets.
+ * @param sourceCode Source text and locations for the current file.
+ * @param token Block-comment token to parse.
+ * @returns Parsed metadata when the token is a valid JSDoc block.
+ */
+function parseJsdocBlock(
+  sourceCode: TSESLint.SourceCode,
+  token: TSESLint.AST.Token,
+): ParsedJsdocBlock | undefined {
+  const source = sourceCode.text.slice(token.range[0], token.range[1]);
+  // comment-parser treats LF and CRLF as line endings but otherwise leaves a
+  // bare CR inside one logical line. Normalize only bare CR bytes; preserving
+  // length keeps its parser offsets aligned with the physical source token.
+  const parserSource = source.replace(/\r(?!\n)/gu, "\n");
+  const blocks = parse(parserSource, { startLine: token.loc.start.line, spacing: "preserve" });
+  const block = blocks[0];
+  if (block === undefined) {
+    return undefined;
+  }
+  const mapped = mapLines(sourceCode.text, token, block);
+  return {
+    token,
+    description: blockDescription(sourceCode, block, mapped),
+    tags: block.tags.map((spec) => {
+      // eslint-disable-next-line agent-code-guard/require-assertion-rationale -- comment-parser spec.source line numbers are a subset of its enclosing block.source lines.
+      const specLines = spec.source.map((line) => mapped.find((entry) => entry.line.number === line.number)!);
+      const tagLine = specLines[0];
+      return {
+        tag: spec.tag,
+        name: spec.name,
+        loc: {
+          start: sourceCode.getLocFromIndex(tagLine.ranges.tag[0]),
+          end: sourceCode.getLocFromIndex(tagLine.ranges.tag[1]),
+        },
+        description: tagDescription(sourceCode, spec, specLines),
+      };
+    }),
+    attachment: attachmentFor(sourceCode, token),
+  };
+}
+
 function mapLines(source: string, token: TSESLint.AST.Token, block: Block): readonly MappedLine[] {
   let cursor = token.range[0];
   return block.source.map((line) => {
@@ -82,42 +139,6 @@ function mapLines(source: string, token: TSESLint.AST.Token, block: Block): read
       ranges: ranges as Readonly<Record<(typeof TOKEN_FIELDS)[number], readonly [number, number]>>,
     };
   });
-}
-
-// eslint-disable-next-line max-params -- A span is defined by these five distinct parser dimensions.
-function spanFromPieces(
-  sourceCode: TSESLint.SourceCode,
-  kind: DescriptionKind,
-  // eslint-disable-next-line agent-code-guard/prefer-optional-over-undefined-union -- These positional parser slots distinguish an explicit absent tag from omitted arguments.
-  tag: string | undefined,
-  // eslint-disable-next-line agent-code-guard/prefer-optional-over-undefined-union -- These positional parser slots distinguish an explicit absent name from omitted arguments.
-  tagName: string | undefined,
-  pieces: readonly Piece[],
-): DescriptionSpan | undefined {
-  const nonEmpty = pieces.filter((piece) => /\S/u.test(piece.text));
-  const first = nonEmpty.at(0);
-  const last = nonEmpty.at(-1);
-  if (first === undefined || last === undefined) {
-    return undefined;
-  }
-  const start = first.range[0] + first.text.length - first.text.trimStart().length;
-  // eslint-disable-next-line sonarjs/slow-regex -- This suffix check runs on a single bounded JSDoc line.
-  const endOffset = last.text.search(/\s*$/u);
-  const range: readonly [number, number] = [
-    start,
-    last.range[0] + endOffset,
-  ];
-  return {
-    kind,
-    tag,
-    tagName,
-    text: pieces.filter((piece) => piece.text !== "").map((piece) => piece.text).join("\n"),
-    range,
-    loc: {
-      start: sourceCode.getLocFromIndex(range[0]),
-      end: sourceCode.getLocFromIndex(range[1]),
-    },
-  };
 }
 
 function descriptionPiece(mapped: MappedLine): Piece {
@@ -171,63 +192,42 @@ function tagDescription(
   return spanFromPieces(sourceCode, "tag", spec.tag, NAMED_TAGS.has(spec.tag) ? spec.name : undefined, pieces);
 }
 
-function isJSDoc(token: TSESLint.AST.Token, sourceCode: TSESLint.SourceCode): boolean {
-  return sourceCode.text.slice(token.range[0], token.range[1]).startsWith("/**");
-}
-
-/**
- * Parses one JSDoc token using comment-parser's physical token offsets.
- * @param sourceCode Source text and locations for the current file.
- * @param token Block-comment token to parse.
- * @returns Parsed metadata when the token is a valid JSDoc block.
- */
-function parseJsdocBlock(
+// eslint-disable-next-line max-params -- A span is defined by these five distinct parser dimensions.
+function spanFromPieces(
   sourceCode: TSESLint.SourceCode,
-  token: TSESLint.AST.Token,
-): ParsedJsdocBlock | undefined {
-  const source = sourceCode.text.slice(token.range[0], token.range[1]);
-  // comment-parser treats LF and CRLF as line endings but otherwise leaves a
-  // bare CR inside one logical line. Normalize only bare CR bytes; preserving
-  // length keeps its parser offsets aligned with the physical source token.
-  const parserSource = source.replace(/\r(?!\n)/gu, "\n");
-  const blocks = parse(parserSource, { startLine: token.loc.start.line, spacing: "preserve" });
-  const block = blocks[0];
-  if (block === undefined) {
+  kind: DescriptionKind,
+  // eslint-disable-next-line agent-code-guard/prefer-optional-over-undefined-union -- These positional parser slots distinguish an explicit absent tag from omitted arguments.
+  tag: string | undefined,
+  // eslint-disable-next-line agent-code-guard/prefer-optional-over-undefined-union -- These positional parser slots distinguish an explicit absent name from omitted arguments.
+  tagName: string | undefined,
+  pieces: readonly Piece[],
+): DescriptionSpan | undefined {
+  const nonEmpty = pieces.filter((piece) => /\S/u.test(piece.text));
+  const first = nonEmpty.at(0);
+  const last = nonEmpty.at(-1);
+  if (first === undefined || last === undefined) {
     return undefined;
   }
-  const mapped = mapLines(sourceCode.text, token, block);
+  const start = first.range[0] + first.text.length - first.text.trimStart().length;
+  // eslint-disable-next-line sonarjs/slow-regex -- This suffix check runs on a single bounded JSDoc line.
+  const endOffset = last.text.search(/\s*$/u);
+  const range: readonly [number, number] = [
+    start,
+    last.range[0] + endOffset,
+  ];
   return {
-    token,
-    description: blockDescription(sourceCode, block, mapped),
-    tags: block.tags.map((spec) => {
-      // eslint-disable-next-line agent-code-guard/require-assertion-rationale -- comment-parser spec.source line numbers are a subset of its enclosing block.source lines.
-      const specLines = spec.source.map((line) => mapped.find((entry) => entry.line.number === line.number)!);
-      const tagLine = specLines[0];
-      return {
-        tag: spec.tag,
-        name: spec.name,
-        loc: {
-          start: sourceCode.getLocFromIndex(tagLine.ranges.tag[0]),
-          end: sourceCode.getLocFromIndex(tagLine.ranges.tag[1]),
-        },
-        description: tagDescription(sourceCode, spec, specLines),
-      };
-    }),
-    attachment: attachmentFor(sourceCode, token),
+    kind,
+    tag,
+    tagName,
+    text: pieces.filter((piece) => piece.text !== "").map((piece) => piece.text).join("\n"),
+    range,
+    loc: {
+      start: sourceCode.getLocFromIndex(range[0]),
+      end: sourceCode.getLocFromIndex(range[1]),
+    },
   };
 }
 
-/**
- * Parses every JSDoc block comment in a source file.
- * @param sourceCode Source text and locations for the current file.
- * @returns Parsed metadata for every JSDoc block comment.
- */
-export function parseJsdocBlocks(sourceCode: TSESLint.SourceCode): readonly ParsedJsdocBlock[] {
-  return sourceCode
-    .getAllComments()
-    .filter((token) => isJSDoc(token, sourceCode))
-    .flatMap((token) => {
-      const block = parseJsdocBlock(sourceCode, token);
-      return block === undefined ? [] : [block];
-    });
+function isJSDoc(token: TSESLint.AST.Token, sourceCode: TSESLint.SourceCode): boolean {
+  return sourceCode.text.slice(token.range[0], token.range[1]).startsWith("/**");
 }

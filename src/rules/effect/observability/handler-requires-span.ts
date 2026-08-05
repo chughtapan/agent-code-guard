@@ -52,20 +52,6 @@ function topOfPipeChain(node: TSESTree.Node): TSESTree.Node {
   return current;
 }
 
-function isPipeMember(node: TSESTree.MemberExpression): boolean {
-  if (node.computed) {
-    return false;
-  }
-  if (node.property.type !== AST_NODE_TYPES.Identifier) {
-    return false;
-  }
-  return node.property.name === "pipe";
-}
-
-function isPipeCall(node: TSESTree.CallExpression): boolean {
-  return node.callee.type === AST_NODE_TYPES.MemberExpression && isPipeMember(node.callee);
-}
-
 function isPipeMemberContext(parent: TSESTree.Node): boolean {
   if (parent.type === AST_NODE_TYPES.MemberExpression) {
     return isPipeMember(parent);
@@ -74,6 +60,20 @@ function isPipeMemberContext(parent: TSESTree.Node): boolean {
     return isPipeCall(parent);
   }
   return false;
+}
+
+function isPipeCall(node: TSESTree.CallExpression): boolean {
+  return node.callee.type === AST_NODE_TYPES.MemberExpression && isPipeMember(node.callee);
+}
+
+function isPipeMember(node: TSESTree.MemberExpression): boolean {
+  if (node.computed) {
+    return false;
+  }
+  if (node.property.type !== AST_NODE_TYPES.Identifier) {
+    return false;
+  }
+  return node.property.name === "pipe";
 }
 
 /**

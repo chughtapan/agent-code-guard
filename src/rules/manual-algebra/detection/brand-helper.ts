@@ -9,11 +9,6 @@ const BRAND_HELPER_RE = /^(as|make|to)[A-Z]/;
 
 type FunctionInitializer = TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression;
 
-function getBrandHelperCastName(node: TSESTree.Node): string | null {
-  const expression = getBrandHelperExpression(node);
-  return expression === null ? null : getCastAnnotationName(expression);
-}
-
 /** Describes one hand-rolled nominal-brand constructor. */
 export interface ManualBrandConstructorMatch {
   readonly node: TSESTree.Node;
@@ -38,6 +33,11 @@ export function findManualBrandConstructorMatch(
     return null;
   }
   return { displayName, node, targetType };
+}
+
+function getBrandHelperCastName(node: TSESTree.Node): string | null {
+  const expression = getBrandHelperExpression(node);
+  return expression === null ? null : getCastAnnotationName(expression);
 }
 
 function matchesBrandHelperName(displayName: string, targetType: string): boolean {

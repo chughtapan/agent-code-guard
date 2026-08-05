@@ -125,10 +125,6 @@ function errorSummary(cause: unknown): string {
   return cause instanceof Error ? cause.message : String(cause);
 }
 
-function absurd(value: never): never {
-  throw new Error(`unreachable tag: ${JSON.stringify(value)}`);
-}
-
 function resolvePackageCheck(
   read: PackageJsonRead,
   scriptNames: readonly string[],
@@ -141,6 +137,10 @@ function resolvePackageCheck(
     default:
       return absurd(read);
   }
+}
+
+function absurd(value: never): never {
+  throw new Error(`unreachable tag: ${JSON.stringify(value)}`);
 }
 
 /**

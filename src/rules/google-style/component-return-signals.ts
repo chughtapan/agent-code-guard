@@ -50,47 +50,66 @@ export function returnTypeSignalsComponent(
     (upperCamel && REACT_NODE_RETURN_TYPE_PATTERN.test(returnType));
 }
 
-function isReactImport(definition: TSESLint.Scope.Definition): boolean {
-  return definition.type === "ImportBinding" &&
-    definition.parent.type === AST_NODE_TYPES.ImportDeclaration &&
-    definition.parent.source.value === "react";
+/**
+ * Tests whether a function returns JSX, React.createElement, or JSX-producing
+ * mapped callbacks.
+ * @param sourceCode Source and scope information.
+ * @param recordedReturns Return statements grouped by their owning function.
+ * @param node Function whose return values are inspected.
+ * @returns Whether a returned value signals a component.
+ */
+export function functionHasComponentReturnSignal(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  recordedReturns: ReadonlyMap<
+    ComponentFunctionNode,
+    ReadonlyArray<TSESTree.Expression | null>
+  >,
+  node: ComponentFunctionNode,
+): boolean {
+  return returnedValues(node, recordedReturns).some((returned) =>
+    returned !== null &&
+    expressionHasComponentSignal(sourceCode, recordedReturns, returned)
+  );
 }
 
-function isReactReference(
-  sourceCode: Readonly<TSESLint.SourceCode>,
-  identifier: TSESTree.Identifier,
-): boolean {
-  const variable = resolveScopeVariable(sourceCode, identifier);
-  if (variable === null || variable.defs.length === 0) {
-    return identifier.name === "React";
+function returnedValues(
+  node: ComponentFunctionNode,
+  recorded: ReadonlyMap<
+    ComponentFunctionNode,
+    ReadonlyArray<TSESTree.Expression | null>
+  >,
+): ReadonlyArray<TSESTree.Expression | null> {
+  if (node.type === AST_NODE_TYPES.ArrowFunctionExpression &&
+    node.body.type !== AST_NODE_TYPES.BlockStatement) {
+    return [node.body];
   }
-  return variable.defs.some(isReactImport);
+  return recorded.get(node) ?? [];
 }
 
-function isImportedCreateElement(
+function expressionHasComponentSignal(
   sourceCode: Readonly<TSESLint.SourceCode>,
-  identifier: TSESTree.Identifier,
+  recordedReturns: ReadonlyMap<
+    ComponentFunctionNode,
+    ReadonlyArray<TSESTree.Expression | null>
+  >,
+  node: TSESTree.Expression,
 ): boolean {
-  const variable = resolveScopeVariable(sourceCode, identifier);
-  return variable?.defs.some((definition) => {
-    if (!isReactImport(definition) ||
-      definition.node.type !== AST_NODE_TYPES.ImportSpecifier) {
-      return false;
-    }
-    const imported = definition.node.imported;
-    return imported.type === AST_NODE_TYPES.Identifier
-      ? imported.name === "createElement"
-      : imported.value === "createElement";
-  }) ?? false;
-}
-
-function isNamedMember(node: TSESTree.MemberExpression, name: string): boolean {
-  const property = node.property;
-  return property.type === AST_NODE_TYPES.Literal
-    ? property.value === name
-    : !node.computed &&
-    property.type === AST_NODE_TYPES.Identifier &&
-    property.name === name;
+  if (node.type === AST_NODE_TYPES.JSXElement ||
+    node.type === AST_NODE_TYPES.JSXFragment ||
+    isReactCreateElement(sourceCode, node)) {
+    return true;
+  }
+  if (node.type === AST_NODE_TYPES.CallExpression &&
+    mappedCallbackHasComponentSignal(sourceCode, recordedReturns, node)) {
+    return true;
+  }
+  const transparent = transparentExpression(node);
+  if (transparent !== null) {
+    return expressionHasComponentSignal(sourceCode, recordedReturns, transparent);
+  }
+  return componentChildren(node).some((child) =>
+    expressionHasComponentSignal(sourceCode, recordedReturns, child)
+  );
 }
 
 function isReactCreateElement(
@@ -110,6 +129,26 @@ function isReactCreateElement(
   return owner.type === AST_NODE_TYPES.Identifier &&
     isReactReference(sourceCode, owner) &&
     isNamedMember(node.callee, "createElement");
+}
+
+function mappedCallbackHasComponentSignal(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  recordedReturns: ReadonlyMap<
+    ComponentFunctionNode,
+    ReadonlyArray<TSESTree.Expression | null>
+  >,
+  node: TSESTree.CallExpression,
+): boolean {
+  if (node.callee.type !== AST_NODE_TYPES.MemberExpression ||
+    !isNamedMember(node.callee, "map")) {
+    return false;
+  }
+  return node.arguments.some((argument) =>
+    argument.type !== AST_NODE_TYPES.SpreadElement &&
+    (argument.type === AST_NODE_TYPES.ArrowFunctionExpression ||
+      argument.type === AST_NODE_TYPES.FunctionExpression) &&
+    functionHasComponentReturnSignal(sourceCode, recordedReturns, argument)
+  );
 }
 
 function transparentExpression(node: TSESTree.Expression): TSESTree.Expression | null {
@@ -139,84 +178,45 @@ function componentChildren(node: TSESTree.Expression): readonly TSESTree.Express
     : [];
 }
 
-function returnedValues(
-  node: ComponentFunctionNode,
-  recorded: ReadonlyMap<
-    ComponentFunctionNode,
-    ReadonlyArray<TSESTree.Expression | null>
-  >,
-): ReadonlyArray<TSESTree.Expression | null> {
-  if (node.type === AST_NODE_TYPES.ArrowFunctionExpression &&
-    node.body.type !== AST_NODE_TYPES.BlockStatement) {
-    return [node.body];
-  }
-  return recorded.get(node) ?? [];
+function isImportedCreateElement(
+  sourceCode: Readonly<TSESLint.SourceCode>,
+  identifier: TSESTree.Identifier,
+): boolean {
+  const variable = resolveScopeVariable(sourceCode, identifier);
+  return variable?.defs.some((definition) => {
+    if (!isReactImport(definition) ||
+      definition.node.type !== AST_NODE_TYPES.ImportSpecifier) {
+      return false;
+    }
+    const imported = definition.node.imported;
+    return imported.type === AST_NODE_TYPES.Identifier
+      ? imported.name === "createElement"
+      : imported.value === "createElement";
+  }) ?? false;
 }
 
-function mappedCallbackHasComponentSignal(
+function isReactReference(
   sourceCode: Readonly<TSESLint.SourceCode>,
-  recordedReturns: ReadonlyMap<
-    ComponentFunctionNode,
-    ReadonlyArray<TSESTree.Expression | null>
-  >,
-  node: TSESTree.CallExpression,
+  identifier: TSESTree.Identifier,
 ): boolean {
-  if (node.callee.type !== AST_NODE_TYPES.MemberExpression ||
-    !isNamedMember(node.callee, "map")) {
-    return false;
+  const variable = resolveScopeVariable(sourceCode, identifier);
+  if (variable === null || variable.defs.length === 0) {
+    return identifier.name === "React";
   }
-  return node.arguments.some((argument) =>
-    argument.type !== AST_NODE_TYPES.SpreadElement &&
-    (argument.type === AST_NODE_TYPES.ArrowFunctionExpression ||
-      argument.type === AST_NODE_TYPES.FunctionExpression) &&
-    functionHasComponentReturnSignal(sourceCode, recordedReturns, argument)
-  );
+  return variable.defs.some(isReactImport);
 }
 
-function expressionHasComponentSignal(
-  sourceCode: Readonly<TSESLint.SourceCode>,
-  recordedReturns: ReadonlyMap<
-    ComponentFunctionNode,
-    ReadonlyArray<TSESTree.Expression | null>
-  >,
-  node: TSESTree.Expression,
-): boolean {
-  if (node.type === AST_NODE_TYPES.JSXElement ||
-    node.type === AST_NODE_TYPES.JSXFragment ||
-    isReactCreateElement(sourceCode, node)) {
-    return true;
-  }
-  if (node.type === AST_NODE_TYPES.CallExpression &&
-    mappedCallbackHasComponentSignal(sourceCode, recordedReturns, node)) {
-    return true;
-  }
-  const transparent = transparentExpression(node);
-  if (transparent !== null) {
-    return expressionHasComponentSignal(sourceCode, recordedReturns, transparent);
-  }
-  return componentChildren(node).some((child) =>
-    expressionHasComponentSignal(sourceCode, recordedReturns, child)
-  );
+function isReactImport(definition: TSESLint.Scope.Definition): boolean {
+  return definition.type === "ImportBinding" &&
+    definition.parent.type === AST_NODE_TYPES.ImportDeclaration &&
+    definition.parent.source.value === "react";
 }
 
-/**
- * Tests whether a function returns JSX, React.createElement, or JSX-producing
- * mapped callbacks.
- * @param sourceCode Source and scope information.
- * @param recordedReturns Return statements grouped by their owning function.
- * @param node Function whose return values are inspected.
- * @returns Whether a returned value signals a component.
- */
-export function functionHasComponentReturnSignal(
-  sourceCode: Readonly<TSESLint.SourceCode>,
-  recordedReturns: ReadonlyMap<
-    ComponentFunctionNode,
-    ReadonlyArray<TSESTree.Expression | null>
-  >,
-  node: ComponentFunctionNode,
-): boolean {
-  return returnedValues(node, recordedReturns).some((returned) =>
-    returned !== null &&
-    expressionHasComponentSignal(sourceCode, recordedReturns, returned)
-  );
+function isNamedMember(node: TSESTree.MemberExpression, name: string): boolean {
+  const property = node.property;
+  return property.type === AST_NODE_TYPES.Literal
+    ? property.value === name
+    : !node.computed &&
+    property.type === AST_NODE_TYPES.Identifier &&
+    property.name === name;
 }

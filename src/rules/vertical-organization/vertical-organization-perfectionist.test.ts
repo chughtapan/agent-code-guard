@@ -11,6 +11,12 @@ import { verticalOrganizationRuleEntries } from "./rule-entries.js";
 
 const linter = new Linter();
 
+function fix(code: string, ruleId: string): string {
+  const result = linter.verifyAndFix(code, enabledRule(ruleId), { filename: "fixture.ts" });
+  expect(result.messages).toEqual([]);
+  return result.output;
+}
+
 function enabledRule(ruleId: string): Linter.Config {
   const entry = verticalOrganizationRuleEntries[ruleId];
   if (!Array.isArray(entry)) {
@@ -26,12 +32,6 @@ function enabledRule(ruleId: string): Linter.Config {
     plugins: { perfectionist },
     rules: { [ruleId]: ["error", entry[1]] },
   };
-}
-
-function fix(code: string, ruleId: string): string {
-  const result = linter.verifyAndFix(code, enabledRule(ruleId), { filename: "fixture.ts" });
-  expect(result.messages).toEqual([]);
-  return result.output;
 }
 
 describe("vertical-organization Perfectionist PR 2 entries", () => {

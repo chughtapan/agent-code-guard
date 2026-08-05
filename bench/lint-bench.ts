@@ -47,14 +47,34 @@ interface TargetResult {
   readonly peakRssMB: number;
 }
 
-function median(values: readonly number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
-}
+function main(): void {
+  const opts = parseOptions(process.argv.slice(2));
+  const targets = collectTargets(opts.only);
+  if (targets.length === 0) {
+    console.error("no targets matched; run `tsx bench/generate-fixture.ts` first");
+    process.exit(1);
+  }
 
-function fmt(ms: number): string {
-  return ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms.toFixed(0)}ms`;
+  if (!fs.existsSync(path.join(REPO_ROOT, "dist/index.js"))) {
+    console.error("dist/index.js not found; run `pnpm build` first");
+    process.exit(1);
+  }
+
+  console.log(`bench: ${targets.length} target(s) × ${opts.subprocesses} subprocess(es) × ${opts.repeats} lint(s)`);
+
+  const results: TargetResult[] = [];
+  for (const target of targets) {
+    process.stdout.write(`  ${target.name}... `);
+    const r = benchTarget(target, opts);
+    results.push(r);
+    console.log(`cold ${fmt(r.cold_ms_median)}, warm ${fmt(r.warm_ms_median)}, ${r.diagnostics} diagnostics`);
+  }
+
+  console.log();
+  const baseline = loadBaseline();
+  printTable(results, baseline);
+
+  if (opts.writeBaseline) writeBaseline(results);
 }
 
 function parseOptions(argv: readonly string[]): BenchOptions {
@@ -95,6 +115,34 @@ function collectTargets(only: string | null): Target[] {
   return only === null ? all : all.filter((t) => t.name === only);
 }
 
+function benchTarget(target: Target, opts: BenchOptions): TargetResult {
+  const colds: number[] = [];
+  const warms: number[] = [];
+  let diagnostics = 0;
+  let diagnosticsHash = "";
+  let peakRss = 0;
+  for (let i = 0; i < opts.subprocesses; i++) {
+    const r = runOnce(target, opts.repeats);
+    colds.push(r.cold_ms);
+    warms.push(...r.warm_ms);
+    diagnostics = r.diagnostics;
+    diagnosticsHash = r.diagnosticsHash;
+    peakRss = Math.max(peakRss, r.peakRssBytes);
+  }
+  return {
+    target: target.name,
+    cold_ms_median: median(colds),
+    cold_ms_min: Math.min(...colds),
+    cold_ms_max: Math.max(...colds),
+    warm_ms_median: median(warms),
+    warm_ms_min: Math.min(...warms),
+    warm_ms_max: Math.max(...warms),
+    diagnostics,
+    diagnosticsHash,
+    peakRssMB: Math.round((peakRss / (1024 * 1024)) * 10) / 10,
+  };
+}
+
 function runOnce(target: Target, repeats: number): SubprocessResult {
   const lintOnePath = path.join(HERE, "lint-one.ts");
   const result = spawnSync(
@@ -122,32 +170,10 @@ function runOnce(target: Target, repeats: number): SubprocessResult {
   return JSON.parse(lines[lines.length - 1]) as SubprocessResult;
 }
 
-function benchTarget(target: Target, opts: BenchOptions): TargetResult {
-  const colds: number[] = [];
-  const warms: number[] = [];
-  let diagnostics = 0;
-  let diagnosticsHash = "";
-  let peakRss = 0;
-  for (let i = 0; i < opts.subprocesses; i++) {
-    const r = runOnce(target, opts.repeats);
-    colds.push(r.cold_ms);
-    warms.push(...r.warm_ms);
-    diagnostics = r.diagnostics;
-    diagnosticsHash = r.diagnosticsHash;
-    peakRss = Math.max(peakRss, r.peakRssBytes);
-  }
-  return {
-    target: target.name,
-    cold_ms_median: median(colds),
-    cold_ms_min: Math.min(...colds),
-    cold_ms_max: Math.max(...colds),
-    warm_ms_median: median(warms),
-    warm_ms_min: Math.min(...warms),
-    warm_ms_max: Math.max(...warms),
-    diagnostics,
-    diagnosticsHash,
-    peakRssMB: Math.round((peakRss / (1024 * 1024)) * 10) / 10,
-  };
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 }
 
 function printTable(results: readonly TargetResult[], baseline: readonly TargetResult[] | null): void {
@@ -200,34 +226,8 @@ function writeBaseline(results: readonly TargetResult[]): void {
   console.log(`\nwrote ${path.relative(REPO_ROOT, BASELINE_PATH)}`);
 }
 
-function main(): void {
-  const opts = parseOptions(process.argv.slice(2));
-  const targets = collectTargets(opts.only);
-  if (targets.length === 0) {
-    console.error("no targets matched; run `tsx bench/generate-fixture.ts` first");
-    process.exit(1);
-  }
-
-  if (!fs.existsSync(path.join(REPO_ROOT, "dist/index.js"))) {
-    console.error("dist/index.js not found; run `pnpm build` first");
-    process.exit(1);
-  }
-
-  console.log(`bench: ${targets.length} target(s) × ${opts.subprocesses} subprocess(es) × ${opts.repeats} lint(s)`);
-
-  const results: TargetResult[] = [];
-  for (const target of targets) {
-    process.stdout.write(`  ${target.name}... `);
-    const r = benchTarget(target, opts);
-    results.push(r);
-    console.log(`cold ${fmt(r.cold_ms_median)}, warm ${fmt(r.warm_ms_median)}, ${r.diagnostics} diagnostics`);
-  }
-
-  console.log();
-  const baseline = loadBaseline();
-  printTable(results, baseline);
-
-  if (opts.writeBaseline) writeBaseline(results);
+function fmt(ms: number): string {
+  return ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms.toFixed(0)}ms`;
 }
 
 main();

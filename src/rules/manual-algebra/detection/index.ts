@@ -92,78 +92,6 @@ const RESULT_FUNCTION_NAMES = new Set([
 ]);
 const OPTION_FUNCTION_NAMES = new Set(["some", "none", "present", "absent", ...OPTION_HELPERS]);
 
-function looksResultLikeName(name: string): boolean {
-  return typeof name === "string" && RESULT_NAME_RE.test(name);
-}
-
-function looksOptionLikeName(name: string): boolean {
-  return typeof name === "string" && OPTION_NAME_RE.test(name);
-}
-
-function hasResultBranchPair(surface: Surface): boolean {
-  if (
-    hasNormalized(surface.keys, ["ok"]) &&
-    (hasNormalized(surface.keys, ["error", "err"]) || hasNormalized(surface.keys, ["value"]))
-  ) {
-    return true;
-  }
-  return RESULT_LITERAL_PAIRS.some(
-    ([left, right]) => hasKeyPair(surface, left, right) || hasLiteralPair(surface, left, right),
-  );
-}
-
-function hasOptionBranchPair(surface: Surface): boolean {
-  if (
-    surface.hasTagKey &&
-    OPTION_LITERAL_PAIRS.some(([left, right]) => hasLiteralPair(surface, left, right))
-  ) {
-    return true;
-  }
-  return OPTION_LITERAL_PAIRS.some(([left, right]) => hasKeyPair(surface, left, right));
-}
-
-function getNormalizedDisplayName(surface: Surface): string | null {
-  return surface.displayName === null ? null : normalize(surface.displayName);
-}
-
-function hasNormalizedDisplayName(surface: Surface, candidates: ReadonlySet<string>): boolean {
-  const name = getNormalizedDisplayName(surface);
-  return name !== null && candidates.has(name);
-}
-
-function hasBooleanLiteral(surface: Surface, candidate: "true" | "false"): boolean {
-  return surface.booleanLiterals.has(candidate);
-}
-
-function hasTaggedLiterals(surface: Surface, candidates: Iterable<string>): boolean {
-  return surface.hasTagKey && hasNormalized(surface.stringLiterals, candidates);
-}
-
-function hasKeys(surface: Surface, candidates: Iterable<string>): boolean {
-  return hasNormalized(surface.keys, candidates);
-}
-
-function hasSurfaceKeyOrLiteral(surface: Surface, name: string): boolean {
-  return hasKeys(surface, [name]) || hasNormalized(surface.stringLiterals, [name]);
-}
-
-function hasOkFunctionEvidence(surface: Surface): boolean {
-  return (
-    hasKeys(surface, ["ok"]) && (hasKeys(surface, ["value"]) || hasBooleanLiteral(surface, "true"))
-  );
-}
-
-function hasErrorFunctionEvidence(surface: Surface): boolean {
-  return (
-    hasKeys(surface, ["error", "err"]) ||
-    (hasKeys(surface, ["ok"]) && hasBooleanLiteral(surface, "false"))
-  );
-}
-
-function hasNamedResultBranchEvidence(name: string): (surface: Surface) => boolean {
-  return (surface) => hasSurfaceKeyOrLiteral(surface, name);
-}
-
 const RESULT_FUNCTION_EVIDENCE = new Map<string, (surface: Surface) => boolean>([
   ["ok", hasOkFunctionEvidence],
   ["err", hasErrorFunctionEvidence],
@@ -176,32 +104,6 @@ const RESULT_FUNCTION_EVIDENCE = new Map<string, (surface: Surface) => boolean>(
   ["isfailure", hasNamedResultBranchEvidence("failure")],
 ]);
 
-function hasResultFunctionEvidence(surface: Surface): boolean {
-  if (surface.kind !== "function") {
-    return hasResultBranchPair(surface);
-  }
-  const name = getNormalizedDisplayName(surface);
-  if (name === null) {
-    return false;
-  }
-  const evidence = RESULT_FUNCTION_EVIDENCE.get(name);
-  if (evidence !== undefined) {
-    return evidence(surface);
-  }
-  if (SOME_RESULT_NAMES.has(name)) {
-    return hasSurfaceKeyOrLiteral(surface, name);
-  }
-  return hasResultBranchPair(surface);
-}
-
-function hasSomeOptionEvidence(surface: Surface): boolean {
-  return hasTaggedLiterals(surface, SOME_OPTION_NAMES) || hasKeys(surface, ["value"]);
-}
-
-function hasNoneOptionEvidence(surface: Surface): boolean {
-  return hasTaggedLiterals(surface, NONE_OPTION_NAMES) || hasKeys(surface, NONE_OPTION_NAMES);
-}
-
 const OPTION_FUNCTION_EVIDENCE = new Map<string, (surface: Surface) => boolean>([
   ["some", hasSomeOptionEvidence],
   ["present", hasSomeOptionEvidence],
@@ -211,71 +113,6 @@ const OPTION_FUNCTION_EVIDENCE = new Map<string, (surface: Surface) => boolean>(
   ["absent", hasNoneOptionEvidence],
   ["isnone", (surface) => hasTaggedLiterals(surface, NONE_OPTION_NAMES)],
 ]);
-
-function hasOptionFunctionEvidence(surface: Surface): boolean {
-  if (surface.kind !== "function") {
-    return hasOptionBranchPair(surface);
-  }
-  const name = getNormalizedDisplayName(surface);
-  if (name === null) {
-    return false;
-  }
-  const evidence = OPTION_FUNCTION_EVIDENCE.get(name);
-  if (evidence !== undefined) {
-    return evidence(surface);
-  }
-  return hasOptionBranchPair(surface);
-}
-
-function hasResultReusableSignal(surface: Surface): boolean {
-  return (
-    displayNameLooksResultLike(surface) ||
-    hasNormalizedDisplayName(surface, RESULT_FUNCTION_NAMES) ||
-    hasNormalized(surface.keys, RESULT_HELPERS)
-  );
-}
-
-function hasOptionReusableSignal(surface: Surface): boolean {
-  return (
-    displayNameLooksOptionLike(surface) ||
-    hasNormalizedDisplayName(surface, OPTION_FUNCTION_NAMES) ||
-    hasNormalized(surface.keys, OPTION_HELPERS)
-  );
-}
-
-function hasBrandMarker(surface: Surface): boolean {
-  return (
-    hasKeys(surface, BRAND_MARKERS) ||
-    (surface.displayName !== null &&
-      hasKeys(surface, ["brand"]) &&
-      hasNormalized(surface.stringLiterals, [surface.displayName]))
-  );
-}
-
-function match(
-  surface: Surface,
-  kind: ManualAlgebraKind,
-  messageId: ManualAlgebraMatch["messageId"],
-): ManualAlgebraMatch {
-  return {
-    kind,
-    messageId,
-    node: surface.node,
-    displayName: surface.displayName ?? "(anonymous)",
-  };
-}
-
-function displayNameLooksResultLike(surface: Surface): boolean {
-  return surface.displayName !== null && looksResultLikeName(surface.displayName);
-}
-
-function displayNameLooksOptionLike(surface: Surface): boolean {
-  return surface.displayName !== null && looksOptionLikeName(surface.displayName);
-}
-
-function isExcludedSurface(surface: Surface): boolean {
-  return isTransportDataSurface(surface) || isTaggedErrorSurface(surface);
-}
 
 /**
  * Whether `node` looks like a transport-data shape (request, response,
@@ -365,4 +202,167 @@ export function findManualBrandMatch(node: TSESTree.Node): ManualAlgebraMatch | 
     return match(surface, "brand", "manualBrand");
   }
   return null;
+}
+
+function isExcludedSurface(surface: Surface): boolean {
+  return isTransportDataSurface(surface) || isTaggedErrorSurface(surface);
+}
+
+function match(
+  surface: Surface,
+  kind: ManualAlgebraKind,
+  messageId: ManualAlgebraMatch["messageId"],
+): ManualAlgebraMatch {
+  return {
+    kind,
+    messageId,
+    node: surface.node,
+    displayName: surface.displayName ?? "(anonymous)",
+  };
+}
+
+function hasResultFunctionEvidence(surface: Surface): boolean {
+  if (surface.kind !== "function") {
+    return hasResultBranchPair(surface);
+  }
+  const name = getNormalizedDisplayName(surface);
+  if (name === null) {
+    return false;
+  }
+  const evidence = RESULT_FUNCTION_EVIDENCE.get(name);
+  if (evidence !== undefined) {
+    return evidence(surface);
+  }
+  if (SOME_RESULT_NAMES.has(name)) {
+    return hasSurfaceKeyOrLiteral(surface, name);
+  }
+  return hasResultBranchPair(surface);
+}
+
+function hasOptionFunctionEvidence(surface: Surface): boolean {
+  if (surface.kind !== "function") {
+    return hasOptionBranchPair(surface);
+  }
+  const name = getNormalizedDisplayName(surface);
+  if (name === null) {
+    return false;
+  }
+  const evidence = OPTION_FUNCTION_EVIDENCE.get(name);
+  if (evidence !== undefined) {
+    return evidence(surface);
+  }
+  return hasOptionBranchPair(surface);
+}
+
+function hasResultReusableSignal(surface: Surface): boolean {
+  return (
+    displayNameLooksResultLike(surface) ||
+    hasNormalizedDisplayName(surface, RESULT_FUNCTION_NAMES) ||
+    hasNormalized(surface.keys, RESULT_HELPERS)
+  );
+}
+
+function hasOptionReusableSignal(surface: Surface): boolean {
+  return (
+    displayNameLooksOptionLike(surface) ||
+    hasNormalizedDisplayName(surface, OPTION_FUNCTION_NAMES) ||
+    hasNormalized(surface.keys, OPTION_HELPERS)
+  );
+}
+
+function hasBrandMarker(surface: Surface): boolean {
+  return (
+    hasKeys(surface, BRAND_MARKERS) ||
+    (surface.displayName !== null &&
+      hasKeys(surface, ["brand"]) &&
+      hasNormalized(surface.stringLiterals, [surface.displayName]))
+  );
+}
+
+function hasOkFunctionEvidence(surface: Surface): boolean {
+  return (
+    hasKeys(surface, ["ok"]) && (hasKeys(surface, ["value"]) || hasBooleanLiteral(surface, "true"))
+  );
+}
+
+function hasErrorFunctionEvidence(surface: Surface): boolean {
+  return (
+    hasKeys(surface, ["error", "err"]) ||
+    (hasKeys(surface, ["ok"]) && hasBooleanLiteral(surface, "false"))
+  );
+}
+
+function hasNamedResultBranchEvidence(name: string): (surface: Surface) => boolean {
+  return (surface) => hasSurfaceKeyOrLiteral(surface, name);
+}
+
+function hasSomeOptionEvidence(surface: Surface): boolean {
+  return hasTaggedLiterals(surface, SOME_OPTION_NAMES) || hasKeys(surface, ["value"]);
+}
+
+function hasNoneOptionEvidence(surface: Surface): boolean {
+  return hasTaggedLiterals(surface, NONE_OPTION_NAMES) || hasKeys(surface, NONE_OPTION_NAMES);
+}
+
+function displayNameLooksResultLike(surface: Surface): boolean {
+  return surface.displayName !== null && looksResultLikeName(surface.displayName);
+}
+
+function displayNameLooksOptionLike(surface: Surface): boolean {
+  return surface.displayName !== null && looksOptionLikeName(surface.displayName);
+}
+
+function hasNormalizedDisplayName(surface: Surface, candidates: ReadonlySet<string>): boolean {
+  const name = getNormalizedDisplayName(surface);
+  return name !== null && candidates.has(name);
+}
+
+function hasResultBranchPair(surface: Surface): boolean {
+  if (
+    hasNormalized(surface.keys, ["ok"]) &&
+    (hasNormalized(surface.keys, ["error", "err"]) || hasNormalized(surface.keys, ["value"]))
+  ) {
+    return true;
+  }
+  return RESULT_LITERAL_PAIRS.some(
+    ([left, right]) => hasKeyPair(surface, left, right) || hasLiteralPair(surface, left, right),
+  );
+}
+
+function hasOptionBranchPair(surface: Surface): boolean {
+  if (
+    surface.hasTagKey &&
+    OPTION_LITERAL_PAIRS.some(([left, right]) => hasLiteralPair(surface, left, right))
+  ) {
+    return true;
+  }
+  return OPTION_LITERAL_PAIRS.some(([left, right]) => hasKeyPair(surface, left, right));
+}
+
+function hasSurfaceKeyOrLiteral(surface: Surface, name: string): boolean {
+  return hasKeys(surface, [name]) || hasNormalized(surface.stringLiterals, [name]);
+}
+
+function hasTaggedLiterals(surface: Surface, candidates: Iterable<string>): boolean {
+  return surface.hasTagKey && hasNormalized(surface.stringLiterals, candidates);
+}
+
+function getNormalizedDisplayName(surface: Surface): string | null {
+  return surface.displayName === null ? null : normalize(surface.displayName);
+}
+
+function looksResultLikeName(name: string): boolean {
+  return typeof name === "string" && RESULT_NAME_RE.test(name);
+}
+
+function looksOptionLikeName(name: string): boolean {
+  return typeof name === "string" && OPTION_NAME_RE.test(name);
+}
+
+function hasKeys(surface: Surface, candidates: Iterable<string>): boolean {
+  return hasNormalized(surface.keys, candidates);
+}
+
+function hasBooleanLiteral(surface: Surface, candidate: "true" | "false"): boolean {
+  return surface.booleanLiterals.has(candidate);
 }

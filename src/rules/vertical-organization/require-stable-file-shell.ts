@@ -37,28 +37,58 @@ interface OverviewPhaseOptions {
   readonly overview?: ParsedJsdocBlock;
 }
 
-function raw(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): string {
-  return sourceCode.text.slice(token.range[0], token.range[1]);
-}
-
-function isLicenseComment(token: TSESLint.AST.Token): boolean {
-  const text = token.value
-    .split(/\r?\n/u)
-    .map((line) => {
-      const trimmed = line.trim();
-      return trimmed.startsWith("*") ? trimmed.slice(1) : trimmed;
-    })
-    .find((line) => line !== "");
-  return text !== undefined && LICENSE_PREFIX.test(text.trim());
-}
-
-function reportIndex(
+function reportOverviewViolations(
   context: ShellContext,
-  messageId: "disallowedPreamble" | "contentBeforeFileOverview",
-  index: number,
-): void {
-  const loc = context.sourceCode.getLocFromIndex(index);
-  context.report({ loc: { start: loc, end: loc }, messageId });
+  sourceCode: TSESLint.SourceCode,
+  program: TSESTree.Program,
+  blocks: readonly ParsedJsdocBlock[],
+): ParsedJsdocBlock | undefined {
+  const canonical = canonicalBlocks(blocks);
+  const canonicalTags = new Set(canonical.flatMap((block) => block.tags));
+  const allFileTags = blocks.flatMap((block) => block.tags.filter((tag) => tag.tag === "file"));
+  const firstFileTag = allFileTags.at(0);
+  for (const tag of allFileTags) {
+    if (tag !== firstFileTag && !canonicalTags.has(tag)) {
+      context.report({ loc: tag.description?.loc ?? tag.loc, messageId: "duplicateFileTag" });
+    }
+  }
+  if (canonical.length === 0) {
+    context.report({ node: program, messageId: "missingCanonicalFileOverview" });
+  }
+  for (const block of canonical.slice(1)) {
+    context.report({ loc: sourceCode.getLocFromIndex(block.token.range[0]), messageId: "multipleCanonicalFileOverviews" });
+  }
+  return canonical.at(0);
+}
+
+function reportOverviewPreambleViolations(options: OverviewPhaseOptions): void {
+  const { context, overview, program, sourceCode } = options;
+  if (overview === undefined) {
+    return;
+  }
+  const illegalPreamble = firstUnpermittedPreamble(sourceCode, overview);
+  if (illegalPreamble !== undefined) {
+    reportIndex(context, "disallowedPreamble", illegalPreamble);
+  }
+  const statementBeforeOverview = statementBeforeToken(sourceCode, program, overview.token);
+  if (statementBeforeOverview !== undefined) {
+    reportIndex(context, "contentBeforeFileOverview", statementBeforeOverview.range[0]);
+  }
+  reportInterimComments(context, program, overview);
+}
+
+function reportImportShellViolations(options: OverviewPhaseOptions): void {
+  const { context, overview, program, sourceCode } = options;
+  let state: ImportShellState = "preamble";
+  const firstAfterOverview = overview === undefined
+    ? program.body.at(0)
+    : statementAfterToken(sourceCode, program, overview.token);
+  const firstAfterIndex = firstAfterOverview === undefined ? program.body.length : program.body.indexOf(firstAfterOverview);
+  for (const statement of program.body.slice(firstAfterIndex)) {
+    if (!directiveExpression(statement)) {
+      state = nextImportShellState(context, statement, state);
+    }
+  }
 }
 
 function canonicalBlocks(blocks: readonly ParsedJsdocBlock[]): readonly ParsedJsdocBlock[] {
@@ -108,26 +138,6 @@ function firstUnpermittedPreamble(
   return illegal === -1 ? undefined : cursor + illegal;
 }
 
-function directiveExpression(node: TSESTree.ProgramStatement): boolean {
-  if (node.type !== AST_NODE_TYPES.ExpressionStatement) {
-    return false;
-  }
-  return node.directive !== undefined;
-}
-
-function isTripleSlashDirective(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): boolean {
-  return TRIPLE_SLASH_DIRECTIVE.test(raw(sourceCode, token));
-}
-
-function statementAfterToken(
-  sourceCode: TSESLint.SourceCode,
-  program: TSESTree.Program,
-  token: TSESLint.AST.Token,
-): TSESTree.ProgramStatement | undefined {
-  const followingToken = sourceCode.getTokenAfter(token);
-  return program.body.find((statement) => sourceCode.getFirstToken(statement) === followingToken);
-}
-
 function statementBeforeToken(
   sourceCode: TSESLint.SourceCode,
   program: TSESTree.Program,
@@ -135,21 +145,6 @@ function statementBeforeToken(
 ): TSESTree.ProgramStatement | undefined {
   const precedingToken = sourceCode.getTokenBefore(token);
   return program.body.find((statement) => sourceCode.getLastToken(statement) === precedingToken);
-}
-
-function beginsImmediateBareSideEffectImport(
-  sourceCode: TSESLint.SourceCode,
-  program: TSESTree.Program,
-  comment: TSESLint.AST.Token,
-): boolean {
-  const marker = parseSideEffectImportBarrier(sourceCode, comment);
-  if (marker?.kind !== "begin") {
-    return false;
-  }
-  const following = statementAfterToken(sourceCode, program, comment);
-  return following?.type === AST_NODE_TYPES.ImportDeclaration &&
-    following.specifiers.length === 0 &&
-    hasLineAdjacentGap(sourceCode, comment, following);
 }
 
 function reportInterimComments(
@@ -177,46 +172,6 @@ function reportInterimComments(
   }
 }
 
-function reportOverviewViolations(
-  context: ShellContext,
-  sourceCode: TSESLint.SourceCode,
-  program: TSESTree.Program,
-  blocks: readonly ParsedJsdocBlock[],
-): ParsedJsdocBlock | undefined {
-  const canonical = canonicalBlocks(blocks);
-  const canonicalTags = new Set(canonical.flatMap((block) => block.tags));
-  const allFileTags = blocks.flatMap((block) => block.tags.filter((tag) => tag.tag === "file"));
-  const firstFileTag = allFileTags.at(0);
-  for (const tag of allFileTags) {
-    if (tag !== firstFileTag && !canonicalTags.has(tag)) {
-      context.report({ loc: tag.description?.loc ?? tag.loc, messageId: "duplicateFileTag" });
-    }
-  }
-  if (canonical.length === 0) {
-    context.report({ node: program, messageId: "missingCanonicalFileOverview" });
-  }
-  for (const block of canonical.slice(1)) {
-    context.report({ loc: sourceCode.getLocFromIndex(block.token.range[0]), messageId: "multipleCanonicalFileOverviews" });
-  }
-  return canonical.at(0);
-}
-
-function reportOverviewPreambleViolations(options: OverviewPhaseOptions): void {
-  const { context, overview, program, sourceCode } = options;
-  if (overview === undefined) {
-    return;
-  }
-  const illegalPreamble = firstUnpermittedPreamble(sourceCode, overview);
-  if (illegalPreamble !== undefined) {
-    reportIndex(context, "disallowedPreamble", illegalPreamble);
-  }
-  const statementBeforeOverview = statementBeforeToken(sourceCode, program, overview.token);
-  if (statementBeforeOverview !== undefined) {
-    reportIndex(context, "contentBeforeFileOverview", statementBeforeOverview.range[0]);
-  }
-  reportInterimComments(context, program, overview);
-}
-
 function nextImportShellState(
   context: ShellContext,
   statement: TSESTree.ProgramStatement,
@@ -231,18 +186,63 @@ function nextImportShellState(
   return "imports";
 }
 
-function reportImportShellViolations(options: OverviewPhaseOptions): void {
-  const { context, overview, program, sourceCode } = options;
-  let state: ImportShellState = "preamble";
-  const firstAfterOverview = overview === undefined
-    ? program.body.at(0)
-    : statementAfterToken(sourceCode, program, overview.token);
-  const firstAfterIndex = firstAfterOverview === undefined ? program.body.length : program.body.indexOf(firstAfterOverview);
-  for (const statement of program.body.slice(firstAfterIndex)) {
-    if (!directiveExpression(statement)) {
-      state = nextImportShellState(context, statement, state);
-    }
+function isLicenseComment(token: TSESLint.AST.Token): boolean {
+  const text = token.value
+    .split(/\r?\n/u)
+    .map((line) => {
+      const trimmed = line.trim();
+      return trimmed.startsWith("*") ? trimmed.slice(1) : trimmed;
+    })
+    .find((line) => line !== "");
+  return text !== undefined && LICENSE_PREFIX.test(text.trim());
+}
+
+function isTripleSlashDirective(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): boolean {
+  return TRIPLE_SLASH_DIRECTIVE.test(raw(sourceCode, token));
+}
+
+function beginsImmediateBareSideEffectImport(
+  sourceCode: TSESLint.SourceCode,
+  program: TSESTree.Program,
+  comment: TSESLint.AST.Token,
+): boolean {
+  const marker = parseSideEffectImportBarrier(sourceCode, comment);
+  if (marker?.kind !== "begin") {
+    return false;
   }
+  const following = statementAfterToken(sourceCode, program, comment);
+  return following?.type === AST_NODE_TYPES.ImportDeclaration &&
+    following.specifiers.length === 0 &&
+    hasLineAdjacentGap(sourceCode, comment, following);
+}
+
+function raw(sourceCode: TSESLint.SourceCode, token: TSESLint.AST.Token): string {
+  return sourceCode.text.slice(token.range[0], token.range[1]);
+}
+
+function statementAfterToken(
+  sourceCode: TSESLint.SourceCode,
+  program: TSESTree.Program,
+  token: TSESLint.AST.Token,
+): TSESTree.ProgramStatement | undefined {
+  const followingToken = sourceCode.getTokenAfter(token);
+  return program.body.find((statement) => sourceCode.getFirstToken(statement) === followingToken);
+}
+
+function directiveExpression(node: TSESTree.ProgramStatement): boolean {
+  if (node.type !== AST_NODE_TYPES.ExpressionStatement) {
+    return false;
+  }
+  return node.directive !== undefined;
+}
+
+function reportIndex(
+  context: ShellContext,
+  messageId: "disallowedPreamble" | "contentBeforeFileOverview",
+  index: number,
+): void {
+  const loc = context.sourceCode.getLocFromIndex(index);
+  context.report({ loc: { start: loc, end: loc }, messageId });
 }
 
 /** Enforces a canonical JSDoc overview, contiguous import shell, and paired bare-import barriers. */

@@ -20,12 +20,73 @@ interface ScriptTrace {
   readonly scripts: Readonly<Record<string, string>>;
 }
 
+/**
+ * Finds an exact executable token across supported package-runner forms.
+ * @param tokens Parsed shell tokens.
+ * @param binaryNames Exact executable names accepted by the caller.
+ * @returns The matching executable index, or `null`.
+ */
+export function directBinaryIndex(
+  tokens: readonly string[],
+  binaryNames: ReadonlySet<string>,
+): number | null {
+  return directExecutableIndex(tokens, binaryNames) ??
+    standaloneRunnerIndex(tokens, binaryNames) ??
+    packageExecIndex(tokens, binaryNames) ??
+    packageBinaryIndex(tokens, binaryNames);
+}
+
+/**
+ * Tests whether configured package scripts safely reach a concrete command.
+ * Only logical-AND composition is accepted; masking and background shell operators
+ * reject the entire script that contains them.
+ * @param scripts Raw package.json scripts.
+ * @param scriptNames Entry scripts that may provide the command.
+ * @param directCommandMatches Matcher for one parsed executable command.
+ * @returns Whether a safe script chain reaches a matching command.
+ */
+export function packageScriptsRunCommand(
+  scripts: Readonly<Record<string, unknown>>,
+  scriptNames: readonly string[],
+  directCommandMatches: DirectCommandMatcher,
+): boolean {
+  const trace: ScriptTrace = {
+    directCommandMatches,
+    scripts: stringScripts(scripts),
+  };
+  return scriptNames.some((name) => scriptMatches(trace, name, new Set()));
+}
+
 function stringScripts(value: Readonly<Record<string, unknown>>): Readonly<Record<string, string>> {
   return Object.fromEntries(
     Object.entries(value).filter(
       (entry): entry is [string, string] => typeof entry[1] === "string",
     ),
   );
+}
+
+function commandMatches(
+  trace: ScriptTrace,
+  command: string,
+  ancestors: ReadonlySet<string>,
+  forwardedArguments: readonly string[],
+): boolean {
+  const commandParts = commandTokens(command);
+  if (commandParts === null) {
+    return false;
+  }
+  const tokens = [...commandParts, ...forwardedArguments];
+  if (trace.directCommandMatches(tokens)) {
+    return true;
+  }
+  const reference = referencedScript(tokens);
+  return reference !== null &&
+    scriptMatches(
+      trace,
+      reference.name,
+      ancestors,
+      reference.forwardedArguments,
+    );
 }
 
 function normalizedShellWord(word: string): string | null {
@@ -56,30 +117,6 @@ function referencedScript(tokens: readonly string[]): ReferencedScript | null {
   }
   const argumentStart = tokens[3] === "--" ? 4 : 3;
   return { forwardedArguments: tokens.slice(argumentStart), name };
-}
-
-function commandMatches(
-  trace: ScriptTrace,
-  command: string,
-  ancestors: ReadonlySet<string>,
-  forwardedArguments: readonly string[],
-): boolean {
-  const commandParts = commandTokens(command);
-  if (commandParts === null) {
-    return false;
-  }
-  const tokens = [...commandParts, ...forwardedArguments];
-  if (trace.directCommandMatches(tokens)) {
-    return true;
-  }
-  const reference = referencedScript(tokens);
-  return reference !== null &&
-    scriptMatches(
-      trace,
-      reference.name,
-      ancestors,
-      reference.forwardedArguments,
-    );
 }
 
 function scriptMatches(
@@ -144,41 +181,4 @@ function packageBinaryIndex(
 ): number | null {
   const directRunner = tokens[0] === "pnpm" || tokens[0] === "yarn";
   return directRunner && binaryNames.has(tokens[1] ?? "") ? 1 : null;
-}
-
-/**
- * Finds an exact executable token across supported package-runner forms.
- * @param tokens Parsed shell tokens.
- * @param binaryNames Exact executable names accepted by the caller.
- * @returns The matching executable index, or `null`.
- */
-export function directBinaryIndex(
-  tokens: readonly string[],
-  binaryNames: ReadonlySet<string>,
-): number | null {
-  return directExecutableIndex(tokens, binaryNames) ??
-    standaloneRunnerIndex(tokens, binaryNames) ??
-    packageExecIndex(tokens, binaryNames) ??
-    packageBinaryIndex(tokens, binaryNames);
-}
-
-/**
- * Tests whether configured package scripts safely reach a concrete command.
- * Only logical-AND composition is accepted; masking and background shell operators
- * reject the entire script that contains them.
- * @param scripts Raw package.json scripts.
- * @param scriptNames Entry scripts that may provide the command.
- * @param directCommandMatches Matcher for one parsed executable command.
- * @returns Whether a safe script chain reaches a matching command.
- */
-export function packageScriptsRunCommand(
-  scripts: Readonly<Record<string, unknown>>,
-  scriptNames: readonly string[],
-  directCommandMatches: DirectCommandMatcher,
-): boolean {
-  const trace: ScriptTrace = {
-    directCommandMatches,
-    scripts: stringScripts(scripts),
-  };
-  return scriptNames.some((name) => scriptMatches(trace, name, new Set()));
 }

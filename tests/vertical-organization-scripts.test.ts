@@ -17,19 +17,6 @@ const calibrateScript = path.join(repositoryRoot, "scripts/calibrate-vertical-or
 const tsx = path.join(repositoryRoot, "node_modules/.bin/tsx");
 const fixtureRoots = new Set<string>();
 
-function run(command: string, args: readonly string[], cwd: string): string {
-  const result = spawnSync(command, args, { cwd, encoding: "utf8" });
-  if (result.error !== undefined) {
-    throw result.error;
-  }
-  if (result.status !== 0) {
-    throw new Error(
-      `${command} failed with status ${result.status ?? "null"}:\n${result.stderr}${result.stdout}`,
-    );
-  }
-  return result.stdout;
-}
-
 async function createFixtureRoot(): Promise<string> {
   const root = await mkdtemp(path.join(repositoryRoot, ".vertical-organization-script-test-"));
   fixtureRoots.add(root);
@@ -132,6 +119,19 @@ function runCalibration(root: string, revision: string, out: string): string {
     "--out",
     out,
   ], repositoryRoot);
+}
+
+function run(command: string, args: readonly string[], cwd: string): string {
+  const result = spawnSync(command, args, { cwd, encoding: "utf8" });
+  if (result.error !== undefined) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error(
+      `${command} failed with status ${result.status ?? "null"}:\n${result.stderr}${result.stdout}`,
+    );
+  }
+  return result.stdout;
 }
 
 afterEach(async () => {

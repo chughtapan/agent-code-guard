@@ -18,10 +18,6 @@ function isConfigFile(filename: string): boolean {
   return CONFIG_FILE_PATTERN.test(filename);
 }
 
-function keyName(key: TSESTree.Expression | TSESTree.PrivateIdentifier): string | null {
-  return getStaticStringKey(key, false);
-}
-
 function parentCoverageKey(node: TSESTree.Property): boolean {
   const obj = getParent(node);
   if (obj === null || obj.type !== "ObjectExpression") {
@@ -32,6 +28,10 @@ function parentCoverageKey(node: TSESTree.Property): boolean {
     return false;
   }
   return keyName(prop.key) === "coverage";
+}
+
+function keyName(key: TSESTree.Expression | TSESTree.PrivateIdentifier): string | null {
+  return getStaticStringKey(key, false);
 }
 
 /**
