@@ -31,6 +31,13 @@ only when the caller component's last declaration occurs before the callee
 component's first declaration. This keeps shared helpers below every caller
 component and produces deterministic reports.
 
+A caller inside a declaration cycle can already precede its callee while its
+cycle still does not, because the constraint applies to the whole component. The
+diagnostic names the cycle member that follows the callee, so the report states
+the constraint that is actually violated rather than one that already holds.
+Satisfy it by moving the callee below the entire cycle, or by breaking the
+cycle.
+
 ## Valid
 
 ```ts

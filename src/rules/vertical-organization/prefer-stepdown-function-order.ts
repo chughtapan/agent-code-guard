@@ -11,9 +11,9 @@ import {
   groupByContainer,
 } from "./stepdown-implementations.js";
 import { collectViolatingEdges } from "./stepdown-graph.js";
-import type { FunctionImplementation, Implementation } from "./stepdown-model.js";
+import type { FunctionImplementation, Implementation, Violation } from "./stepdown-model.js";
 
-type MessageIds = "declarationOutOfStoryBand" | "callerMustPrecedeCallee";
+type MessageIds = "declarationOutOfStoryBand" | "callerMustPrecedeCallee" | "cyclicCallerMustPrecedeCallee";
 
 /**
  * Enforces exported/internal and class visibility story bands before ordering
@@ -34,6 +34,8 @@ export const preferStepdownFunctionOrder = createRule<[], MessageIds>({
         "{{name}} belongs to the {{currentBand}} story band, which must precede an earlier {{previousBand}} declaration.",
       callerMustPrecedeCallee:
         "{{caller}} must precede its direct local callee {{callee}} in the {{band}} story band.",
+      cyclicCallerMustPrecedeCallee:
+        "{{caller}} and {{blocker}} form a declaration cycle that must precede their direct local callee {{callee}} in the {{band}} story band.",
     },
     schema: [],
     fixable: undefined,
@@ -66,13 +68,26 @@ function reportViolations(
   const implementations = collectImplementations(program, classBodies);
   reportBandViolations(context, groupByContainer(implementations));
   const byFunction = functionImplementations(implementations);
-  for (const edge of collectViolatingEdges(calls, implementations, byFunction, context.sourceCode)) {
-    context.report({
-      node: edge.call,
-      messageId: "callerMustPrecedeCallee",
-      data: { caller: edge.caller.label, callee: edge.callee.label, band: edge.caller.bandName },
-    });
+  for (const violation of collectViolatingEdges(calls, implementations, byFunction, context.sourceCode)) {
+    reportEdgeViolation(context, violation);
   }
+}
+
+function reportEdgeViolation(
+  context: Readonly<TSESLint.RuleContext<MessageIds, []>>,
+  violation: Violation,
+): void {
+  const { edge, cycleBlocker } = violation;
+  const shared = { caller: edge.caller.label, callee: edge.callee.label, band: edge.caller.bandName };
+  if (cycleBlocker === null) {
+    context.report({ node: edge.call, messageId: "callerMustPrecedeCallee", data: shared });
+    return;
+  }
+  context.report({
+    node: edge.call,
+    messageId: "cyclicCallerMustPrecedeCallee",
+    data: { ...shared, blocker: cycleBlocker.label },
+  });
 }
 
 function functionImplementations(

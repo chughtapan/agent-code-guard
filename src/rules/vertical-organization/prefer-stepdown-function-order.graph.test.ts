@@ -125,6 +125,23 @@ ruleTester.run("prefer-stepdown-function-order: graph", rule, {
       output: null,
     },
     {
+      name: "a cyclic caller that already precedes its callee names the blocking cycle member",
+      code: `
+        function isPureComposite(node) {
+          if (isBinaryLike(node)) { return isPureDefault(node); }
+          return false;
+        }
+        function isBinaryLike(node) { return Boolean(node); }
+        function isPureDefault(node) { return isPureComposite(node); }
+      `,
+      errors: [{
+        message:
+          "isPureComposite and isPureDefault form a declaration cycle that must precede their direct local callee isBinaryLike in the internal story band.",
+        type: AST_NODE_TYPES.CallExpression,
+      }],
+      output: null,
+    },
+    {
       name: "an inter-component edge uses the component interval boundary",
       code: `
         function first() { return second(); }

@@ -1,4 +1,4 @@
-import type { Edge, Implementation } from "./stepdown-model.js";
+import type { Edge, Implementation, Violation } from "./stepdown-model.js";
 
 interface Component {
   readonly members: readonly Implementation[];
@@ -11,27 +11,41 @@ interface Component {
  * strongly connected component.
  *
  * @param edges Resolved same-band call edges.
- * @returns Edges that violate component-level declaration order.
+ * @returns Violations carrying each offending edge and, when the caller sits in
+ * a declaration cycle, the cycle member that actually follows the callee.
  */
-export function violatingEdges(edges: readonly Edge[]): readonly Edge[] {
+export function violatingEdges(edges: readonly Edge[]): readonly Violation[] {
   const componentByMember = componentMembers(stronglyConnectedComponents(edges));
-  return edges.filter((edge) => violatesComponentOrder(edge, componentByMember));
+  return edges.flatMap((edge) => violationFor(edge, componentByMember));
+}
+
+function violationFor(
+  edge: Edge,
+  componentByMember: ReadonlyMap<Implementation, Component>,
+): readonly Violation[] {
+  const caller = componentByMember.get(edge.caller);
+  const callee = componentByMember.get(edge.callee);
+  if (caller === undefined || callee === undefined || caller === callee ||
+    Math.sign(caller.maxIndex - callee.minIndex) !== 1) {
+    return [];
+  }
+  return [{ edge, cycleBlocker: cycleBlockerFor(caller, edge.caller) }];
+}
+
+function cycleBlockerFor(component: Component, caller: Implementation): Implementation | null {
+  if (component.members.length === 1) {
+    return null;
+  }
+  const last = component.members.reduce((furthest, member) =>
+    member.index > furthest.index ? member : furthest,
+  );
+  return last === caller ? null : last;
 }
 
 function componentMembers(
   components: readonly Component[],
 ): ReadonlyMap<Implementation, Component> {
   return new Map(components.flatMap((component) => component.members.map((member) => [member, component] as const)));
-}
-
-function violatesComponentOrder(
-  edge: Edge,
-  componentByMember: ReadonlyMap<Implementation, Component>,
-): boolean {
-  const caller = componentByMember.get(edge.caller);
-  const callee = componentByMember.get(edge.callee);
-  return caller !== undefined && callee !== undefined && caller !== callee &&
-    Math.sign(caller.maxIndex - callee.minIndex) === 1;
 }
 
 function graphFromEdges(edges: readonly Edge[]): {

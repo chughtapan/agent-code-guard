@@ -1,5 +1,5 @@
 import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
-import type { Container, Edge, FunctionImplementation, Implementation } from "./stepdown-model.js";
+import type { Container, Edge, FunctionImplementation, Implementation, Violation } from "./stepdown-model.js";
 import { violatingEdges } from "./stepdown-scc.js";
 
 interface EdgeCollection {
@@ -18,14 +18,14 @@ interface EdgeCollection {
  * @param implementations Eligible function and method implementations.
  * @param byFunction Implementation lookup by function node.
  * @param sourceCode ESLint source and scope model.
- * @returns Violating call edges in source order.
+ * @returns Component-order violations in source order.
  */
 export function collectViolatingEdges(
   calls: readonly TSESTree.CallExpression[],
   implementations: readonly Implementation[],
   byFunction: WeakMap<FunctionImplementation, Implementation>,
   sourceCode: Readonly<TSESLint.SourceCode>,
-): readonly Edge[] {
+): readonly Violation[] {
   const edges = new Map<string, Edge>();
   const collection: EdgeCollection = {
     byFunction,

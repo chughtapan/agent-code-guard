@@ -25,3 +25,13 @@ export interface Edge {
   readonly callee: Implementation;
   readonly call: TSESTree.CallExpression;
 }
+
+/**
+ * An edge that breaks component order. `cycleBlocker` names the cycle member
+ * that follows the callee when the caller alone already precedes it, so the
+ * diagnostic can state the constraint that is actually violated.
+ */
+export interface Violation {
+  readonly edge: Edge;
+  readonly cycleBlocker: Implementation | null;
+}

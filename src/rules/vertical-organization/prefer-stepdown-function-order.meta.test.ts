@@ -13,6 +13,7 @@ test("stepdown rule exposes its exact public metadata", async () => {
     messages: {
       declarationOutOfStoryBand: "{{name}} belongs to the {{currentBand}} story band, which must precede an earlier {{previousBand}} declaration.",
       callerMustPrecedeCallee: "{{caller}} must precede its direct local callee {{callee}} in the {{band}} story band.",
+      cyclicCallerMustPrecedeCallee: "{{caller}} and {{blocker}} form a declaration cycle that must precede their direct local callee {{callee}} in the {{band}} story band.",
     },
     schema: [],
     fixable: undefined,
