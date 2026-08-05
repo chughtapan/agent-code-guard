@@ -184,6 +184,9 @@ function methodName(member: TSESTree.MethodDefinition): string | null {
   if (member.key.type === AST_NODE_TYPES.Identifier || member.key.type === AST_NODE_TYPES.PrivateIdentifier) {
     return member.key.name;
   }
+  // Stryker disable next-line ConditionalExpression: Equivalent mutant. Forcing this true admits
+  // only numeric-literal keys, and no numeric literal stringifies to a dot-addressable name, so the
+  // regex below rejects them either way. The check is here for the type narrowing, not for behavior.
   if (member.key.type === AST_NODE_TYPES.Literal && typeof member.key.value === "string") {
     return DOT_ADDRESSABLE_NAME.test(member.key.value) ? member.key.value : null;
   }
