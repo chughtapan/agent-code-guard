@@ -10,6 +10,7 @@ import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
 import { createTypeScriptImportResolver } from "eslint-import-resolver-typescript";
 import importX from "eslint-plugin-import-x";
 import jsdoc from "eslint-plugin-jsdoc";
+import perfectionist from "eslint-plugin-perfectionist";
 import sonarjs from "eslint-plugin-sonarjs";
 import tseslint from "typescript-eslint";
 import packageJson from "../package.json" with { type: "json" };
@@ -200,6 +201,7 @@ const bundledPlugins = {
   "agent-code-guard": null,
   "import-x": importX,
   jsdoc,
+  perfectionist,
   sonarjs,
 };
 

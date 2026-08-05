@@ -26,7 +26,7 @@ deliberately ships no formatter rules or formatter gate.
 | Google clause family | Status | Enforcement or limitation |
 |---|---|---|
 | UTF-8 source, horizontal spaces, escapes, non-ASCII readability | **Formatting excluded / review-only** | Encoding and character presentation belong to source tooling and review. No formatter gate is bundled. |
-| Source section order, blank lines, copyright, optional `@fileoverview` | **Formatting excluded / not normative** | Section spacing is formatting. Copyright is repository-specific and `@fileoverview` is optional. |
+| Source section order, blank lines, copyright, optional `@fileoverview` | **ACG rule / formatting excluded** | `require-stable-file-shell` is public but disabled until the reviewed PR 2 migration. It requires a canonical `@file` overview and a contiguous import shell; section spacing remains formatter policy. |
 | TypeScript import paths | **Rule + review-only** | `import-x/no-absolute-path`, `no-commonjs`, `no-dynamic-require`, `@typescript-eslint/no-require-imports`, and `triple-slash-reference`. Whether a bare alias names an intra-project module is resolver/project-specific and remains review-only. |
 | Prefer relative imports within one logical project; limit `../` depth | **Review-only** | Logical project boundaries and acceptable parent depth are repository architecture, not reliably inferable from one portable preset. |
 | Namespace versus named imports and import renaming | **Review-only** | The guide makes this depend on frequency, API size, collisions, generated names, and clarity. |
@@ -111,7 +111,7 @@ deliberately ships no formatter rules or formatter gate.
 | JSDoc for every top-level export | **Rule** | Both main presets include export-scoped `jsdoc/require-jsdoc`; the standalone `documentation` preset remains available for composition. |
 | JSDoc descriptions, parameters, properties, and returns | **ACG stricter rule** | The bundled requirements/content rules require complete descriptions on exported APIs even where Google allows omission when obvious. |
 | No redundant JSDoc type annotations | **Rule** | `jsdoc/no-types`, with parameter/return type requirements disabled. |
-| Informative comments and approved JSDoc structure/tags | **Rule + review-only** | JSDoc logical/content rules catch invalid and uninformative documentation. Whether prose adds enough domain information remains review-only. |
+| Informative comments and approved JSDoc structure/tags | **Rule + review-only** | Existing JSDoc rules catch invalid structure. The public-but-disabled `no-vacuous-jsdoc` additionally rejects a closed grammar of known filler; broader prose quality remains review-only. |
 | Ordinary multiline comment presentation, Markdown wrapping, tag alignment | **Formatting excluded** | These are presentation and wrapping concerns, so no lint or formatter gate is included. |
 | Parameter-name comments at ambiguous call sites | **Review-only** | Ambiguity depends on API semantics and reader context. |
 | Documentation before decorators | **Not applicable** | Decorators are rejected entirely by the stricter preset. |

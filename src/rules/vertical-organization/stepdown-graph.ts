@@ -1,0 +1,181 @@
+import { AST_NODE_TYPES, type TSESLint, type TSESTree } from "@typescript-eslint/utils";
+import type { Container, Edge, FunctionImplementation, Implementation, Violation } from "./stepdown-model.js";
+import { violatingEdges } from "./stepdown-scc.js";
+
+interface EdgeCollection {
+  readonly byFunction: WeakMap<FunctionImplementation, Implementation>;
+  readonly sourceCode: Readonly<TSESLint.SourceCode>;
+  readonly topLevelTargets: ReadonlyMap<string, Implementation>;
+  readonly classTargets: ReadonlyMap<Container, ReadonlyMap<string, Implementation>>;
+  readonly edges: Map<string, Edge>;
+}
+
+/**
+ * Collects same-band local call edges whose declaration order violates the
+ * caller-before-callee narrative.
+ *
+ * @param calls Calls found in the source file.
+ * @param implementations Eligible function and method implementations.
+ * @param byFunction Implementation lookup by function node.
+ * @param sourceCode ESLint source and scope model.
+ * @returns Component-order violations in source order.
+ */
+export function collectViolatingEdges(
+  calls: readonly TSESTree.CallExpression[],
+  implementations: readonly Implementation[],
+  byFunction: WeakMap<FunctionImplementation, Implementation>,
+  sourceCode: Readonly<TSESLint.SourceCode>,
+): readonly Violation[] {
+  const edges = new Map<string, Edge>();
+  const collection: EdgeCollection = {
+    byFunction,
+    sourceCode,
+    topLevelTargets: uniqueTopLevelImplementations(implementations),
+    classTargets: uniqueClassImplementations(implementations),
+    edges,
+  };
+  for (const call of calls) {
+    collectEdge(call, collection);
+  }
+  return violatingEdges([...edges.values()]);
+}
+
+function collectEdge(
+  call: TSESTree.CallExpression,
+  collection: EdgeCollection,
+): void {
+  const caller = ownerOfCall(call, collection.byFunction);
+  if (caller === null) {
+    return;
+  }
+  const callee = topLevelCallee(call, collection.topLevelTargets, collection.sourceCode) ??
+    classCallee(call, caller, collection.classTargets);
+  if (callee === null || caller.container !== callee.container || caller.band !== callee.band) {
+    return;
+  }
+  rememberEarliestEdge(collection.edges, { caller, callee, call });
+}
+
+function rememberEarliestEdge(edges: Map<string, Edge>, edge: Edge): void {
+  const key = `${edge.caller.declaration.range[0]}:${edge.callee.declaration.range[0]}`;
+  if (!edges.has(key)) {
+    edges.set(key, edge);
+  }
+}
+
+function uniqueClassImplementations(
+  implementations: readonly Implementation[],
+): ReadonlyMap<Container, ReadonlyMap<string, Implementation>> {
+  const grouped = groupClassTargets(implementations);
+  return new Map([...grouped].map(([container, targets]) => [container, uniqueTargets(targets)]));
+}
+
+function groupClassTargets(
+  implementations: readonly Implementation[],
+): ReadonlyMap<Container, ReadonlyMap<string, readonly Implementation[]>> {
+  const grouped = new Map<Container, Map<string, Implementation[]>>();
+  for (const implementation of implementations) {
+    const targets = grouped.get(implementation.container) ?? new Map<string, Implementation[]>();
+    const key = `${implementation.isStatic}:${implementation.callableName}`;
+    targets.set(key, [...(targets.get(key) ?? []), implementation]);
+    grouped.set(implementation.container, targets);
+  }
+  return grouped;
+}
+
+function uniqueTargets(
+  targets: ReadonlyMap<string, readonly Implementation[]>,
+): ReadonlyMap<string, Implementation> {
+  return new Map(
+    [...targets].flatMap(([key, candidates]) => candidates.length === 1 ? [[key, candidates[0]] as const] : []),
+  );
+}
+
+function ownerOfCall(
+  call: TSESTree.CallExpression,
+  byFunction: WeakMap<FunctionImplementation, Implementation>,
+): Implementation | null {
+  for (let current: TSESTree.Node | null | undefined = call.parent; current != null; current = current.parent) {
+    if (!isFunctionBoundary(current)) {
+      continue;
+    }
+    return current.type === AST_NODE_TYPES.ArrowFunctionExpression ? null : byFunction.get(current) ?? null;
+  }
+  return null;
+}
+
+function isFunctionBoundary(
+  node: TSESTree.Node,
+): node is FunctionImplementation | TSESTree.ArrowFunctionExpression {
+  return node.type === AST_NODE_TYPES.FunctionDeclaration ||
+    node.type === AST_NODE_TYPES.FunctionExpression ||
+    node.type === AST_NODE_TYPES.ArrowFunctionExpression;
+}
+
+function uniqueTopLevelImplementations(
+  implementations: readonly Implementation[],
+): ReadonlyMap<string, Implementation> {
+  const grouped = new Map<string, Implementation[]>();
+  for (const implementation of implementations) {
+    if (implementation.container.type === AST_NODE_TYPES.Program && implementation.callableName !== null) {
+      const group = grouped.get(implementation.callableName) ?? [];
+      group.push(implementation);
+      grouped.set(implementation.callableName, group);
+    }
+  }
+  return uniqueTargets(grouped);
+}
+
+function topLevelCallee(
+  call: TSESTree.CallExpression,
+  targets: ReadonlyMap<string, Implementation>,
+  sourceCode: Readonly<TSESLint.SourceCode>,
+): Implementation | null {
+  if (call.optional || call.callee.type !== AST_NODE_TYPES.Identifier || call.callee.optional) {
+    return null;
+  }
+  const target = targets.get(call.callee.name);
+  if (target === undefined) {
+    return null;
+  }
+  const variable = lexicalVariable(sourceCode.getScope(call), call.callee.name);
+  return variable?.defs.some((definition) => definition.node === target.declaration) ? target : null;
+}
+
+function lexicalVariable(
+  initialScope: TSESLint.Scope.Scope,
+  name: string,
+): TSESLint.Scope.Variable | null {
+  for (let scope: TSESLint.Scope.Scope | null = initialScope; scope !== null; scope = scope.upper) {
+    const variable = scope.set.get(name);
+    if (variable !== undefined) {
+      return variable;
+    }
+  }
+  return null;
+}
+
+function classCallee(
+  call: TSESTree.CallExpression,
+  caller: Implementation,
+  targets: ReadonlyMap<Container, ReadonlyMap<string, Implementation>>,
+): Implementation | null {
+  if (call.optional || call.callee.type !== AST_NODE_TYPES.MemberExpression || call.callee.optional) {
+    return null;
+  }
+  const name = directThisMethodName(call.callee);
+  if (name === null || caller.container.type !== AST_NODE_TYPES.ClassBody) {
+    return null;
+  }
+  return targets.get(caller.container)?.get(`${caller.isStatic}:${name}`) ?? null;
+}
+
+function directThisMethodName(member: TSESTree.MemberExpression): string | null {
+  if (member.computed || member.object.type !== AST_NODE_TYPES.ThisExpression) {
+    return null;
+  }
+  if (member.property.type === AST_NODE_TYPES.PrivateIdentifier) {
+    return `#${member.property.name}`;
+  }
+  return member.property.name;
+}

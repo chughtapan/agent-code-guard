@@ -7,6 +7,16 @@ import { plugin } from "../index.js";
 const parser: Linter.Parser = tsParser;
 const pluginEntry: NonNullable<Linter.Config["plugins"]>[string] = plugin;
 
+/**
+ * Orders rule identifiers deterministically for registry assertions.
+ * @param left First rule identifier.
+ * @param right Second rule identifier.
+ * @returns Negative, zero, or positive lexical ordering result.
+ */
+function compareStrings(left: string, right: string): number {
+  return left.localeCompare(right);
+}
+
 const linter = new Linter();
 
 function configFor(ruleId: string): Linter.Config {
@@ -111,6 +121,22 @@ describe("property: exported constructors", () => {
       }),
       { numRuns: 40 },
     );
+  });
+});
+
+describe("vertical-organization public rules", () => {
+  it("registers exactly the three PR 1 rule ids", () => {
+    const ruleIds: string[] = Object.keys(plugin.rules).filter((ruleId) =>
+      ["no-vacuous-jsdoc", "require-stable-file-shell", "prefer-stepdown-function-order"].includes(ruleId),
+    );
+    const sortedRuleIds: string[] = Array.from(ruleIds);
+    sortedRuleIds.sort(compareStrings);
+    expect(sortedRuleIds).toEqual([
+      "no-vacuous-jsdoc",
+      "prefer-stepdown-function-order",
+      "require-stable-file-shell",
+    ]);
+    expect(Object.keys(plugin.rules)).toHaveLength(63);
   });
 });
 

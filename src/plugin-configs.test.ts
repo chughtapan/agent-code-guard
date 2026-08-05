@@ -66,6 +66,36 @@ it("recommended and strict presets provide type-aware Google Style enforcement",
   }
 });
 
+it("ships the complete vertical-organization surface disabled outside documentation", () => {
+  expect(packageJson.dependencies).toMatchObject({
+    "comment-parser": "1.4.1",
+    "eslint-plugin-jsdoc": "62.9.0",
+    "eslint-plugin-perfectionist": "5.10.1",
+  });
+  for (const config of [plugin.configs.recommended, plugin.configs.strict]) {
+    expect(config.plugins).toHaveProperty("perfectionist");
+    expect(config.rules).toMatchObject({
+      "agent-code-guard/no-vacuous-jsdoc": "off",
+      "agent-code-guard/require-stable-file-shell": "off",
+      "agent-code-guard/prefer-stepdown-function-order": "off",
+      "@typescript-eslint/adjacent-overload-signatures": "off",
+      "import-x/first": "off",
+      "jsdoc/require-file-overview": "off",
+      "perfectionist/sort-imports": ["off", expect.any(Object)],
+      "perfectionist/sort-exports": ["off", expect.any(Object)],
+      "perfectionist/sort-named-imports": ["off", expect.any(Object)],
+      "perfectionist/sort-named-exports": ["off", expect.any(Object)],
+      "perfectionist/sort-import-attributes": ["off", expect.any(Object)],
+      "perfectionist/sort-export-attributes": ["off", expect.any(Object)],
+      "perfectionist/sort-heritage-clauses": ["off", expect.any(Object)],
+    });
+  }
+  expect(plugin.configs.documentation.rules).not.toHaveProperty(
+    "agent-code-guard/no-vacuous-jsdoc",
+  );
+  expect(plugin.configs.documentation.rules).not.toHaveProperty("perfectionist/sort-imports");
+});
+
 it("does not expose the removed TypeScript quality-gate rule", () => {
   expect(plugin.rules).not.toHaveProperty("require-typescript-quality-gate");
   for (const config of [plugin.configs.recommended, plugin.configs.strict]) {
