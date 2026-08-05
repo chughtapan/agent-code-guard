@@ -4,7 +4,9 @@
 
 import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-import { afterAll, describe, it } from "vitest";
+import * as fc from "fast-check";
+import { afterAll, describe, expect, it } from "vitest";
+import { lintRule } from "../../test-support/property-lint.js";
 import { noEffectErrorCoalescing as rule } from "./no-effect-error-coalescing.js";
 
 RuleTester.afterAll = afterAll;
@@ -110,4 +112,32 @@ ruleTester.run("no-effect-error-coalescing", rule, {
       ],
     },
   ],
+});
+
+const typeNameArb = fc.stringMatching(/^[A-Z][a-zA-Z]{2,8}$/);
+
+describe("property: Effect error coalescing", () => {
+  it("Effect error coalescing fires across broad error handlers", () => {
+    fc.assert(
+      fc.property(typeNameArb, fc.constantFrom("mapError", "catchAll", "catchAllCause"), (name, method) => {
+        const errorName = `${name}Error`;
+        const body =
+          method === "mapError" ? `new ${errorName}({ cause })` : `Effect.fail(new ${errorName}({ cause }))`;
+        const code = `const run = program.pipe(Effect.${method}((cause) => ${body}));`;
+        expect(lintRule(code, "agent-code-guard/no-effect-error-coalescing")).toHaveLength(1);
+      }),
+      { numRuns: 60 },
+    );
+  });
+
+  it("Effect error handlers that preserve the incoming error stay clean", () => {
+    fc.assert(
+      fc.property(fc.constantFrom("mapError", "catchAll", "catchAllCause"), (method) => {
+        const body = method === "mapError" ? "err" : "Effect.fail(err)";
+        const code = `const run = program.pipe(Effect.${method}((err) => ${body}));`;
+        expect(lintRule(code, "agent-code-guard/no-effect-error-coalescing")).toHaveLength(0);
+      }),
+      { numRuns: 30 },
+    );
+  });
 });

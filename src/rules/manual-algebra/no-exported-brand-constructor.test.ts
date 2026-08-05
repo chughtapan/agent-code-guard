@@ -4,7 +4,9 @@
 
 import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-import { afterAll, describe, it } from "vitest";
+import * as fc from "fast-check";
+import { afterAll, describe, expect, it } from "vitest";
+import { lintRule } from "../test-support/property-lint.js";
 import { noExportedBrandConstructor as rule } from "./no-exported-brand-constructor.js";
 
 RuleTester.afterAll = afterAll;
@@ -99,4 +101,43 @@ ruleTester.run("no-exported-brand-constructor", rule, {
       ],
     },
   ],
+});
+
+const typeNameArb = fc.stringMatching(/^[A-Z][a-zA-Z]{2,8}$/);
+
+const exportedConstructorArb = typeNameArb.chain((name) =>
+  fc.constantFrom(
+    { expression: `Brand.nominal<${name}>()`, expectedKind: "brand", name },
+    { expression: "Schema.Struct({ id: Schema.String })", expectedKind: "schema", name: `${name}Schema` },
+    { expression: "z.object({ id: z.string() })", expectedKind: "schema", name: `${name}Schema` },
+    { expression: "Type.Object({ id: Type.String() })", expectedKind: "schema", name },
+  ),
+);
+
+describe("property: exported constructors", () => {
+  it("exported brand/schema constructors fire across supported constructor families", () => {
+    fc.assert(
+      fc.property(exportedConstructorArb, (sample) => {
+        const code = `export const ${sample.name} = ${sample.expression};`;
+        const messages = lintRule(code, "agent-code-guard/no-exported-brand-constructor");
+        expect(messages).toHaveLength(1);
+        expect(messages[0]?.message).toContain(sample.expectedKind);
+      }),
+      { numRuns: 40 },
+    );
+  });
+
+  it("named re-exports of local constructors fire while local constructors behind parsers stay clean", () => {
+    fc.assert(
+      fc.property(exportedConstructorArb, (sample) => {
+        const reexport = `const ${sample.name} = ${sample.expression};\nexport { ${sample.name} };`;
+        const localBoundary =
+          `const ${sample.name} = ${sample.expression};\n` +
+          `export const parse${sample.name} = (input: unknown) => input;`;
+        expect(lintRule(reexport, "agent-code-guard/no-exported-brand-constructor")).toHaveLength(1);
+        expect(lintRule(localBoundary, "agent-code-guard/no-exported-brand-constructor")).toHaveLength(0);
+      }),
+      { numRuns: 40 },
+    );
+  });
 });

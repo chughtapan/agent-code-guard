@@ -116,6 +116,19 @@ it("ships the complete vertical-organization surface at error outside documentat
   }
 });
 
+it("registers exactly the published rule surface", () => {
+  const verticalIds = Object.keys(plugin.rules)
+    .filter((ruleId) => verticalOrganizationRuleIds.includes(`agent-code-guard/${ruleId}`))
+    .sort((left, right) => left.localeCompare(right));
+
+  expect(verticalIds).toEqual([
+    "no-vacuous-jsdoc",
+    "prefer-stepdown-function-order",
+    "require-stable-file-shell",
+  ]);
+  expect(Object.keys(plugin.rules)).toHaveLength(63);
+});
+
 it("does not expose the removed TypeScript quality-gate rule", () => {
   expect(plugin.rules).not.toHaveProperty("require-typescript-quality-gate");
   for (const config of [plugin.configs.recommended, plugin.configs.strict]) {

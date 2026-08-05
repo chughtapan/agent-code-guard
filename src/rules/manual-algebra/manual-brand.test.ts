@@ -4,7 +4,9 @@
 
 import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-import { afterAll, describe, it } from "vitest";
+import * as fc from "fast-check";
+import { afterAll, describe, expect, it } from "vitest";
+import { lintRule } from "../test-support/property-lint.js";
 import { manualBrand as rule } from "./manual-brand.js";
 
 RuleTester.afterAll = afterAll;
@@ -102,4 +104,21 @@ ruleTester.run("manual-brand", rule, {
       errors: [{ messageId: "manualBrand", data: { name: "UserId" } }],
     },
   ],
+});
+
+const typeNameArb = fc.stringMatching(/^[A-Z][a-zA-Z]{2,8}$/);
+
+describe("property: manual brand constructors", () => {
+  it("manual brand constructors fire for constructor-like helper names only", () => {
+    fc.assert(
+      fc.property(typeNameArb, fc.constantFrom("as", "make", "to"), (name, prefix) => {
+        const helper = `${prefix}${name}`;
+        const constructor = `const ${helper} = (value: string): ${name} => value as ${name};`;
+        const neutral = `const project = (value: string): ${name} => value as ${name};`;
+        expect(lintRule(constructor, "agent-code-guard/no-manual-brand-constructor")).toHaveLength(1);
+        expect(lintRule(neutral, "agent-code-guard/no-manual-brand-constructor")).toHaveLength(0);
+      }),
+      { numRuns: 40 },
+    );
+  });
 });

@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+### Removed
+
+- The `agent-code-guard-init` CLI. It printed a config snippet and four setup
+  steps that the README's "Hello world" section already carries verbatim, so
+  the only thing it added was a second place to keep in sync. Its one unique
+  detail, that the project needs a strict `tsconfig.json`, moved into the
+  README.
+
+### Changed
+
+- Rule property tests now live beside the rules they exercise instead of in a
+  shared `new-eslint-rules.test.ts`, whose name stopped being true once the
+  rules stopped being new. The public rule-surface assertion moved to
+  `plugin-configs.test.ts` alongside the other preset checks.
+
 ## [0.0.21] - 2026-08-05
 
 ### Added
