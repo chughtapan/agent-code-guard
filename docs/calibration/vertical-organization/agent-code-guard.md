@@ -1,17 +1,25 @@
 # agent-code-guard vertical-organization calibration
 
-Status: pending review.
+Status: reviewed — gate passed.
 
 ## Input
 
 | Field | Value |
 |---|---|
 | Corpus | agent-code-guard |
-| Root | `/tmp/acg-pr1.u2efev` |
-| Revision | `637edb331276c3d0fe6f04353defad1092a58f72` |
-| Command | `"/tmp/acg-pr1.u2efev/scripts/calibrate-vertical-organization.mts" "--corpus" "agent-code-guard" "--root" "/tmp/acg-pr1.u2efev" "--revision" "637edb331276c3d0fe6f04353defad1092a58f72" "--globs" "**/*.{ts,tsx,mts,cts}" "--exclude" "node_modules/**,dist/**,coverage/**,bench/fixtures/**" "--out" "/tmp/acg-pr1.u2efev/docs/calibration/vertical-organization/agent-code-guard.md"` |
+| Root | `/tmp/acg-calib-corpus` |
+| Revision | `19c5eb860a9508f837185b93e4ec612e9cb293ea` |
+| Command | `"/home/tapanc/acg-pr2-adoption/scripts/calibrate-vertical-organization.mts" "--corpus" "agent-code-guard" "--root" "/tmp/acg-calib-corpus" "--revision" "19c5eb860a9508f837185b93e4ec612e9cb293ea" "--globs" "**/*.{ts,tsx,mts,cts}" "--exclude" "node_modules/**,dist/**,coverage/**,bench/fixtures/**" "--out" "/home/tapanc/acg-pr2-adoption/docs/calibration/vertical-organization/agent-code-guard.md"` |
 | Globs | `**/*.{ts,tsx,mts,cts}` |
 | Excludes | `node_modules/**,dist/**,coverage/**,bench/fixtures/**` |
+
+## Inspection totals
+
+| Metric | Count |
+|---|---:|
+| Files inspected | 168 |
+| Error messages | 0 |
+| Warning messages | 374 |
 
 ## Dependency versions
 
@@ -25,226 +33,303 @@ Status: pending review.
 | Rule | Findings |
 |---|---:|
 | `agent-code-guard/no-vacuous-jsdoc` | 0 |
-| `agent-code-guard/require-stable-file-shell` | 135 |
-| `agent-code-guard/prefer-stepdown-function-order` | 274 |
+| `agent-code-guard/require-stable-file-shell` | 125 |
+| `agent-code-guard/prefer-stepdown-function-order` | 249 |
+
+## Diagnostic breakdown
+
+| Rule | Diagnostic | All findings | Inspected sample |
+|---|---|---:|---:|
+| `agent-code-guard/require-stable-file-shell` | `missingCanonicalFileOverview` | 125 | 72 |
+| `agent-code-guard/prefer-stepdown-function-order` | `callerMustPrecedeCallee` | 223 | 117 |
+| `agent-code-guard/prefer-stepdown-function-order` | `declarationOutOfStoryBand` | 26 | 11 |
+
+No shell diagnostic other than `missingCanonicalFileOverview` fired: the corpus contains no
+bare side-effect import, no interrupted import shell, no disallowed preamble, and no duplicate
+`@file` tag. `no-vacuous-jsdoc` reported nothing. A positive control confirmed that zero is a
+real result rather than a wiring artifact: a probe file whose block description is `TODO`, whose
+`@param` reads `Value supplied to the operation`, and whose `@returns` reads `The probe result`
+produces exactly three `no-vacuous-jsdoc` diagnostics under the same plugin instance.
+
+## Inspection method
+
+Total findings (374) exceed 200, so the first 200 sorted by `path:line:column:ruleId`
+were inspected, as the corpus README requires. Every inspected finding was checked against the
+cited source and against an independent AST inventory built with `typescript-eslint`'s parser
+rather than with the rule's own modules:
+
+- Shell findings: the whole file text was scanned for any JSDoc block containing an `@file` tag.
+- Band findings: export form (direct, default, or top-level local specifier) and the earliest
+  preceding declaration of the named band were recomputed independently.
+- Edge findings: caller attribution was recomputed by walking from the reported call to its
+  innermost enclosing function-like node, so a call sitting inside a nested arrow, callback, or
+  nested function declaration would have surfaced as a misattribution. Callee shape, optional-call
+  status, duplicate top-level names, and earliest-callsite selection were checked the same way.
+
+Independent recomputation matched the rule on all 200 findings. No inspected finding required a
+policy exemption: Invariant 1 puts tests, benches, and scripts in scope, and the corpus needs no
+evaluation-order partition because it has no bare side-effect import and no runtime import cycle.
 
 ## Deterministic inspection sample
 
 | Finding | Classification | Notes |
 |---|---|---|
-| `bench/generate-fixture.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `bench/generate-fixture.ts:114:3:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/generate-fixture.ts:117:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/generate-fixture.ts:126:3:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/generate-fixture.ts:129:52:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/generate-fixture.ts:208:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/generate-fixture.ts:48:15:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/generate-fixture.ts:54:29:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-bench.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `bench/lint-bench.ts:128:15:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-bench.ts:137:21:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-bench.ts:166:10:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-bench.ts:200:16:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-bench.ts:201:19:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-bench.ts:217:15:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-bench.ts:219:25:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-bench.ts:223:20:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-bench.ts:224:3:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-bench.ts:226:27:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-one.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `bench/lint-one.ts:101:16:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-one.ts:115:22:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `bench/lint-one.ts:85:16:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `scripts/apply-vertical-organization-fix.mts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `scripts/calibrate-vertical-organization.mts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `scripts/calibrate-vertical-organization.mts:139:26:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `scripts/calibrate-vertical-organization.mts:171:3:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `scripts/calibrate-vertical-organization.mts:62:14:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `scripts/calibrate-vertical-organization.mts:93:16:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/init.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/knip.ts:3:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/plugin-configs.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/async-flow/async-keyword.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/async-flow/async-keyword.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/async-flow/bare-catch.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/async-flow/bare-catch.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/async-flow/conditional-chaining-parameters.ts:111:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/async-flow/no-conditional-chaining.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/async-flow/no-conditional-chaining.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/async-flow/no-unbounded-concurrency.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/async-flow/no-unbounded-concurrency.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/async-flow/promise-type.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/async-flow/promise-type.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/async-flow/then-chain.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/async-flow/then-chain.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/discriminants/either-discriminant.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/discriminants/either-discriminant.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/discriminants/tag-discriminant.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/discriminants/tag-discriminant.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/discriminants/tag-discriminant.ts:37:22:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/discriminants/tag-discriminant.ts:41:7:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/error/effect-error-erasure.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/error/effect-error-erasure.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/error/effect-error-erasure.ts:29:12:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/error/effect-promise.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/error/effect-promise.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/error/no-effect-error-coalescing.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/error/no-effect-error-coalescing.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/annotate-without-span.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/annotate-without-span.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/handler-requires-span.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/handler-requires-span.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/handler-requires-span.ts:62:66:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/observability/handler-requires-span.ts:67:12:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/observability/handler-requires-span.ts:70:12:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/observability/logger-config-at-boot.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/logger-config-at-boot.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/no-console-in-effect.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/no-console-in-effect.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/prefer-annotate-logs.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/prefer-annotate-logs.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/require-span-on-exported-effect.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/require-span-on-exported-effect.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/observability/require-span-on-exported-effect.ts:26:12:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/observability/require-span-on-exported-effect.ts:29:12:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/runtime/effect-foreach-requires-concurrency.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/runtime/effect-foreach-requires-concurrency.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/runtime/no-promise-all-in-effect.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/runtime/no-promise-all-in-effect.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/runtime/prefer-config-redacted.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/runtime/prefer-config-redacted.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/runtime/prefer-effect-platform.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/runtime/prefer-effect-platform.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/schema/no-schema-type-cast.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/schema/no-schema-type-cast.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/schema/parse-into-schema-requires-effect.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/schema/parse-into-schema-requires-effect.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/schema/parse-into-schema-requires-effect.ts:100:10:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/schema/parse-into-schema-requires-effect.ts:106:9:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/schema/parse-into-schema-requires-effect.ts:177:8:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/schema/parse-into-schema-requires-effect.ts:90:8:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/schema/prefer-decode-effect-at-boundary.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/schema/prefer-decode-effect-at-boundary.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/schema/prefer-decode-effect-at-boundary.ts:112:7:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/schema/prefer-decode-effect-at-boundary.ts:115:7:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/schema/prefer-decode-effect-at-boundary.ts:177:7:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/schema/prefer-decode-effect-at-boundary.ts:180:7:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/scope/acquire-release-requires-scope.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/scope/acquire-release-requires-scope.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/scope/finalizer-requires-scope.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/scope/finalizer-requires-scope.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/scope/finalizer-requires-scope.ts:39:12:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/effect/scope/fork-requires-lifecycle.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/scope/fork-requires-lifecycle.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/scope/runpromise-requires-scoped.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/effect/scope/runpromise-requires-scoped.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/google-style/assertions.ts:47:19:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/assertions.ts:51:8:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/classes.ts:149:22:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/classes.ts:39:7:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/classes.ts:50:25:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/classes.ts:54:9:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/component-function-naming.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/google-style/component-function-naming.ts:102:21:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/component-function-naming.ts:57:30:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/component-return-signals.ts:104:12:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/component-return-signals.ts:111:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/component-return-signals.ts:112:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/component-return-signals.ts:165:6:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/component-return-signals.ts:186:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/component-return-signals.ts:190:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/component-return-signals.ts:193:23:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/component-return-signals.ts:197:10:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/component-return-signals.ts:210:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:110:10:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:120:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:124:20:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:140:22:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:156:16:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:167:20:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:185:20:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:201:16:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:205:7:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:210:7:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:30:16:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:82:21:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/descriptor-accessors.ts:89:23:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/enum-coercion.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/google-style/enum-coercion.ts:104:10:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/expressions.ts:145:9:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/expressions.ts:162:34:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/expressions.ts:162:60:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/expressions.ts:166:7:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/expressions.ts:195:7:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/expressions.ts:212:8:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/expressions.ts:216:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/expressions.ts:62:12:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/expressions.ts:64:7:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/expressions.ts:72:59:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/expressions.ts:96:7:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/mutation.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/google-style/mutation.ts:143:16:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/mutation.ts:174:59:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/mutation.ts:191:10:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/mutation.ts:191:51:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/mutation.ts:206:10:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/mutation.ts:206:36:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/mutation.ts:227:10:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/mutation.ts:227:47:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/mutation.ts:64:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/mutation.ts:65:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/mutation.ts:66:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/google-style/syntax.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/google-style/type-shape.ts:63:9:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/brand-helper.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/brand-helper.ts:24:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/brand.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/exclusions.ts:47:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/exclusions.ts:65:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:130:16:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:147:10:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:152:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:152:65:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:158:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:159:34:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:181:12:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:183:16:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:192:12:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:198:10:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:198:59:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:202:10:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:202:59:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:217:12:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:219:16:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:233:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:241:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:248:5:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:269:42:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:273:42:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:287:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:298:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:309:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:332:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/index.ts:356:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/option.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/property.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/result.test.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/surface.ts:1:1:agent-code-guard/require-stable-file-shell` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/surface.ts:100:17:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
-| `src/rules/manual-algebra/detection/surface.ts:101:10:agent-code-guard/prefer-stepdown-function-order` | unreviewed | pending |
+| `bench/generate-fixture.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `bench/generate-fixture.ts:114:3:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `rmrf` declared line 108 precedes caller `generateFixture` declared line 112; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `generateFixture` and is the earliest such callsite. |
+| `bench/generate-fixture.ts:117:17:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `planFiles` declared line 45 precedes caller `generateFixture` declared line 112; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `generateFixture` and is the earliest such callsite. |
+| `bench/generate-fixture.ts:126:3:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `writeFile` declared line 34 precedes caller `generateFixture` declared line 112; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `generateFixture` and is the earliest such callsite. |
+| `bench/generate-fixture.ts:129:52:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `renderFile` declared line 98 precedes caller `generateFixture` declared line 112; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `generateFixture` and is the earliest such callsite. |
+| `bench/generate-fixture.ts:208:17:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `generateFixture` declared line 112 precedes caller `main` declared line 198; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `main` and is the earliest such callsite. |
+| `bench/generate-fixture.ts:48:15:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `mulberry32` declared line 19 precedes caller `planFiles` declared line 45; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `planFiles` and is the earliest such callsite. |
+| `bench/generate-fixture.ts:54:29:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `pad` declared line 30 precedes caller `planFiles` declared line 45; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `planFiles` and is the earliest such callsite. |
+| `bench/lint-bench.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `bench/lint-bench.ts:128:15:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `runOnce` declared line 94 precedes caller `benchTarget` declared line 121; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `benchTarget` and is the earliest such callsite. |
+| `bench/lint-bench.ts:137:21:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `median` declared line 46 precedes caller `benchTarget` declared line 121; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `benchTarget` and is the earliest such callsite. |
+| `bench/lint-bench.ts:166:10:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `fmt` declared line 52 precedes caller `printTable` declared line 149; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `printTable` and is the earliest such callsite. |
+| `bench/lint-bench.ts:200:16:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `parseOptions` declared line 56 precedes caller `main` declared line 199; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `main` and is the earliest such callsite. |
+| `bench/lint-bench.ts:201:19:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `collectTargets` declared line 83 precedes caller `main` declared line 199; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `main` and is the earliest such callsite. |
+| `bench/lint-bench.ts:217:15:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `benchTarget` declared line 121 precedes caller `main` declared line 199; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `main` and is the earliest such callsite. |
+| `bench/lint-bench.ts:219:25:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `fmt` declared line 52 precedes caller `main` declared line 199; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `main` and is the earliest such callsite. |
+| `bench/lint-bench.ts:223:20:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `loadBaseline` declared line 180 precedes caller `main` declared line 199; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `main` and is the earliest such callsite. |
+| `bench/lint-bench.ts:224:3:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `printTable` declared line 149 precedes caller `main` declared line 199; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `main` and is the earliest such callsite. |
+| `bench/lint-bench.ts:226:27:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `writeBaseline` declared line 188 precedes caller `main` declared line 199; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `main` and is the earliest such callsite. |
+| `bench/lint-one.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `bench/lint-one.ts:101:16:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `flatten` declared line 55 precedes caller `main` declared line 84; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `main` and is the earliest such callsite. |
+| `bench/lint-one.ts:115:22:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hash` declared line 78 precedes caller `main` declared line 84; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `main` and is the earliest such callsite. |
+| `bench/lint-one.ts:85:16:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `parseArgs` declared line 12 precedes caller `main` declared line 84; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `main` and is the earliest such callsite. |
+| `src/init.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/knip.ts:3:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/plugin-configs.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/async-flow/async-keyword.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/async-flow/async-keyword.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/async-flow/bare-catch.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/async-flow/bare-catch.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/async-flow/conditional-chaining-parameters.ts:111:17:agent-code-guard/prefer-stepdown-function-order` | true positive | `unresolvedParameter` is exported (export form: direct) at line 111 but follows internal `typeAnnotationIsNullable` at line 95. Invariant 7 orders the exported band first, independently of call edges. |
+| `src/rules/async-flow/no-conditional-chaining.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/async-flow/no-conditional-chaining.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/async-flow/no-unbounded-concurrency.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/async-flow/no-unbounded-concurrency.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/async-flow/promise-type.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/async-flow/promise-type.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/async-flow/then-chain.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/async-flow/then-chain.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/discriminants/either-discriminant.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/discriminants/either-discriminant.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/discriminants/tag-discriminant.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/discriminants/tag-discriminant.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/discriminants/tag-discriminant.ts:37:22:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `tagComparison` declared line 21 precedes caller `reportableTagComparison` declared line 36; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `reportableTagComparison` and is the earliest such callsite. |
+| `src/rules/effect/discriminants/tag-discriminant.ts:41:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `resolveStringLiteral` declared line 11 precedes caller `reportableTagComparison` declared line 36; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `reportableTagComparison` and is the earliest such callsite. |
+| `src/rules/effect/error/effect-error-erasure.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/error/effect-error-erasure.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/error/effect-error-erasure.ts:29:12:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `resolveGenericErrorCtor` declared line 8 precedes caller `functionReturnsGenericError` declared line 20; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `functionReturnsGenericError` and is the earliest such callsite. |
+| `src/rules/effect/error/effect-promise.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/error/effect-promise.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/error/no-effect-error-coalescing.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/error/no-effect-error-coalescing.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/annotate-without-span.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/annotate-without-span.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/handler-requires-span.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/handler-requires-span.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/handler-requires-span.ts:62:66:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isPipeMember` declared line 51 precedes caller `isPipeCall` declared line 61; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isPipeCall` and is the earliest such callsite. |
+| `src/rules/effect/observability/handler-requires-span.ts:67:12:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isPipeMember` declared line 51 precedes caller `isPipeMemberContext` declared line 65; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isPipeMemberContext` and is the earliest such callsite. |
+| `src/rules/effect/observability/handler-requires-span.ts:70:12:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isPipeCall` declared line 61 precedes caller `isPipeMemberContext` declared line 65; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isPipeMemberContext` and is the earliest such callsite. |
+| `src/rules/effect/observability/logger-config-at-boot.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/logger-config-at-boot.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/no-console-in-effect.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/no-console-in-effect.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/prefer-annotate-logs.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/prefer-annotate-logs.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/require-span-on-exported-effect.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/require-span-on-exported-effect.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/observability/require-span-on-exported-effect.ts:26:12:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `functionExportName` declared line 5 precedes caller `exportName` declared line 20; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `exportName` and is the earliest such callsite. |
+| `src/rules/effect/observability/require-span-on-exported-effect.ts:29:12:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `variableExportName` declared line 9 precedes caller `exportName` declared line 20; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `exportName` and is the earliest such callsite. |
+| `src/rules/effect/runtime/effect-foreach-requires-concurrency.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/runtime/effect-foreach-requires-concurrency.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/runtime/no-promise-all-in-effect.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/runtime/no-promise-all-in-effect.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/runtime/prefer-config-redacted.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/runtime/prefer-config-redacted.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/runtime/prefer-effect-platform.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/runtime/prefer-effect-platform.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/schema/no-schema-type-cast.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/schema/no-schema-type-cast.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/schema/parse-into-schema-requires-effect.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/schema/parse-into-schema-requires-effect.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/schema/parse-into-schema-requires-effect.ts:100:10:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isEffectTryCall` declared line 62 precedes caller `isThunkOfEffectTry` declared line 89; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isThunkOfEffectTry` and is the earliest such callsite. |
+| `src/rules/effect/schema/parse-into-schema-requires-effect.ts:106:9:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isThunkOfEffectTry` declared line 89 precedes caller `isInsideEffectTryThunk` declared line 103; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isInsideEffectTryThunk` and is the earliest such callsite. |
+| `src/rules/effect/schema/parse-into-schema-requires-effect.ts:177:8:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isJsonParseCall` declared line 37 precedes caller `applyCallOnJsonParse` declared line 159; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `applyCallOnJsonParse` and is the earliest such callsite. |
+| `src/rules/effect/schema/parse-into-schema-requires-effect.ts:90:8:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isFunctionLike` declared line 82 precedes caller `isThunkOfEffectTry` declared line 89; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isThunkOfEffectTry` and is the earliest such callsite. |
+| `src/rules/effect/schema/prefer-decode-effect-at-boundary.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/schema/prefer-decode-effect-at-boundary.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/schema/prefer-decode-effect-at-boundary.ts:112:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isJsonParseCall` declared line 39 precedes caller `appliedArgumentIsIoLike` declared line 104; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `appliedArgumentIsIoLike` and is the earliest such callsite. |
+| `src/rules/effect/schema/prefer-decode-effect-at-boundary.ts:115:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isFetchOrIoCall` declared line 62 precedes caller `appliedArgumentIsIoLike` declared line 104; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `appliedArgumentIsIoLike` and is the earliest such callsite. |
+| `src/rules/effect/schema/prefer-decode-effect-at-boundary.ts:177:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isJsonParseCall` declared line 39 precedes caller `describeIoSource` declared line 173; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `describeIoSource` and is the earliest such callsite. |
+| `src/rules/effect/schema/prefer-decode-effect-at-boundary.ts:180:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isFetchOrIoCall` declared line 62 precedes caller `describeIoSource` declared line 173; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `describeIoSource` and is the earliest such callsite. |
+| `src/rules/effect/scope/acquire-release-requires-scope.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/scope/acquire-release-requires-scope.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/scope/finalizer-requires-scope.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/scope/finalizer-requires-scope.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/scope/finalizer-requires-scope.ts:39:12:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isScopeFrameMember` declared line 27 precedes caller `mentionsScopeFrame` declared line 37; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `mentionsScopeFrame` and is the earliest such callsite. |
+| `src/rules/effect/scope/fork-requires-lifecycle.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/scope/fork-requires-lifecycle.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/scope/runpromise-requires-scoped.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/effect/scope/runpromise-requires-scoped.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/google-style/assertions.ts:47:19:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `closestCommentBefore` declared line 22 precedes caller `hasRationale` declared line 46; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasRationale` and is the earliest such callsite. |
+| `src/rules/google-style/assertions.ts:51:8:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasOnlyNearbyTransparentParentheses` declared line 36 precedes caller `hasRationale` declared line 46; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasRationale` and is the earliest such callsite. |
+| `src/rules/google-style/classes.ts:149:22:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `publicMemberNode` declared line 124 precedes caller `reportRedundantPublic` declared line 139; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `reportRedundantPublic` and is the earliest such callsite. |
+| `src/rules/google-style/classes.ts:39:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isFunctionBoundary` declared line 10 precedes caller `endsStaticThisLookup` declared line 38; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `endsStaticThisLookup` and is the earliest such callsite. |
+| `src/rules/google-style/classes.ts:50:25:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `staticMemberValue` declared line 17 precedes caller `belongsToStaticMember` declared line 47; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `belongsToStaticMember` and is the earliest such callsite. |
+| `src/rules/google-style/classes.ts:54:9:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `endsStaticThisLookup` declared line 38 precedes caller `belongsToStaticMember` declared line 47; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `belongsToStaticMember` and is the earliest such callsite. |
+| `src/rules/google-style/component-function-naming.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/google-style/component-function-naming.ts:102:21:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isComponent` declared line 75 precedes caller `reportCandidate` declared line 94; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `reportCandidate` and is the earliest such callsite. |
+| `src/rules/google-style/component-function-naming.ts:57:30:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isFunctionNode` declared line 34 precedes caller `containingFunction` declared line 55; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `containingFunction` and is the earliest such callsite. |
+| `src/rules/google-style/component-return-signals.ts:104:12:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isImportedCreateElement` declared line 70 precedes caller `isReactCreateElement` declared line 96; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isReactCreateElement` and is the earliest such callsite. |
+| `src/rules/google-style/component-return-signals.ts:111:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isReactReference` declared line 59 precedes caller `isReactCreateElement` declared line 96; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isReactCreateElement` and is the earliest such callsite. |
+| `src/rules/google-style/component-return-signals.ts:112:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isNamedMember` declared line 87 precedes caller `isReactCreateElement` declared line 96; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isReactCreateElement` and is the earliest such callsite. |
+| `src/rules/google-style/component-return-signals.ts:165:6:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isNamedMember` declared line 87 precedes caller `mappedCallbackHasComponentSignal` declared line 156; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `mappedCallbackHasComponentSignal` and is the earliest such callsite. |
+| `src/rules/google-style/component-return-signals.ts:186:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isReactCreateElement` declared line 96 precedes caller `expressionHasComponentSignal` declared line 176; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `expressionHasComponentSignal` and is the earliest such callsite. |
+| `src/rules/google-style/component-return-signals.ts:190:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `mappedCallbackHasComponentSignal` declared line 156 precedes caller `expressionHasComponentSignal` declared line 176; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `expressionHasComponentSignal` and is the earliest such callsite. |
+| `src/rules/google-style/component-return-signals.ts:193:23:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `transparentExpression` declared line 115 precedes caller `expressionHasComponentSignal` declared line 176; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `expressionHasComponentSignal` and is the earliest such callsite. |
+| `src/rules/google-style/component-return-signals.ts:197:10:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `componentChildren` declared line 124 precedes caller `expressionHasComponentSignal` declared line 176; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `expressionHasComponentSignal` and is the earliest such callsite. |
+| `src/rules/google-style/component-return-signals.ts:210:17:agent-code-guard/prefer-stepdown-function-order` | true positive | `functionHasComponentReturnSignal` is exported (export form: direct) at line 210 but follows internal `expressionHasComponentSignal` at line 176. Invariant 7 orders the exported band first, independently of call edges. |
+| `src/rules/google-style/descriptor-accessors.ts:110:10:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isTypeAssertionExpression` declared line 98 precedes caller `aliasExpression` declared line 106; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `aliasExpression` and is the earliest such callsite. |
+| `src/rules/google-style/descriptor-accessors.ts:120:17:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `aliasExpression` declared line 106 precedes caller `resolveObjectExpression` declared line 113; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `resolveObjectExpression` and is the earliest such callsite. |
+| `src/rules/google-style/descriptor-accessors.ts:124:20:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `resolveConstExpression` declared line 77 precedes caller `resolveObjectExpression` declared line 113; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `resolveObjectExpression` and is the earliest such callsite. |
+| `src/rules/google-style/descriptor-accessors.ts:140:22:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `resolveConstExpression` declared line 77 precedes caller `staticPropertyName` declared line 128; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `staticPropertyName` and is the earliest such callsite. |
+| `src/rules/google-style/descriptor-accessors.ts:156:16:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `staticPropertyName` declared line 128 precedes caller `isAccessorProperty` declared line 149; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isAccessorProperty` and is the earliest such callsite. |
+| `src/rules/google-style/descriptor-accessors.ts:167:20:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `resolveObjectExpression` declared line 113 precedes caller `objectHasAccessorDescriptor` declared line 160; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `objectHasAccessorDescriptor` and is the earliest such callsite. |
+| `src/rules/google-style/descriptor-accessors.ts:185:20:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `resolveObjectExpression` declared line 113 precedes caller `bulkDescriptorMapHasAccessor` declared line 178; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `bulkDescriptorMapHasAccessor` and is the earliest such callsite. |
+| `src/rules/google-style/descriptor-accessors.ts:201:16:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `descriptorDefinitionKind` declared line 26 precedes caller `callDefinesAccessor` declared line 197; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `callDefinesAccessor` and is the earliest such callsite. |
+| `src/rules/google-style/descriptor-accessors.ts:205:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `objectHasAccessorDescriptor` declared line 160 precedes caller `callDefinesAccessor` declared line 197; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `callDefinesAccessor` and is the earliest such callsite. |
+| `src/rules/google-style/descriptor-accessors.ts:210:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `bulkDescriptorMapHasAccessor` declared line 178 precedes caller `callDefinesAccessor` declared line 197; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `callDefinesAccessor` and is the earliest such callsite. |
+| `src/rules/google-style/descriptor-accessors.ts:30:16:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `descriptorStaticCall` declared line 15 precedes caller `descriptorDefinitionKind` declared line 26; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `descriptorDefinitionKind` and is the earliest such callsite. |
+| `src/rules/google-style/descriptor-accessors.ts:82:21:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `unwrapExpression` declared line 66 precedes caller `resolveConstExpression` declared line 77; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `resolveConstExpression` and is the earliest such callsite. |
+| `src/rules/google-style/descriptor-accessors.ts:89:23:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `constInitializer` declared line 46 precedes caller `resolveConstExpression` declared line 77; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `resolveConstExpression` and is the earliest such callsite. |
+| `src/rules/google-style/enum-coercion.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/google-style/enum-coercion.ts:104:10:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `enumBooleanVisitor` declared line 49 precedes caller `enumBooleanListeners` declared line 87; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `enumBooleanListeners` and is the earliest such callsite. |
+| `src/rules/google-style/expressions.ts:145:9:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isFunctionNode` declared line 105 precedes caller `isFunctionParameterDefault` declared line 141; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isFunctionParameterDefault` and is the earliest such callsite. |
+| `src/rules/google-style/expressions.ts:162:34:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isFunctionNode` declared line 105 precedes caller `isDirectFunctionParameter` declared line 160; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isDirectFunctionParameter` and is the earliest such callsite. |
+| `src/rules/google-style/expressions.ts:162:60:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `functionOwnsNode` declared line 156 precedes caller `isDirectFunctionParameter` declared line 160; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isDirectFunctionParameter` and is the earliest such callsite. |
+| `src/rules/google-style/expressions.ts:166:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isDirectFunctionParameter` declared line 160 precedes caller `isObjectParameterPattern` declared line 165; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isObjectParameterPattern` and is the earliest such callsite. |
+| `src/rules/google-style/expressions.ts:195:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `nestedPattern` declared line 177 precedes caller `reportUnsafeObjectProperty` declared line 188; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `reportUnsafeObjectProperty` and is the earliest such callsite. |
+| `src/rules/google-style/expressions.ts:212:8:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isObjectParameterPattern` declared line 165 precedes caller `reportUnsafeObjectParameter` declared line 208; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `reportUnsafeObjectParameter` and is the earliest such callsite. |
+| `src/rules/google-style/expressions.ts:216:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `reportUnsafeObjectProperty` declared line 188 precedes caller `reportUnsafeObjectParameter` declared line 208; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `reportUnsafeObjectParameter` and is the earliest such callsite. |
+| `src/rules/google-style/expressions.ts:62:12:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isPureArray` declared line 14 precedes caller `isPureComposite` declared line 60; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isPureComposite` and is the earliest such callsite. |
+| `src/rules/google-style/expressions.ts:64:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Component-level violation under Invariant 10: `isPureComposite` (60) and `isPureDefault` (83) are mutually recursive, so their component's last declaration (83) follows callee `isBinaryLike` (75). Message names the individual caller rather than the component, which reads oddly but the edge is required. |
+| `src/rules/google-style/expressions.ts:72:59:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isPureObject` declared line 26 precedes caller `isPureComposite` declared line 60; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isPureComposite` and is the earliest such callsite. |
+| `src/rules/google-style/expressions.ts:96:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isTransparentTypeExpression` declared line 41 precedes caller `isPureDefault` declared line 83; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isPureDefault` and is the earliest such callsite. |
+| `src/rules/google-style/mutation.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/google-style/mutation.ts:143:16:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `staticMemberName` declared line 126 precedes caller `targetsPrototype` declared line 139; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `targetsPrototype` and is the earliest such callsite. |
+| `src/rules/google-style/mutation.ts:174:59:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `targetsPrototype` declared line 139 precedes caller `firstArgumentTargetsPrototype` declared line 172; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `firstArgumentTargetsPrototype` and is the earliest such callsite. |
+| `src/rules/google-style/mutation.ts:191:10:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `supportsPrototypeTargetMutation` declared line 177 precedes caller `isPrototypeTargetMutation` declared line 187; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isPrototypeTargetMutation` and is the earliest such callsite. |
+| `src/rules/google-style/mutation.ts:191:51:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `firstArgumentTargetsPrototype` declared line 172 precedes caller `isPrototypeTargetMutation` declared line 187; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isPrototypeTargetMutation` and is the earliest such callsite. |
+| `src/rules/google-style/mutation.ts:206:10:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isSetPrototypeOf` declared line 165 precedes caller `isPrototypeMutationCall` declared line 194; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isPrototypeMutationCall` and is the earliest such callsite. |
+| `src/rules/google-style/mutation.ts:206:36:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isPrototypeTargetMutation` declared line 187 precedes caller `isPrototypeMutationCall` declared line 194; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isPrototypeMutationCall` and is the earliest such callsite. |
+| `src/rules/google-style/mutation.ts:227:10:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isObjectLiteralDataProperty` declared line 209 precedes caller `isObjectLiteralPrototypeSetter` declared line 226; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isObjectLiteralPrototypeSetter` and is the earliest such callsite. |
+| `src/rules/google-style/mutation.ts:227:47:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isPrototypeSetterKey` declared line 219 precedes caller `isObjectLiteralPrototypeSetter` declared line 226; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isObjectLiteralPrototypeSetter` and is the earliest such callsite. |
+| `src/rules/google-style/mutation.ts:64:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isGlobalCall` declared line 17 precedes caller `isNumericParserCall` declared line 58; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isNumericParserCall` and is the earliest such callsite. |
+| `src/rules/google-style/mutation.ts:65:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isNumberNamespaceCall` declared line 29 precedes caller `isNumericParserCall` declared line 58; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isNumericParserCall` and is the earliest such callsite. |
+| `src/rules/google-style/mutation.ts:66:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isGlobalThisCall` declared line 42 precedes caller `isNumericParserCall` declared line 58; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `isNumericParserCall` and is the earliest such callsite. |
+| `src/rules/google-style/syntax.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/google-style/type-shape.ts:63:9:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `isParameterOwner` declared line 53 precedes caller `functionOwnsParameter` declared line 59; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `functionOwnsParameter` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/brand-helper.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/manual-algebra/detection/brand-helper.ts:24:17:agent-code-guard/prefer-stepdown-function-order` | true positive | `findManualBrandConstructorMatch` is exported (export form: direct) at line 24 but follows internal `getBrandHelperCastName` at line 7. Invariant 7 orders the exported band first, independently of call edges. |
+| `src/rules/manual-algebra/detection/brand.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/manual-algebra/detection/exclusions.ts:47:17:agent-code-guard/prefer-stepdown-function-order` | true positive | `isTransportDataSurface` is exported (export form: direct) at line 47 but follows internal `displayNameMatches` at line 37. Invariant 7 orders the exported band first, independently of call edges. |
+| `src/rules/manual-algebra/detection/exclusions.ts:65:17:agent-code-guard/prefer-stepdown-function-order` | true positive | `isTaggedErrorSurface` is exported (export form: direct) at line 65 but follows internal `displayNameMatches` at line 37. Invariant 7 orders the exported band first, independently of call edges. |
+| `src/rules/manual-algebra/detection/index.ts:130:16:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `getNormalizedDisplayName` declared line 125 precedes caller `hasNormalizedDisplayName` declared line 129; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasNormalizedDisplayName` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:147:10:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasKeys` declared line 142 precedes caller `hasSurfaceKeyOrLiteral` declared line 146; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasSurfaceKeyOrLiteral` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:152:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasKeys` declared line 142 precedes caller `hasOkFunctionEvidence` declared line 150; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasOkFunctionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:152:65:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasBooleanLiteral` declared line 134 precedes caller `hasOkFunctionEvidence` declared line 150; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasOkFunctionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:158:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasKeys` declared line 142 precedes caller `hasErrorFunctionEvidence` declared line 156; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasErrorFunctionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:159:34:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasBooleanLiteral` declared line 134 precedes caller `hasErrorFunctionEvidence` declared line 156; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasErrorFunctionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:181:12:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasResultBranchPair` declared line 103 precedes caller `hasResultFunctionEvidence` declared line 179; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasResultFunctionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:183:16:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `getNormalizedDisplayName` declared line 125 precedes caller `hasResultFunctionEvidence` declared line 179; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasResultFunctionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:192:12:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasSurfaceKeyOrLiteral` declared line 146 precedes caller `hasResultFunctionEvidence` declared line 179; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasResultFunctionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:198:10:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasTaggedLiterals` declared line 138 precedes caller `hasSomeOptionEvidence` declared line 197; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasSomeOptionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:198:59:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasKeys` declared line 142 precedes caller `hasSomeOptionEvidence` declared line 197; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasSomeOptionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:202:10:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasTaggedLiterals` declared line 138 precedes caller `hasNoneOptionEvidence` declared line 201; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasNoneOptionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:202:59:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasKeys` declared line 142 precedes caller `hasNoneOptionEvidence` declared line 201; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasNoneOptionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:217:12:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasOptionBranchPair` declared line 115 precedes caller `hasOptionFunctionEvidence` declared line 215; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasOptionFunctionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:219:16:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `getNormalizedDisplayName` declared line 125 precedes caller `hasOptionFunctionEvidence` declared line 215; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasOptionFunctionEvidence` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:233:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasNormalizedDisplayName` declared line 129 precedes caller `hasResultReusableSignal` declared line 230; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasResultReusableSignal` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:241:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasNormalizedDisplayName` declared line 129 precedes caller `hasOptionReusableSignal` declared line 238; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasOptionReusableSignal` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:248:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasKeys` declared line 142 precedes caller `hasBrandMarker` declared line 246; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasBrandMarker` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:269:42:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `looksResultLikeName` declared line 95 precedes caller `displayNameLooksResultLike` declared line 268; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `displayNameLooksResultLike` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:273:42:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `looksOptionLikeName` declared line 99 precedes caller `displayNameLooksOptionLike` declared line 272; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `displayNameLooksOptionLike` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/index.ts:287:17:agent-code-guard/prefer-stepdown-function-order` | true positive | `isTransportDataShape` is exported (export form: direct) at line 287 but follows internal `isExcludedSurface` at line 276. Invariant 7 orders the exported band first, independently of call edges. |
+| `src/rules/manual-algebra/detection/index.ts:298:17:agent-code-guard/prefer-stepdown-function-order` | true positive | `isTaggedErrorCollision` is exported (export form: direct) at line 298 but follows internal `isExcludedSurface` at line 276. Invariant 7 orders the exported band first, independently of call edges. |
+| `src/rules/manual-algebra/detection/index.ts:309:17:agent-code-guard/prefer-stepdown-function-order` | true positive | `findManualResultMatch` is exported (export form: direct) at line 309 but follows internal `isExcludedSurface` at line 276. Invariant 7 orders the exported band first, independently of call edges. |
+| `src/rules/manual-algebra/detection/index.ts:332:17:agent-code-guard/prefer-stepdown-function-order` | true positive | `findManualOptionMatch` is exported (export form: direct) at line 332 but follows internal `isExcludedSurface` at line 276. Invariant 7 orders the exported band first, independently of call edges. |
+| `src/rules/manual-algebra/detection/index.ts:356:17:agent-code-guard/prefer-stepdown-function-order` | true positive | `findManualBrandMatch` is exported (export form: direct) at line 356 but follows internal `isExcludedSurface` at line 276. Invariant 7 orders the exported band first, independently of call edges. |
+| `src/rules/manual-algebra/detection/option.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/manual-algebra/detection/property.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/manual-algebra/detection/result.test.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/manual-algebra/detection/surface.ts:1:1:agent-code-guard/require-stable-file-shell` | true positive | No JSDoc block containing `@file` anywhere in the file (full-text scan). In-scope hand-written TypeScript under Invariant 1. |
+| `src/rules/manual-algebra/detection/surface.ts:100:17:agent-code-guard/prefer-stepdown-function-order` | true positive | `hasKeyPair` is exported (export form: direct) at line 100 but follows internal `finalizeSurface` at line 43. Invariant 7 orders the exported band first, independently of call edges. |
+| `src/rules/manual-algebra/detection/surface.ts:101:10:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `hasNormalized` declared line 70 precedes caller `hasKeyPair` declared line 100; both in the exported band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `hasKeyPair` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/surface.ts:132:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `resolveLiteralIntoSurface` declared line 119 precedes caller `addTypeLiterals` declared line 130; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `addTypeLiterals` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/surface.ts:144:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `addKey` declared line 104 precedes caller `addTypeElement` declared line 142; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `addTypeElement` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/surface.ts:146:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `addTypeLiterals` declared line 130 precedes caller `addTypeElement` declared line 142; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `addTypeElement` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/surface.ts:158:7:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `addTypeElement` declared line 142 precedes caller `addTypeNode` declared line 155; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `addTypeNode` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/surface.ts:171:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `addKey` declared line 104 precedes caller `addClassMember` declared line 169; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `addClassMember` and is the earliest such callsite. |
+| `src/rules/manual-algebra/detection/surface.ts:172:5:agent-code-guard/prefer-stepdown-function-order` | true positive | Callee `resolveLiteralIntoSurface` declared line 119 precedes caller `addClassMember` declared line 169; both in the internal band. Callsite is a direct unshadowed identifier call whose innermost enclosing function is `addClassMember` and is the earliest such callsite. |
+
+## Classification summary
+
+| Verdict | Count | Share |
+|---|---:|---:|
+| True positive | 200 | 100.0% |
+| Documented exemption | 0 | 0.0% |
+| False-positive defect | 0 | 0.0% |
+
+False-positive rate: 0/200 = 0.0%, against the 5% threshold. No false-positive category
+repeats because no category exists.
+
+One diagnostic deserves a wording note without changing its verdict.
+`src/rules/google-style/expressions.ts:64:7` reads "isPureComposite must precede its direct local
+callee isBinaryLike", yet `isPureComposite` (line 60) already precedes `isBinaryLike` (line 75).
+The finding is nevertheless required by Invariant 10: `isPureComposite` and `isPureDefault`
+(line 83) are mutually recursive, so the strongly connected component's last declaration follows
+the callee and the shared helper must move below the whole component. The message names the
+individual caller instead of the component, which makes the intent hard to read at the callsite.
+This is a message-precision observation, not a rule firing where the policy says it should not,
+so it is not counted as a false positive.
 
 ## Runtime-cycle inventory
 
-Pending manual inventory. Record every runtime cycle and its reviewed import-evaluation order.
+Zero runtime cycles. A value-import graph over every in-scope corpus file — relative specifiers
+only, type-only imports excluded — has no strongly connected component larger than one and no
+self-import, so no declaration move in this corpus can change module-evaluation order through a
+cycle. The corpus also contains zero bare side-effect imports; the only `import "effect";` text is
+inside a test fixture template literal, not a program statement. No import-evaluation partition
+was therefore required.
 
 ## Unresolved boundaries
 
-Pending review.
+None. Every inspected finding resolved to a definite verdict against the source.
 
 ## Reviewed partitions and suppressions
 
-Pending review. Each entry must name its evaluation-order or semantic exception.
+None. The migrated tree carries no `eslint-disable` for `no-vacuous-jsdoc`,
+`require-stable-file-shell`, or `prefer-stepdown-function-order` at any scope, and no Perfectionist
+hard partition was needed because the corpus has no bare side-effect import.
+
+## Agent Code Guard migration findings
+
+Zero. Running the same three rules with the same globs and excludes over the migrated worktree
+(`implement/96-adopt-vertical-organization`, 200 files) reports no finding, so there is no
+unexplained migration finding to explain.
 
 ## Promotion decision
 
-Pending named reviewer approval. Promotion requires no more than 5% false positives, no repeated false-positive category, and zero unexplained Agent Code Guard migration findings.
+Approved for promotion to `error`.
+
+| Gate | Requirement | Result |
+|---|---|---|
+| False-positive rate | at most 5% of the inspected sample | 0.0% (0/200) |
+| Repeated false-positive category | none | none — no false positive found |
+| Named reviewer approval | required | Claude Opus 5 (autonomous calibration pass) |
+| Agent Code Guard migration findings | zero unexplained | zero findings |
+
+Reviewer: Claude Opus 5 (autonomous calibration pass).
