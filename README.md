@@ -26,7 +26,7 @@ export default [
 
 Then run your default lint script. The preset bundles its TypeScript parser,
 maintained rule plugins, and type-aware `projectService` setup; the project
-must have a `tsconfig.json`. Its default lint path must run ESLint over the
+must have a strict `tsconfig.json`. Its default lint path must run ESLint over the
 repository's intended source surface and run Knip. Keep type checking as an
 explicit part of the repository's quality pipeline; the preset does not
 prescribe a particular command string or task orchestrator.

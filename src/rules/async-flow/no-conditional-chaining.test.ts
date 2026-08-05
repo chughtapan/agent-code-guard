@@ -4,7 +4,9 @@
 
 import * as tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-import { afterAll, describe, it } from "vitest";
+import * as fc from "fast-check";
+import { afterAll, describe, expect, it } from "vitest";
+import { lintRule } from "../test-support/property-lint.js";
 import { noConditionalChaining as rule } from "./no-conditional-chaining.js";
 
 RuleTester.afterAll = afterAll;
@@ -107,4 +109,43 @@ ruleTester.run("no-conditional-chaining", rule, {
       errors: [{ messageId: "conditionalChaining", data: { name: "id" } }],
     },
   ],
+});
+
+const typeNameArb = fc.stringMatching(/^[A-Z][a-zA-Z]{2,8}$/);
+const valueNameArb = fc.stringMatching(/^[a-z][a-zA-Z]{2,8}$/);
+const paramNameArb = fc.constantFrom("id", "key", "input", "token");
+
+const nullableParameterArb = fc.tuple(
+  paramNameArb,
+  fc.constantFrom(
+    (name: string) => `${name}?: string`,
+    (name: string) => `${name}: string | undefined`,
+    (name: string) => `${name}: string | null`,
+    (name: string) => `{ ${name} }: { readonly ${name}?: string }`,
+  ),
+);
+
+const boundaryPrefixArb = fc.constantFrom("decode", "from", "normalize", "parse", "read", "resolve");
+
+describe("property: conditional chaining", () => {
+  it("optional/nullish parameters fire in non-boundary functions", () => {
+    fc.assert(
+      fc.property(valueNameArb, nullableParameterArb, (suffix, [paramName, renderParam]) => {
+        const functionName = `load${suffix[0]?.toUpperCase() ?? "X"}${suffix.slice(1)}`;
+        const code = `function ${functionName}(${renderParam(paramName)}) { return fetchUser(${paramName}); }`;
+        expect(lintRule(code, "agent-code-guard/no-conditional-chaining")).toHaveLength(1);
+      }),
+      { numRuns: 60 },
+    );
+  });
+
+  it("explicit boundary parser/normalizer names may accept optional/nullish parameters", () => {
+    fc.assert(
+      fc.property(boundaryPrefixArb, typeNameArb, nullableParameterArb, (prefix, suffix, [paramName, renderParam]) => {
+        const code = `function ${prefix}${suffix}(${renderParam(paramName)}) { return ${suffix}(${paramName}); }`;
+        expect(lintRule(code, "agent-code-guard/no-conditional-chaining")).toHaveLength(0);
+      }),
+      { numRuns: 60 },
+    );
+  });
 });
