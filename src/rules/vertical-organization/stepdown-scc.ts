@@ -33,8 +33,9 @@ function violationFor(
 }
 
 function cycleBlockerFor(component: Component, caller: Implementation): Implementation | null {
-  const last = component.members.reduce((furthest, member) =>
-    member.index > furthest.index ? member : furthest,
+  const last = (
+    // A completed component always contains at least its root member.
+    component.members.at(-1)!
   );
   return last === caller ? null : last;
 }
@@ -188,10 +189,10 @@ function componentFromStack(
     onStack.delete(member);
     members.push(member);
   } while (member !== root);
-  const indexes = members.map((member) => member.index).sort((left, right) => left - right);
-  const maxIndex = (
+  const ordered = members.sort((left, right) => left.index - right.index);
+  const last = (
     // Invariant guarantees a completed component contains at least its root member.
-    indexes.at(-1)!
+    ordered.at(-1)!
   );
-  return { members, minIndex: indexes[0], maxIndex };
+  return { members: ordered, minIndex: ordered[0].index, maxIndex: last.index };
 }

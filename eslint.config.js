@@ -1,6 +1,10 @@
 import { plugin as guard } from "eslint-plugin-agent-code-guard";
 
 export default [
+  // Stryker copies the tree into sandboxes while it runs, so linting during a
+  // mutation run would otherwise report on generated output.
+  { ignores: [".stryker-tmp/**"] },
+
   // Block 1: plugin source.
   {
     ...guard.configs.strict,
