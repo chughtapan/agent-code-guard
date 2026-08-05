@@ -33,9 +33,6 @@ function violationFor(
 }
 
 function cycleBlockerFor(component: Component, caller: Implementation): Implementation | null {
-  if (component.members.length === 1) {
-    return null;
-  }
   const last = component.members.reduce((furthest, member) =>
     member.index > furthest.index ? member : furthest,
   );

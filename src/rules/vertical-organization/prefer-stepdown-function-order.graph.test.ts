@@ -125,6 +125,24 @@ ruleTester.run("prefer-stepdown-function-order: graph", rule, {
       output: null,
     },
     {
+      name: "a three-member cycle names its last declaration as the blocker",
+      code: `
+        function first(node) {
+          if (helper(node)) { return second(node); }
+          return false;
+        }
+        function helper(node) { return Boolean(node); }
+        function second(node) { return third(node); }
+        function third(node) { return first(node); }
+      `,
+      errors: [{
+        message:
+          "first and third form a declaration cycle that must precede their direct local callee helper in the internal story band.",
+        type: AST_NODE_TYPES.CallExpression,
+      }],
+      output: null,
+    },
+    {
       name: "a cyclic caller that already precedes its callee names the blocking cycle member",
       code: `
         function isPureComposite(node) {
