@@ -1,5 +1,54 @@
 # Changelog
 
+## [0.0.21] - 2026-08-05
+
+### Added
+
+- Three vertical-organization rules, enforcing at `error` in `recommended` and
+  inherited `strict`. The plugin's public surface goes from 60 rules to 63.
+  - `no-vacuous-jsdoc` rejects a closed grammar of placeholder prose:
+    `TODO`, `TBD`, `The <name> result`, `Executes the <name> operation`. Each is
+    matched only against the symbol or callable signature the block is
+    actually attached to. Short real prose stays valid.
+  - `require-stable-file-shell` requires exactly one canonical `@file` overview,
+    restricts what may precede it to a hashbang and license comments, and keeps
+    the import shell contiguous. Bare side-effect imports must be fenced by
+    paired `// agent-code-guard: side-effect-import-begin/end -- evaluation-order:`
+    markers, which double as hard Perfectionist partitions.
+  - `prefer-stepdown-function-order` keeps exported declarations before internal
+    ones and callers before their direct local callees. Cycles are collapsed into
+    components, so a mutually recursive pair is ordered as a unit rather than
+    reported against itself.
+- Executable before/after fixtures that run real ESM module graphs through Node,
+  proving the import-sorting phase cannot change evaluation order when the
+  stable-shell guard is clean.
+- `comment-parser@1.4.1` as a pinned direct runtime dependency, and a bundled
+  Perfectionist ordering surface.
+
+### Changed
+
+- The repository now satisfies its own policy. Every file carries a specific
+  `@file` overview, imports are sorted, and declarations across 50 files were
+  reordered so callers precede their callees. The reorder was verified as pure
+  relocation: for every file the multiset of non-blank lines is identical to its
+  parent commit.
+- `bench/`, `scripts/`, and `tests/` entered lint scope with the policy and were
+  brought to the strict bar. Behavior is unchanged: the fixture generator emits
+  byte-identical trees and the benchmark round-trips its committed baseline in
+  both directions.
+
+### Fixed
+
+- `prefer-stepdown-function-order` no longer reports a constraint that already
+  holds. A caller inside a declaration cycle can precede its callee while its
+  component does not, so cyclic violations now name the cycle member that
+  actually follows the callee.
+- Method keys written as string literals are addressable through a dot call, so
+  `"read"() {}` is now reachable from `this.read()` in the stepdown graph.
+- Rule-correctness property tests lint generated fragments, which carry no file
+  overview of their own; the harness supplies one so the shell contract does not
+  fire on every fixture.
+
 ## [0.0.20] - 2026-07-29
 
 ### Fixed
