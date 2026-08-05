@@ -4,6 +4,7 @@
 
 import { configDefaults, defineConfig } from "vitest/config";
 
+// eslint-disable-next-line import-x/no-default-export -- Vitest resolves configuration only from a module's default export.
 export default defineConfig({
   cacheDir: "node_modules/.cache/vite",
   test: {

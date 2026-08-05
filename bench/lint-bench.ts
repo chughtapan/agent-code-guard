@@ -12,6 +12,8 @@ const REPO_ROOT = path.resolve(HERE, "..");
 const FIXTURES_ROOT = path.join(HERE, "fixtures");
 const BASELINE_PATH = path.join(HERE, "baselines/baseline.json");
 const TSX_BIN = path.join(REPO_ROOT, "node_modules/.bin/tsx");
+// eslint-disable-next-line agent-code-guard/no-process-env-at-runtime -- Boundary read: lint-one subprocesses must inherit this process's environment, and there is no config layer between a CLI benchmark and spawnSync.
+const PARENT_ENV = process.env;
 
 interface Target {
   readonly name: string;
@@ -27,8 +29,8 @@ interface BenchOptions {
 }
 
 interface SubprocessResult {
-  readonly cold_ms: number;
-  readonly warm_ms: readonly number[];
+  readonly coldMs: number;
+  readonly warmMs: readonly number[];
   readonly diagnostics: number;
   readonly diagnosticsHash: string;
   readonly peakRssBytes: number;
@@ -36,12 +38,12 @@ interface SubprocessResult {
 
 interface TargetResult {
   readonly target: string;
-  readonly cold_ms_median: number;
-  readonly cold_ms_min: number;
-  readonly cold_ms_max: number;
-  readonly warm_ms_median: number;
-  readonly warm_ms_min: number;
-  readonly warm_ms_max: number;
+  readonly coldMsMedian: number;
+  readonly coldMsMin: number;
+  readonly coldMsMax: number;
+  readonly warmMsMedian: number;
+  readonly warmMsMin: number;
+  readonly warmMsMax: number;
   readonly diagnostics: number;
   readonly diagnosticsHash: string;
   readonly peakRssMB: number;
@@ -67,14 +69,16 @@ function main(): void {
     process.stdout.write(`  ${target.name}... `);
     const r = benchTarget(target, opts);
     results.push(r);
-    console.log(`cold ${fmt(r.cold_ms_median)}, warm ${fmt(r.warm_ms_median)}, ${r.diagnostics} diagnostics`);
+    console.log(`cold ${fmt(r.coldMsMedian)}, warm ${fmt(r.warmMsMedian)}, ${r.diagnostics} diagnostics`);
   }
 
   console.log();
   const baseline = loadBaseline();
   printTable(results, baseline);
 
-  if (opts.writeBaseline) writeBaseline(results);
+  if (opts.writeBaseline) {
+    writeBaseline(results);
+  }
 }
 
 function parseOptions(argv: readonly string[]): BenchOptions {
@@ -89,26 +93,36 @@ function parseOptions(argv: readonly string[]): BenchOptions {
         writeBaseline = true;
         break;
       case "--subprocesses":
-        subprocesses = Number.parseInt(argv[++i], 10);
+        subprocesses = parseCount(flag, argv[++i]);
         break;
       case "--repeats":
-        repeats = Number.parseInt(argv[++i], 10);
+        repeats = parseCount(flag, argv[++i]);
         break;
       case "--only":
         only = argv[++i];
         break;
       default:
-        throw new Error(`unknown flag: ${flag}`);
+        fail(`unknown flag: ${flag}`);
     }
   }
   return { subprocesses, repeats, writeBaseline, only };
+}
+
+function parseCount(flag: string, value: string): number {
+  const count = Number(value);
+  if (!Number.isInteger(count)) {
+    fail(`${flag} expects an integer, got: ${value}`);
+  }
+  return count;
 }
 
 function collectTargets(only: string | null): Target[] {
   const all: Target[] = [];
   for (const size of ["small", "medium", "large", "large-ps", "xlarge"] as const) {
     const dir = path.join(FIXTURES_ROOT, size);
-    if (!fs.existsSync(dir)) continue;
+    if (!fs.existsSync(dir)) {
+      continue;
+    }
     all.push({ name: size, cwd: dir, patterns: "src/**/*.ts" });
   }
   all.push({ name: "self", cwd: REPO_ROOT, patterns: "src/**/*.ts" });
@@ -123,20 +137,20 @@ function benchTarget(target: Target, opts: BenchOptions): TargetResult {
   let peakRss = 0;
   for (let i = 0; i < opts.subprocesses; i++) {
     const r = runOnce(target, opts.repeats);
-    colds.push(r.cold_ms);
-    warms.push(...r.warm_ms);
+    colds.push(r.coldMs);
+    warms.push(...r.warmMs);
     diagnostics = r.diagnostics;
     diagnosticsHash = r.diagnosticsHash;
     peakRss = Math.max(peakRss, r.peakRssBytes);
   }
   return {
     target: target.name,
-    cold_ms_median: median(colds),
-    cold_ms_min: Math.min(...colds),
-    cold_ms_max: Math.max(...colds),
-    warm_ms_median: median(warms),
-    warm_ms_min: Math.min(...warms),
-    warm_ms_max: Math.max(...warms),
+    coldMsMedian: median(colds),
+    coldMsMin: Math.min(...colds),
+    coldMsMax: Math.max(...colds),
+    warmMsMedian: median(warms),
+    warmMsMin: Math.min(...warms),
+    warmMsMax: Math.max(...warms),
     diagnostics,
     diagnosticsHash,
     peakRssMB: Math.round((peakRss / (1024 * 1024)) * 10) / 10,
@@ -160,14 +174,18 @@ function runOnce(target: Target, repeats: number): SubprocessResult {
       encoding: "utf8",
       cwd: REPO_ROOT,
       stdio: ["ignore", "pipe", "inherit"],
-      env: { ...process.env, NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --expose-gc`.trim() },
+      env: { ...PARENT_ENV, NODE_OPTIONS: `${PARENT_ENV.NODE_OPTIONS ?? ""} --expose-gc`.trim() },
     },
   );
   if (result.status !== 0) {
-    throw new Error(`lint-one exited ${result.status} for ${target.name}`);
+    fail(`lint-one exited ${result.status} for ${target.name}`);
   }
   const lines = result.stdout.trim().split("\n");
-  return JSON.parse(lines[lines.length - 1]) as SubprocessResult;
+  const parsed: unknown = JSON.parse(lines[lines.length - 1]);
+  if (!isRecord(parsed)) {
+    fail(`lint-one emitted a non-object measurement for ${target.name}`);
+  }
+  return toSubprocessResult(parsed);
 }
 
 function median(values: readonly number[]): number {
@@ -185,34 +203,46 @@ function printTable(results: readonly TargetResult[], baseline: readonly TargetR
     const b = baselineByTarget.get(r.target);
     let delta = "—";
     if (b !== undefined) {
-      const coldPct = ((r.cold_ms_median - b.cold_ms_median) / b.cold_ms_median) * 100;
-      const warmPct = ((r.warm_ms_median - b.warm_ms_median) / b.warm_ms_median) * 100;
+      const coldPct = ((r.coldMsMedian - b.coldMsMedian) / b.coldMsMedian) * 100;
+      const warmPct = ((r.warmMsMedian - b.warmMsMedian) / b.warmMsMedian) * 100;
       const sign = (n: number): string => (n >= 0 ? "+" : "");
       const hashMark = r.diagnosticsHash === b.diagnosticsHash ? "" : " ⚠ HASH DRIFT";
       delta = `cold ${sign(coldPct)}${coldPct.toFixed(1)}% · warm ${sign(warmPct)}${warmPct.toFixed(1)}%${hashMark}`;
     }
     rows.push([
       r.target,
-      `${fmt(r.cold_ms_median)} [${fmt(r.cold_ms_min)}–${fmt(r.cold_ms_max)}]`,
-      `${fmt(r.warm_ms_median)} [${fmt(r.warm_ms_min)}–${fmt(r.warm_ms_max)}]`,
+      `${fmt(r.coldMsMedian)} [${fmt(r.coldMsMin)}–${fmt(r.coldMsMax)}]`,
+      `${fmt(r.warmMsMedian)} [${fmt(r.warmMsMin)}–${fmt(r.warmMsMax)}]`,
       String(r.diagnostics),
       r.diagnosticsHash.slice(0, 8),
       `${r.peakRssMB} MB`,
       delta,
     ]);
   }
-  const widths = rows[0].map((_, i) => Math.max(...rows.map((row) => row[i].length)));
+  const widths = columnWidths(rows);
   for (const row of rows) {
     console.log(row.map((cell, i) => cell.padEnd(widths[i])).join("  "));
   }
 }
 
+function columnWidths(rows: ReadonlyArray<readonly string[]>): number[] {
+  const widths: number[] = [];
+  for (let i = 0; i < rows[0].length; i++) {
+    widths.push(Math.max(...rows.map((row) => row[i].length)));
+  }
+  return widths;
+}
+
 function loadBaseline(): readonly TargetResult[] | null {
-  if (!fs.existsSync(BASELINE_PATH)) return null;
-  const parsed = JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8")) as {
-    results: TargetResult[];
-  };
-  return parsed.results;
+  if (!fs.existsSync(BASELINE_PATH)) {
+    return null;
+  }
+  const parsed: unknown = JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8"));
+  const rows = isRecord(parsed) ? parsed.results : null;
+  if (!Array.isArray(rows) || !rows.every(isRecord)) {
+    return null;
+  }
+  return rows.map(toTargetResult);
 }
 
 function writeBaseline(results: readonly TargetResult[]): void {
@@ -220,7 +250,7 @@ function writeBaseline(results: readonly TargetResult[]): void {
   const payload = {
     capturedAt: new Date().toISOString(),
     node: process.version,
-    results,
+    results: results.map(toBaselineRow),
   };
   fs.writeFileSync(BASELINE_PATH, JSON.stringify(payload, null, 2) + "\n");
   console.log(`\nwrote ${path.relative(REPO_ROOT, BASELINE_PATH)}`);
@@ -228,6 +258,76 @@ function writeBaseline(results: readonly TargetResult[]): void {
 
 function fmt(ms: number): string {
   return ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms.toFixed(0)}ms`;
+}
+
+function fail(message: string): never {
+  console.error(message);
+  process.exit(1);
+}
+
+// Reads the measurement JSON that bench/lint-one.ts prints on stdout; those key names are the
+// subprocess protocol, so they stay as written there.
+function toSubprocessResult(row: Record<string, unknown>): SubprocessResult {
+  return {
+    coldMs: readNumber(row, "cold_ms"),
+    warmMs: readNumbers(row, "warm_ms"),
+    diagnostics: readNumber(row, "diagnostics"),
+    diagnosticsHash: readString(row, "diagnosticsHash"),
+    peakRssBytes: readNumber(row, "peakRssBytes"),
+  };
+}
+
+// Reads and writes the committed bench/baselines/baseline.json; its key names outlive any single
+// run, so a rename here would silently orphan every recorded baseline.
+function toTargetResult(row: Record<string, unknown>): TargetResult {
+  return {
+    target: readString(row, "target"),
+    coldMsMedian: readNumber(row, "cold_ms_median"),
+    coldMsMin: readNumber(row, "cold_ms_min"),
+    coldMsMax: readNumber(row, "cold_ms_max"),
+    warmMsMedian: readNumber(row, "warm_ms_median"),
+    warmMsMin: readNumber(row, "warm_ms_min"),
+    warmMsMax: readNumber(row, "warm_ms_max"),
+    diagnostics: readNumber(row, "diagnostics"),
+    diagnosticsHash: readString(row, "diagnosticsHash"),
+    peakRssMB: readNumber(row, "peakRssMB"),
+  };
+}
+
+function toBaselineRow(result: TargetResult): Record<string, number | string> {
+  return {
+    target: result.target,
+    cold_ms_median: result.coldMsMedian,
+    cold_ms_min: result.coldMsMin,
+    cold_ms_max: result.coldMsMax,
+    warm_ms_median: result.warmMsMedian,
+    warm_ms_min: result.warmMsMin,
+    warm_ms_max: result.warmMsMax,
+    diagnostics: result.diagnostics,
+    diagnosticsHash: result.diagnosticsHash,
+    peakRssMB: result.peakRssMB,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function readNumber(row: Record<string, unknown>, key: string): number {
+  const value = row[key];
+  return typeof value === "number" ? value : Number.NaN;
+}
+
+function readNumbers(row: Record<string, unknown>, key: string): readonly number[] {
+  const value = row[key];
+  return Array.isArray(value)
+    ? value.filter((entry: unknown): entry is number => typeof entry === "number")
+    : [];
+}
+
+function readString(row: Record<string, unknown>, key: string): string {
+  const value = row[key];
+  return typeof value === "string" ? value : "";
 }
 
 main();

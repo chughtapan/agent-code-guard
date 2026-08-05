@@ -1,6 +1,6 @@
 /**
- * @file Reports casts to `Record<string, unknown>` that present unvalidated
- * external data as safely indexed objects.
+ * @file Reports casts to a string-keyed record of unknown values that present
+ * unvalidated external data as safely indexed objects.
  */
 
 import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/utils";

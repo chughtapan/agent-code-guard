@@ -13,7 +13,7 @@ interface Args {
   readonly dumpPath: string | null;
 }
 
-async function main(): Promise<void> {
+try {
   const args = parseArgs(process.argv.slice(2));
   const eslint = new ESLint({ cwd: args.cwd });
 
@@ -22,7 +22,9 @@ async function main(): Promise<void> {
   let peakRss = 0;
 
   for (let i = 0; i < args.repeats; i++) {
-    if (global.gc) global.gc();
+    if (global.gc) {
+      global.gc();
+    }
     const before = process.memoryUsage().rss;
     const t0 = performance.now();
     const results = await eslint.lintFiles([...args.patterns]);
@@ -49,6 +51,11 @@ async function main(): Promise<void> {
   };
 
   process.stdout.write(JSON.stringify(output) + "\n");
+} catch (err: unknown) {
+  process.stderr.write(
+    `lint-one failed: ${err instanceof Error ? err.stack ?? err.message : String(err)}\n`,
+  );
+  process.exit(1);
 }
 
 function parseArgs(argv: readonly string[]): Args {
@@ -70,7 +77,7 @@ function parseArgs(argv: readonly string[]): Args {
         i++;
         break;
       case "--repeats":
-        repeats = Number.parseInt(value, 10);
+        repeats = parseCount(flag, value);
         i++;
         break;
       case "--dump":
@@ -78,13 +85,28 @@ function parseArgs(argv: readonly string[]): Args {
         i++;
         break;
       default:
-        throw new Error(`unknown flag: ${flag}`);
+        fail(`unknown flag: ${flag}`);
     }
   }
 
-  if (cwd === null) throw new Error("--cwd is required");
+  if (cwd === null) {
+    fail("--cwd is required");
+  }
   const patterns = (patternsCsv ?? "src/**/*.ts").split(",");
   return { cwd, patterns, repeats, dumpPath };
+}
+
+function parseCount(flag: string, value: string): number {
+  const count = Number(value);
+  if (!Number.isInteger(count)) {
+    fail(`${flag} expects an integer, got: ${value}`);
+  }
+  return count;
+}
+
+function fail(message: string): never {
+  process.stderr.write(`lint-one failed: ${message}\n`);
+  process.exit(1);
 }
 
 interface DiagnosticRow {
@@ -107,23 +129,24 @@ function flatten(results: readonly ESLint.LintResult[], cwd: string): Diagnostic
       });
     }
   }
-  rows.sort((a, b) =>
-    a.file !== b.file
-      ? a.file.localeCompare(b.file)
-      : a.ruleId !== b.ruleId
-        ? a.ruleId.localeCompare(b.ruleId)
-        : a.message.localeCompare(b.message),
-  );
+  rows.sort(compareRows);
   return rows;
+}
+
+function compareRows(a: DiagnosticRow, b: DiagnosticRow): number {
+  if (a.file !== b.file) {
+    return a.file.localeCompare(b.file);
+  }
+  if (a.ruleId !== b.ruleId) {
+    return a.ruleId.localeCompare(b.ruleId);
+  }
+  return a.message.localeCompare(b.message);
 }
 
 function hash(rows: readonly DiagnosticRow[]): string {
   const h = crypto.createHash("sha256");
-  for (const r of rows) h.update(`${r.file}\t${r.ruleId}\t${r.severity}\t${r.message}\n`);
+  for (const r of rows) {
+    h.update(`${r.file}\t${r.ruleId}\t${r.severity}\t${r.message}\n`);
+  }
   return h.digest("hex").slice(0, 16);
 }
-
-main().catch((err: unknown) => {
-  process.stderr.write(`lint-one failed: ${err instanceof Error ? err.stack ?? err.message : String(err)}\n`);
-  process.exit(1);
-});

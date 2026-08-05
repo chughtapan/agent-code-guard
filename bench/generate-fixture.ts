@@ -30,11 +30,9 @@ const fileBodyOverride = new Map<string, string>();
 
 function main(): void {
   const arg = process.argv[2];
-  const targets: readonly SizeName[] = arg
-    ? [arg as SizeName]
-    : (Object.keys(SIZES) as SizeName[]);
+  const targets: readonly string[] = arg ? [arg] : Object.keys(SIZES);
   for (const size of targets) {
-    if (!(size in SIZES)) {
+    if (!isSizeName(size)) {
       console.error(`unknown size: ${size}. valid: ${Object.keys(SIZES).join(", ")}`);
       process.exit(1);
     }
@@ -44,13 +42,120 @@ function main(): void {
   }
 }
 
+function isSizeName(value: string): value is SizeName {
+  return value in SIZES;
+}
+
 function generateFixture(size: SizeName): string {
   const fixtureDir = path.join(FIXTURES_ROOT, size);
   rmrf(fixtureDir);
   fs.mkdirSync(fixtureDir, { recursive: true });
 
   const specs = planFiles(size);
+  writeRootIndex(fixtureDir, specs);
 
+  for (const spec of specs) {
+    writeFile(path.join(fixtureDir, spec.relPath), renderFile(spec));
+  }
+
+  writeTsconfig(fixtureDir);
+  writePackageJson(fixtureDir, size);
+  writeEslintConfig(fixtureDir, size);
+
+  return fixtureDir;
+}
+
+function rmrf(dir: string): void {
+  fs.rmSync(dir, { recursive: true, force: true });
+}
+
+function planFiles(size: SizeName): readonly FileSpec[] {
+  const { files, filesPerFolder } = SIZES[size];
+  const folderCount = Math.max(1, Math.ceil(files / filesPerFolder));
+  const rng = mulberry32(1729 + files);
+  const moduleSpecs = planModuleFiles(files, filesPerFolder, rng);
+  return [...moduleSpecs, ...planFolderIndexFiles(moduleSpecs, folderCount)];
+}
+
+function mulberry32(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
+  };
+}
+
+function planModuleFiles(
+  files: number,
+  filesPerFolder: number,
+  rng: () => number,
+): readonly FileSpec[] {
+  const specs: FileSpec[] = [];
+
+  for (let i = 0; i < files; i++) {
+    const folderIdx = Math.floor(i / filesPerFolder);
+    const fileIdx = i % filesPerFolder;
+    const folder = `domain${pad(folderIdx, 3)}`;
+    const baseName = `mod${pad(fileIdx, 3)}`;
+    const relPath = `src/${folder}/${baseName}.ts`;
+
+    const exportNames = [`fn${pad(i, 4)}`];
+
+    const imports: string[] = [];
+    if (i > 0 && rng() < 0.6) {
+      imports.push(renderImportLine(relPath, specs[Math.floor(rng() * i)]));
+    }
+
+    specs.push({ relPath, imports, exportNames });
+  }
+
+  return specs;
+}
+
+function planFolderIndexFiles(
+  moduleSpecs: readonly FileSpec[],
+  folderCount: number,
+): readonly FileSpec[] {
+  const indexSpecs: FileSpec[] = [];
+
+  for (let folderIdx = 0; folderIdx < folderCount; folderIdx++) {
+    const folder = `domain${pad(folderIdx, 3)}`;
+    const folderFiles = moduleSpecs.filter((s) => s.relPath.startsWith(`src/${folder}/`));
+    if (folderFiles.length === 0) {
+      continue;
+    }
+    const relPath = `src/${folder}/index.ts`;
+    indexSpecs.push({ relPath, imports: [], exportNames: [] });
+    fileBodyOverride.set(relPath, renderFolderIndexBody(folderFiles));
+  }
+
+  return indexSpecs;
+}
+
+function pad(n: number, width: number): string {
+  return String(n).padStart(width, "0");
+}
+
+function renderImportLine(fromRelPath: string, target: FileSpec): string {
+  const importPath = path
+    .relative(path.dirname(fromRelPath), target.relPath)
+    .replace(/\.ts$/, ".js");
+  const importSpec = importPath.startsWith(".") ? importPath : `./${importPath}`;
+  return `import { ${target.exportNames[0]} } from "${importSpec}";`;
+}
+
+function renderFolderIndexBody(folderFiles: readonly FileSpec[]): string {
+  const lines = folderFiles.map((spec) => {
+    const base = path.basename(spec.relPath, ".ts");
+    return `export { ${spec.exportNames[0]} } from "./${base}.js";`;
+  });
+  return lines.join("\n") + "\n";
+}
+
+function writeRootIndex(fixtureDir: string, specs: readonly FileSpec[]): void {
   const indexExports = specs
     .filter((s) => s.relPath.endsWith("/index.ts") && s.relPath !== "src/index.ts")
     .map((s) => {
@@ -59,11 +164,9 @@ function generateFixture(size: SizeName): string {
     })
     .join("\n");
   writeFile(path.join(fixtureDir, "src/index.ts"), indexExports + "\n");
+}
 
-  for (const spec of specs) {
-    writeFile(path.join(fixtureDir, spec.relPath), renderFile(spec));
-  }
-
+function writeTsconfig(fixtureDir: string): void {
   writeFile(
     path.join(fixtureDir, "tsconfig.json"),
     JSON.stringify(
@@ -85,7 +188,9 @@ function generateFixture(size: SizeName): string {
       2,
     ) + "\n",
   );
+}
 
+function writePackageJson(fixtureDir: string, size: SizeName): void {
   writeFile(
     path.join(fixtureDir, "package.json"),
     JSON.stringify(
@@ -101,7 +206,9 @@ function generateFixture(size: SizeName): string {
       2,
     ) + "\n",
   );
+}
 
+function writeEslintConfig(fixtureDir: string, size: SizeName): void {
   const pluginEntry = path.relative(fixtureDir, path.join(REPO_ROOT, "dist/index.js"));
   const parserOptions = SIZES[size].projectService
     ? `{ ecmaVersion: 2022, sourceType: "module", projectService: true, tsconfigRootDir: import.meta.dirname }`
@@ -126,83 +233,13 @@ export default [
 ];
 `,
   );
-
-  return fixtureDir;
-}
-
-function rmrf(dir: string): void {
-  fs.rmSync(dir, { recursive: true, force: true });
-}
-
-function planFiles(size: SizeName): readonly FileSpec[] {
-  const { files, filesPerFolder } = SIZES[size];
-  const folderCount = Math.max(1, Math.ceil(files / filesPerFolder));
-  const rng = mulberry32(1729 + files);
-  const specs: FileSpec[] = [];
-
-  for (let i = 0; i < files; i++) {
-    const folderIdx = Math.floor(i / filesPerFolder);
-    const fileIdx = i % filesPerFolder;
-    const folder = `domain${pad(folderIdx, 3)}`;
-    const baseName = `mod${pad(fileIdx, 3)}`;
-    const relPath = `src/${folder}/${baseName}.ts`;
-
-    const exportNames = [`fn${pad(i, 4)}`];
-
-    const imports: string[] = [];
-    if (i > 0 && rng() < 0.6) {
-      const prev = specs[Math.floor(rng() * i)];
-      const importPath = path
-        .relative(path.dirname(relPath), prev.relPath)
-        .replace(/\.ts$/, ".js");
-      const importSpec = importPath.startsWith(".")
-        ? importPath
-        : `./${importPath}`;
-      imports.push(`import { ${prev.exportNames[0]} } from "${importSpec}";`);
-    }
-
-    specs.push({ relPath, imports, exportNames });
-  }
-
-  for (let folderIdx = 0; folderIdx < folderCount; folderIdx++) {
-    const folder = `domain${pad(folderIdx, 3)}`;
-    const folderFiles = specs.filter((s) => s.relPath.startsWith(`src/${folder}/`));
-    if (folderFiles.length === 0) continue;
-    const indexImports = folderFiles
-      .map((spec) => {
-        const base = path.basename(spec.relPath, ".ts");
-        return `export { ${spec.exportNames[0]} } from "./${base}.js";`;
-      })
-      .join("\n");
-    specs.push({
-      relPath: `src/${folder}/index.ts`,
-      imports: [],
-      exportNames: [],
-    } as FileSpec);
-    fileBodyOverride.set(`src/${folder}/index.ts`, indexImports + "\n");
-  }
-
-  return specs;
-}
-
-function mulberry32(seed: number): () => number {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
-  };
-}
-
-function pad(n: number, width: number): string {
-  return String(n).padStart(width, "0");
 }
 
 function renderFile(spec: FileSpec): string {
   const override = fileBodyOverride.get(spec.relPath);
-  if (override !== undefined) return override;
+  if (override !== undefined) {
+    return override;
+  }
   const importsBlock = spec.imports.length > 0 ? spec.imports.join("\n") + "\n\n" : "";
   const bodyLines = spec.exportNames.map(
     (name) => `export function ${name}(): number {\n  return ${name.length};\n}`,

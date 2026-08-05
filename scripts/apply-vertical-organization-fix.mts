@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 
 const shellRule = "agent-code-guard/require-stable-file-shell";
 const perfectionistRulePrefix = "perfectionist/";
+// eslint-disable-next-line sonarjs/no-os-command-from-path -- This script runs inside any developer or CI checkout, so its Git install has no fixed absolute path.
 const trackedFiles = execFileSync("git", ["ls-files", "--", "*.ts", "*.tsx", "*.mts", "*.cts"], {
   encoding: "utf8",
 }).split("\n").filter(Boolean);
