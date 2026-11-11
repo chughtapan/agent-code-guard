@@ -12,6 +12,13 @@
 
 ### Changed
 
+- `require-span-on-exported-effect` asks for `Effect.fn("name")` when an
+  exported function returns one Effect and sets its span by hand, either a bare
+  `Effect.gen` or a pipe with `Effect.withSpan("name")` among its steps.
+  `Effect.fn` names the span and records the call site, so the wrapper and the
+  trailing span go. The rule fixes the mechanical case itself: a generator with
+  nothing piped on but its span and no declared return type. Functions that run
+  statements first or pass span options keep their shape and still need a span.
 - Rule property tests now live beside the rules they exercise instead of in a
   shared `new-eslint-rules.test.ts`, whose name stopped being true once the
   rules stopped being new. The public rule-surface assertion moved to
