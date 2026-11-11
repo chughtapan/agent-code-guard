@@ -83,7 +83,7 @@ export const SEEDS: readonly RuleSeed[] = [
   },
   {
     ruleId: "agent-code-guard/require-span-on-exported-effect",
-    seed: "export const program = Effect.gen(function* () { return yield* load; });",
+    seed: "export const program = () => Effect.gen(function* () { return yield* load; });",
     coFire: [],
   },
   {
