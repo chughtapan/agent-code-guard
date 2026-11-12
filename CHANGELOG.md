@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.23] - 2026-11-12
+
+### Fixed
+
+- `require-span-on-exported-effect` no longer reports an export defined as
+  `Effect.fn("name")(...)` whose body contains an `Effect.gen`. The function
+  already carries the span.
+- The `build` and `lint` scripts call `tsc6`, the binary the pinned TypeScript 6
+  package installs. They called `tsc`, which that package does not provide.
+
 ## [0.0.22] - 2026-11-11
 
 ### Removed

@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-agent-code-guard",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "description": "Normative ESLint floor for agent-written TypeScript: Google TypeScript Style plus stricter safety, Effect, testing, and tooling rules.",
   "type": "module",
   "main": "./dist/index.js",
@@ -22,8 +22,8 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "pnpm clean && tsc",
-    "lint": "tsc --noEmit && eslint . && knip",
+    "build": "pnpm clean && tsc6",
+    "lint": "tsc6 --noEmit && eslint . && knip",
     "test": "vitest run --changed",
     "test:all": "vitest run",
     "bench": "tsx bench/lint-bench.ts",
