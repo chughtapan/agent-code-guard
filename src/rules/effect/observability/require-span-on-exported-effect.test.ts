@@ -57,6 +57,28 @@ ruleTester.run("require-span-on-exported-effect", rule, {
         });
       `,
     },
+    // An Effect.gen inside an Effect.fn body runs under that function's span
+    {
+      code: `
+        export const program = Effect.fn("program")(function* (ids: readonly string[]) {
+          return yield* Effect.forEach(ids, (id) =>
+            Effect.gen(function* () {
+              return yield* load(id);
+            }),
+          );
+        });
+      `,
+    },
+    // Effect.fn over a plain function names the span of the generator it returns
+    {
+      code: `
+        export const program = Effect.fn("program")((id: string, limit = 10) =>
+          Effect.gen(function* () {
+            return yield* load(id);
+          }).pipe(Effect.timeout(limit)),
+        );
+      `,
+    },
     // Statements before the return keep the function as written
     {
       code: `

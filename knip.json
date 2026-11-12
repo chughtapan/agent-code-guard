@@ -7,8 +7,5 @@
     "scripts/apply-vertical-organization-fix.mts",
     "scripts/calibrate-vertical-organization.mts",
     "stryker.vertical-organization.config.js"
-  ],
-  "ignoreBinaries": [
-    "tsc"
   ]
 }

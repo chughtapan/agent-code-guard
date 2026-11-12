@@ -50,6 +50,9 @@ function spanListeners(context: Context, scan: ExportScan): TSESLint.RuleListene
       if (name === null || node.declaration == null) {
         return;
       }
+      if (isNamedFn(node.declaration)) {
+        return;
+      }
       const spanned = spannedFunction(node.declaration, name);
       if (spanned !== null) {
         reportPreferFn(context, name, spanned);
@@ -89,6 +92,23 @@ function variableExportName(declaration: TSESTree.VariableDeclaration): string |
     return null;
   }
   return first.id.name;
+}
+
+// An export defined as `Effect.fn("name")(...)` carries the span itself.
+function isNamedFn(declaration: TSESTree.Node): boolean {
+  if (declaration.type !== AST_NODE_TYPES.VariableDeclaration) {
+    return false;
+  }
+  const definition = declaration.declarations[0]?.init;
+  if (definition?.type !== AST_NODE_TYPES.CallExpression) {
+    return false;
+  }
+  const named = definition.callee;
+  return (
+    named.type === AST_NODE_TYPES.CallExpression &&
+    named.arguments.length > 0 &&
+    isEffectMember(named.callee, "fn")
+  );
 }
 
 function spannedFunction(declaration: TSESTree.Node, name: string): SpannedFunction | null {
