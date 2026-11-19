@@ -62,6 +62,7 @@ export const recommendedSyntaxRuleEntries: Record<string, RuleEntry> = {
   "agent-code-guard/effect-foreach-requires-concurrency": "error",
   "agent-code-guard/acquire-release-requires-scope": "error",
   "agent-code-guard/finalizer-requires-scope": "error",
+  "agent-code-guard/gen-finally": "error",
   "agent-code-guard/parse-into-schema-requires-effect": "error",
   "agent-code-guard/manual-result": "error",
   "agent-code-guard/manual-option": "error",

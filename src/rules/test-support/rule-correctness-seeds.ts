@@ -128,6 +128,11 @@ export const SEEDS: readonly RuleSeed[] = [
     coFire: [],
   },
   {
+    ruleId: "agent-code-guard/gen-finally",
+    seed: "const program = Effect.gen(function* () { try { yield* work; } finally { close(); } });",
+    coFire: [],
+  },
+  {
     ruleId: "agent-code-guard/parse-into-schema-requires-effect",
     seed: "const u = Schema.decodeUnknownSync(S)(JSON.parse(input));",
     coFire: ["agent-code-guard/prefer-decode-effect-at-boundary"],

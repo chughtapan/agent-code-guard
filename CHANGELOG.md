@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `gen-finally`, enforcing at `error` in `recommended` and inherited `strict`.
+  The plugin's public surface goes from 63 rules to 64. It reports a `try`
+  statement with a `finally` block whose nearest enclosing function is a
+  generator passed to `Effect.gen`, `Effect.fn`, `Effect.fn("name")(...)` or
+  `Effect.fnUntraced`. Effect abandons the generator when a yielded effect
+  fails, so the `finally` block does not run on that path; `Effect.ensuring`
+  and `Effect.acquireRelease` do. Plain generators, nested functions and
+  `try/catch` without `finally` are left alone.
+
 ## [0.0.23] - 2026-11-12
 
 ### Fixed

@@ -126,7 +126,7 @@ it("registers exactly the published rule surface", () => {
     "prefer-stepdown-function-order",
     "require-stable-file-shell",
   ]);
-  expect(Object.keys(plugin.rules)).toHaveLength(63);
+  expect(Object.keys(plugin.rules)).toHaveLength(64);
 });
 
 it("does not expose the removed TypeScript quality-gate rule", () => {
