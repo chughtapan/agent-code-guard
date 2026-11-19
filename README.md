@@ -84,6 +84,7 @@ another formatter independently.
 | [`effect-error-erasure`](docs/rules/effect/effect-error-erasure.md) | `Effect.fail(new Error(...))` and similar generic error wrapping inside the Effect channel |
 | [`either-discriminant`](docs/rules/effect/either-discriminant.md) | `Either.isLeft(...)`, `Either.isRight(...)`, and `_tag === "Left" / "Right"` |
 | [`tag-discriminant`](docs/rules/effect/tag-discriminant.md) | Manual `_tag` checks on Effect-flavored tagged unions (`Effect`, `Either`, `Option`, `Cause`, `Exit`, `Data.TaggedError`, …); type-aware through the main presets |
+| [`gen-finally`](docs/rules/effect/scope/gen-finally.md) | `try/finally` inside a generator passed to `Effect.gen` / `Effect.fn` / `Effect.fnUntraced`, where the `finally` block is skipped when a yielded effect fails |
 | [`no-effect-error-coalescing`](docs/rules/effect/no-effect-error-coalescing.md) | `Effect.mapError` / `catchAll` wrappers that collapse typed error variants into one broad error |
 
 ### Manual algebra

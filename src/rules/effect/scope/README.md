@@ -9,6 +9,7 @@ needs an enclosing `Scope` to close it; anything that runs an Effect with a
 | `acquire-release-requires-scope.ts` | `acquire-release-requires-scope`     | `Effect.acquireRelease` / `acquireUseRelease` in files with no `Effect.scoped` / `Layer.scoped` reference.    |
 | `finalizer-requires-scope.ts`       | `finalizer-requires-scope`           | `Scope.addFinalizer` calls in files with no scoped frame reference.                                           |
 | `fork-requires-lifecycle.ts`        | `fork-requires-lifecycle`            | `Effect.fork(...)` whose Fiber is structurally discarded (not captured, not awaited, not interrupted).        |
+| `gen-finally.ts`                    | `gen-finally`                        | `try/finally` whose nearest enclosing function is a generator Effect drives (`Effect.gen`, `Effect.fn`).      |
 | `runpromise-requires-scoped.ts`     | `runpromise-requires-scoped` (typed) | `Effect.runPromise` / `runSync` whose input Effect requires `Scope`. Uses parser services for the type query. |
 
 The `index.ts` here exports `scopeRules`, which the parent `effect/index.ts` spreads into the package's full rule map.

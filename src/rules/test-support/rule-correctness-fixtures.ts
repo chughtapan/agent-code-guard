@@ -246,6 +246,7 @@ const IDENTS_BY_SEED: Record<string, string> = {
   "agent-code-guard/effect-foreach-requires-concurrency": "items",
   "agent-code-guard/acquire-release-requires-scope": "open",
   "agent-code-guard/finalizer-requires-scope": "close",
+  "agent-code-guard/gen-finally": "work",
   "agent-code-guard/parse-into-schema-requires-effect": "input",
   "agent-code-guard/no-effect-error-coalescing": "program",
   "agent-code-guard/no-exported-brand-constructor": "UserId",
